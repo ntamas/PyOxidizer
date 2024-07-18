@@ -32,7 +32,7 @@ use {
         ffi as pyffi,
         prelude::*,
         types::{PyBytes, PyDict, PyList, PyString, PyTuple},
-        AsPyPointer, FromPyPointer, PyNativeType, PyTraverseError, PyVisit,
+        PyNativeType, PyTraverseError, PyVisit,
     },
     python_packaging::resource::BytecodeOptimizationLevel,
     std::sync::Arc,
@@ -328,10 +328,9 @@ impl ImporterState {
             .into_py(py);
         let module_spec_type = bootstrap_module.getattr("ModuleSpec")?.into_py(py);
 
-        let builtins_module =
-            unsafe { PyDict::from_borrowed_ptr_or_err(py, pyffi::PyEval_GetBuiltins()) }?;
-
-        let exec_fn = match builtins_module.get_item("exec") {
+        let builtins_module = unsafe { Py::from_borrowed_ptr_or_err(py, pyffi::PyEval_GetBuiltins()) }?;
+        let builtins_module_dict = builtins_module.downcast::<PyDict>(py)?;
+        let exec_fn = match builtins_module_dict.get_item("exec").unwrap_or(None) {
             Some(v) => v,
             None => {
                 return Err(PyValueError::new_err("could not obtain __builtins__.exec"));
@@ -1285,7 +1284,7 @@ pub fn replace_meta_path_importers<'a, 'p>(
     resources_state: Box<PythonResourcesState<'a, u8>>,
     importer_state_callback: Option<impl FnOnce(&mut ImporterState)>,
 ) -> PyResult<&'p PyCell<OxidizedFinder>> {
-    let mut state = get_module_state(oxidized_importer)?;
+    let state = get_module_state(oxidized_importer)?;
 
     let sys_module = py.import("sys")?;
 

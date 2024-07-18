@@ -62,7 +62,7 @@ impl<'a> ResourceParserIterator<'a> {
     /// current blob section offsets, the resource field being accessed, and the
     /// length of the blob and returns a slice to that blob.
     fn resolve_blob_data(&mut self, resource_field: ResourceField, length: usize) -> &'a [u8] {
-        let mut state = self.blob_sections[resource_field as usize]
+        let state = self.blob_sections[resource_field as usize]
             .as_mut()
             .expect("blob state not found");
 

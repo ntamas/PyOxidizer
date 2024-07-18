@@ -23,6 +23,8 @@ mod resource_scanning;
 #[allow(clippy::needless_option_as_deref)]
 mod zip_import;
 
+use std::ptr::addr_of_mut;
+
 pub use crate::{
     importer::{
         install_path_hook, remove_external_importers, replace_meta_path_importers, ImporterState,
@@ -46,7 +48,7 @@ use {
         exceptions::{PyImportError, PyValueError},
         ffi as pyffi,
         prelude::*,
-        AsPyPointer, FromPyPointer,
+        AsPyPointer,
     },
 };
 
@@ -109,19 +111,21 @@ pub(crate) fn get_module_state(m: &PyModule) -> Result<&mut ModuleState, PyErr> 
 pub extern "C" fn PyInit_oxidized_importer() -> *mut pyffi::PyObject {
     let py = unsafe { Python::assume_gil_acquired() };
 
-    let module = unsafe { pyffi::PyModule_Create(&mut MODULE_DEF) } as *mut pyffi::PyObject;
+    let module = unsafe { pyffi::PyModule_Create(addr_of_mut!(MODULE_DEF)) } as *mut pyffi::PyObject;
 
     if module.is_null() {
         return module;
     }
 
-    let module = match unsafe { PyModule::from_owned_ptr_or_err(py, module) } {
+    let module_as_any = match unsafe { Py::from_owned_ptr_or_err(py, module) } {
         Ok(m) => m,
         Err(e) => {
             e.restore(py);
             return std::ptr::null_mut();
         }
     };
+
+    let module = module_as_any.downcast::<PyModule>(py).unwrap();
 
     match module_init(py, module) {
         Ok(()) => module.into_ptr(),
@@ -180,7 +184,7 @@ fn module_init(py: Python, m: &PyModule) -> PyResult<()> {
         return Err(PyImportError::new_err("module requires Python 3.8+"));
     }
 
-    let mut state = get_module_state(m)?;
+    let state = get_module_state(m)?;
 
     state.initialized = false;
 

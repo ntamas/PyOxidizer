@@ -19,7 +19,6 @@ use {
         ffi as pyffi,
         prelude::*,
         types::{PyBytes, PyList, PyTuple},
-        AsPyPointer,
     },
     python_packaging::{
         bytecode::BytecodeCompiler,
@@ -111,7 +110,7 @@ impl OxidizedResourceCollector {
         let typ = resource.get_type();
         let repr = resource.repr()?;
 
-        match typ.name()? {
+        match typ.qualname()?.as_str() {
             "PythonExtensionModule" => {
                 let module_cell = resource.downcast::<PyCell<PythonExtensionModule>>()?;
                 let module = module_cell.borrow();
@@ -190,7 +189,7 @@ impl OxidizedResourceCollector {
 
         let repr = resource.repr()?;
 
-        match resource.get_type().name()? {
+        match resource.get_type().qualname()?.as_str() {
             "PythonExtensionModule" => {
                 let module_cell = resource.downcast::<PyCell<PythonExtensionModule>>()?;
                 let module = module_cell.borrow();

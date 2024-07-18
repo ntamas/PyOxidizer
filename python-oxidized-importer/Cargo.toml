@@ -47,8 +47,8 @@ path = "../python-packaging"
 default-features = false
 
 [dependencies.pyo3]
-version = "0.18.0"
-features = ["macros"]
+version = "0.21.2"
+features = ["macros", "gil-refs"]
 
 [dependencies.zip]
 version = "0.6.3"
