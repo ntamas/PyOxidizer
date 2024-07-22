@@ -19,8 +19,7 @@ use {
         OXIDIZED_IMPORTER_NAME_STR,
     },
     pyo3::{
-        exceptions::PyRuntimeError, ffi as pyffi, prelude::*, types::PyDict, AsPyPointer,
-        PyTypeInfo,
+        exceptions::PyRuntimeError, ffi as pyffi, prelude::*, types::PyDict, PyTypeInfo,
     },
     python_packaging::interpreter::{MultiprocessingStartMethod, TerminfoResolution},
     std::{
