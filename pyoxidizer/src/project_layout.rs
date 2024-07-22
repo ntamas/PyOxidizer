@@ -41,8 +41,8 @@ static HANDLEBARS: Lazy<Handlebars<'static>> = Lazy::new(|| {
         .unwrap();
     handlebars
         .register_template_string(
-            "new-cargo-config",
-            include_str!("templates/new-cargo-config.hbs"),
+            "new-cargo-config.toml",
+            include_str!("templates/new-cargo-config.toml.hbs"),
         )
         .unwrap();
     handlebars
@@ -143,9 +143,9 @@ pub fn write_new_cargo_config(project_path: &Path) -> Result<()> {
     }
 
     let data: BTreeMap<String, String> = BTreeMap::new();
-    let t = HANDLEBARS.render("new-cargo-config", &data)?;
+    let t = HANDLEBARS.render("new-cargo-config.toml", &data)?;
 
-    let config_path = cargo_path.join("config");
+    let config_path = cargo_path.join("config.toml");
     println!("writing {}", config_path.display());
     std::fs::write(&config_path, t)?;
 
