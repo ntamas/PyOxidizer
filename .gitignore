@@ -1,4 +1,5 @@
 .idea/
+build/
 docs/_build/
 docs/oxidized_importer*
 docs/pyembed*

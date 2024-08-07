@@ -28,8 +28,8 @@ pub(crate) struct PythonModuleSource {
 }
 
 impl PythonModuleSource {
-    pub fn new(py: Python, resource: RawPythonModuleSource) -> PyResult<&PyCell<Self>> {
-        PyCell::new(
+    pub fn new(py: Python, resource: RawPythonModuleSource) -> PyResult<Bound<Self>> {
+        Bound::new(
             py,
             PythonModuleSource {
                 resource: RefCell::new(resource),
@@ -68,7 +68,7 @@ impl PythonModuleSource {
     }
 
     #[getter]
-    fn get_source<'p>(&self, py: Python<'p>) -> PyResult<&'p PyBytes> {
+    fn get_source<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyBytes>> {
         let source = self
             .resource
             .borrow()
@@ -76,11 +76,11 @@ impl PythonModuleSource {
             .resolve_content()
             .map_err(|_| PyValueError::new_err("error resolving source code"))?;
 
-        Ok(PyBytes::new(py, &source))
+        Ok(PyBytes::new_bound(py, &source))
     }
 
     #[setter]
-    fn set_source(&self, value: Option<&PyAny>) -> PyResult<()> {
+    fn set_source(&self, value: Option<&Bound<PyAny>>) -> PyResult<()> {
         if let Some(value) = value {
             self.resource.borrow_mut().source = FileData::Memory(pyobject_to_owned_bytes(value)?);
 
@@ -113,8 +113,8 @@ pub(crate) struct PythonModuleBytecode {
 }
 
 impl PythonModuleBytecode {
-    pub fn new(py: Python, resource: RawPythonModuleBytecode) -> PyResult<&PyCell<Self>> {
-        PyCell::new(
+    pub fn new(py: Python, resource: RawPythonModuleBytecode) -> PyResult<Bound<Self>> {
+        Bound::new(
             py,
             Self {
                 resource: RefCell::new(resource),
@@ -153,18 +153,18 @@ impl PythonModuleBytecode {
     }
 
     #[getter]
-    fn get_bytecode<'p>(&self, py: Python<'p>) -> PyResult<&'p PyBytes> {
+    fn get_bytecode<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyBytes>> {
         let bytecode = self
             .resource
             .borrow()
             .resolve_bytecode()
             .map_err(|_| PyValueError::new_err("error resolving bytecode"))?;
 
-        Ok(PyBytes::new(py, &bytecode))
+        Ok(PyBytes::new_bound(py, &bytecode))
     }
 
     #[setter]
-    fn set_bytecode(&self, value: Option<&PyAny>) -> PyResult<()> {
+    fn set_bytecode(&self, value: Option<&Bound<PyAny>>) -> PyResult<()> {
         if let Some(value) = value {
             self.resource
                 .borrow_mut()
@@ -218,8 +218,8 @@ pub(crate) struct PythonPackageResource {
 }
 
 impl PythonPackageResource {
-    pub fn new(py: Python, resource: RawPythonPackageResource) -> PyResult<&PyCell<Self>> {
-        PyCell::new(
+    pub fn new(py: Python, resource: RawPythonPackageResource) -> PyResult<Bound<Self>> {
+        Bound::new(
             py,
             Self {
                 resource: RefCell::new(resource),
@@ -275,7 +275,7 @@ impl PythonPackageResource {
     }
 
     #[getter]
-    fn get_data<'p>(&self, py: Python<'p>) -> PyResult<&'p PyBytes> {
+    fn get_data<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyBytes>> {
         let data = self
             .resource
             .borrow()
@@ -283,11 +283,11 @@ impl PythonPackageResource {
             .resolve_content()
             .map_err(|_| PyValueError::new_err("error resolving data"))?;
 
-        Ok(PyBytes::new(py, &data))
+        Ok(PyBytes::new_bound(py, &data))
     }
 
     #[setter]
-    fn set_data(&self, value: Option<&PyAny>) -> PyResult<()> {
+    fn set_data(&self, value: Option<&Bound<PyAny>>) -> PyResult<()> {
         if let Some(value) = value {
             self.resource.borrow_mut().data = FileData::Memory(pyobject_to_owned_bytes(value)?);
 
@@ -307,8 +307,8 @@ impl PythonPackageDistributionResource {
     pub fn new(
         py: Python,
         resource: RawPythonPackageDistributionResource,
-    ) -> PyResult<&PyCell<Self>> {
-        PyCell::new(
+    ) -> PyResult<Bound<Self>> {
+        Bound::new(
             py,
             Self {
                 resource: RefCell::new(resource),
@@ -380,7 +380,7 @@ impl PythonPackageDistributionResource {
     }
 
     #[getter]
-    fn get_data<'p>(&self, py: Python<'p>) -> PyResult<&'p PyBytes> {
+    fn get_data<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyBytes>> {
         let data = self
             .resource
             .borrow()
@@ -388,11 +388,11 @@ impl PythonPackageDistributionResource {
             .resolve_content()
             .map_err(|_| PyValueError::new_err("error resolving data"))?;
 
-        Ok(PyBytes::new(py, &data))
+        Ok(PyBytes::new_bound(py, &data))
     }
 
     #[setter]
-    fn set_data(&self, value: Option<&PyAny>) -> PyResult<()> {
+    fn set_data(&self, value: Option<&Bound<PyAny>>) -> PyResult<()> {
         if let Some(value) = value {
             self.resource.borrow_mut().data = FileData::Memory(pyobject_to_owned_bytes(value)?);
 
@@ -409,8 +409,8 @@ pub(crate) struct PythonExtensionModule {
 }
 
 impl PythonExtensionModule {
-    pub fn new(py: Python, resource: RawPythonExtensionModule) -> PyResult<&PyCell<Self>> {
-        PyCell::new(
+    pub fn new(py: Python, resource: RawPythonExtensionModule) -> PyResult<Bound<Self>> {
+        Bound::new(
             py,
             Self {
                 resource: RefCell::new(resource),

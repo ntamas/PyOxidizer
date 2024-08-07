@@ -267,7 +267,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
 
         let resources_state = Box::new(PythonResourcesState::try_from(&self.config)?);
 
-        let oxidized_importer = py.import(OXIDIZED_IMPORTER_NAME_STR).map_err(|err| {
+        let oxidized_importer = py.import_bound(OXIDIZED_IMPORTER_NAME_STR).map_err(|err| {
             NewInterpreterError::new_from_pyerr(py, err, "import of oxidized importer module")
         })?;
 
@@ -305,7 +305,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         // there should no longer be a Python interpreter around. So it follows that the
         // importer state cannot be dropped after self.
 
-        replace_meta_path_importers(py, oxidized_importer, resources_state, Some(cb)).map_err(
+        replace_meta_path_importers(py, &oxidized_importer, resources_state, Some(cb)).map_err(
             |err| {
                 NewInterpreterError::new_from_pyerr(py, err, "initialization of oxidized importer")
             },
@@ -321,7 +321,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         oxidized_finder_loaded: bool,
     ) -> Result<Option<PathBuf>, NewInterpreterError> {
         let sys_module = py
-            .import("sys")
+            .import_bound("sys")
             .map_err(|e| NewInterpreterError::new_from_pyerr(py, e, "obtaining sys module"))?;
 
         // When the main initialization ran, it initialized the "external"
@@ -350,7 +350,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         // _Py_InitializeMain.
 
         if !self.config.filesystem_importer {
-            remove_external_importers(sys_module).map_err(|err| {
+            remove_external_importers(&sys_module).map_err(|err| {
                 NewInterpreterError::new_from_pyerr(py, err, "removing external importers")
             })?;
         }
@@ -374,7 +374,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
                 .find(|finder| {
                     // This should never fail.
                     if let Ok(finder) = finder {
-                        OxidizedFinder::is_type_of(finder)
+                        OxidizedFinder::is_type_of_bound(finder)
                     } else {
                         false
                     }
@@ -384,7 +384,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         };
 
         if let Some(Ok(finder)) = oxidized_finder {
-            install_path_hook(finder, sys_module).map_err(|err| {
+            install_path_hook(&finder, &sys_module).map_err(|err| {
                 NewInterpreterError::new_from_pyerr(
                     py,
                     err,
@@ -462,7 +462,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
 
                 // We use Python's uuid module to generate a filename. This avoids
                 // a dependency on a Rust crate, which cuts down on dependency bloat.
-                let uuid_mod = py.import("uuid").map_err(|e| {
+                let uuid_mod = py.import_bound("uuid").map_err(|e| {
                     NewInterpreterError::new_from_pyerr(py, e, "importing uuid module")
                 })?;
                 let uuid4 = uuid_mod.getattr("uuid4").map_err(|e| {
@@ -541,7 +541,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         }
 
         self.with_gil(|py| {
-            let kwargs = PyDict::new(py);
+            let kwargs = PyDict::new_bound(py);
 
             for arg in argv.iter().skip(2) {
                 let arg = arg.to_string_lossy();
@@ -571,7 +571,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
                 kwargs.set_item(key, value)?;
             }
 
-            let spawn_module = py.import("multiprocessing.spawn")?;
+            let spawn_module = py.import_bound("multiprocessing.spawn")?;
             spawn_module.getattr("spawn_main")?.call1((kwargs,))?;
 
             Ok(0)
@@ -696,7 +696,7 @@ fn write_modules_to_path(py: Python, path: &Path) -> Result<(), &'static str> {
     // TODO this needs better error handling all over.
 
     let sys = py
-        .import("sys")
+        .import_bound("sys")
         .map_err(|_| "could not obtain sys module")?;
     let modules = sys
         .getattr("modules")

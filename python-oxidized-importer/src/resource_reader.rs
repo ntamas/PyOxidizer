@@ -28,7 +28,7 @@ impl OxidizedResourceReader {
     /// Returns an opened, file-like object for binary reading of the resource.
     ///
     /// If the resource cannot be found, FileNotFoundError is raised.
-    fn open_resource<'p>(&self, py: Python<'p>, resource: &str) -> PyResult<&'p PyAny> {
+    fn open_resource<'p>(&self, py: Python<'p>, resource: &str) -> PyResult<Bound<'p, PyAny>> {
         if let Some(file) = self.state.get_resources_state().get_package_resource_file(
             py,
             &self.package,
@@ -45,7 +45,7 @@ impl OxidizedResourceReader {
     /// If the resource does not concretely exist on the file system, raise
     /// FileNotFoundError.
     #[allow(unused)]
-    fn resource_path(&self, resource: &PyAny) -> PyResult<()> {
+    fn resource_path(&self, resource: &Bound<PyAny>) -> PyResult<()> {
         Err(PyFileNotFoundError::new_err(
             "in-memory resources do not have filesystem paths",
         ))
@@ -75,7 +75,7 @@ impl OxidizedResourceReader {
     /// For instance, returning subdirectory names is allowed so that when it is known that the
     /// package and resources are stored on the file system then those subdirectory names can be
     /// used directly.
-    fn contents<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
+    fn contents<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyAny>> {
         self.state
             .get_resources_state()
             .package_resource_names(py, &self.package)

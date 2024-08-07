@@ -21,7 +21,7 @@ fn new_interpreter<'interpreter, 'resources>(
 
 fn get_importer(interp: &MainPythonInterpreter) -> Result<PyObject> {
     interp.with_gil(|py| {
-        let sys = py.import("sys").unwrap();
+        let sys = py.import_bound("sys").unwrap();
         let meta_path = sys.getattr("meta_path").unwrap();
         assert_eq!(meta_path.len().unwrap(), 2);
 
@@ -42,14 +42,14 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import("sys").unwrap();
+            let sys = py.import_bound("sys").unwrap();
             let meta_path = sys.getattr("meta_path").unwrap();
             assert_eq!(meta_path.len().unwrap(), 2);
 
             let importer = meta_path.get_item(0).unwrap();
             assert_eq!(importer.get_type().name().unwrap(), "OxidizedFinder");
 
-            let errno = py.import("errno").unwrap();
+            let errno = py.import_bound("errno").unwrap();
             let loader = errno.getattr("__loader__").unwrap();
             // It isn't OxidizedFinder because OxidizedFinder is just a proxy.
             assert!(loader
@@ -67,11 +67,11 @@ rusty_fork_test! {
 
         interp.with_gil(|py| {
             assert!(importer
-                .call_method(py, "find_spec", ("missing_package", py.None()), None)
+                .call_method_bound(py, "find_spec", ("missing_package", py.None()), None)
                 .unwrap()
                 .is_none(py));
             assert!(importer
-                .call_method(py, "find_spec", ("foo.bar", py.None()), None)
+                .call_method_bound(py, "find_spec", ("foo.bar", py.None()), None)
                 .unwrap()
                 .is_none(py));
         });

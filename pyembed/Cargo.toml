@@ -53,7 +53,7 @@ default-features = false
 [dependencies.pyo3]
 version = "0.21.2"
 default-features = false
-features = ["macros", "gil-refs"]
+features = ["macros"]
 
 [dependencies.python-packaging]
 version = "0.16.0-pre"

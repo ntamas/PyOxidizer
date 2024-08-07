@@ -21,7 +21,7 @@ use {
 
 /// Scans a filesystem path for Python resources and turns them into Python types.
 #[pyfunction]
-pub(crate) fn find_resources_in_path<'p>(py: Python<'p>, path: &PyAny) -> PyResult<&'p PyList> {
+pub(crate) fn find_resources_in_path<'p>(py: Python<'p>, path: &Bound<'p, PyAny>) -> PyResult<Bound<'p, PyList>> {
     let path = pyobject_to_pathbuf(py, path)?;
 
     if !path.is_dir() {
@@ -31,11 +31,11 @@ pub(crate) fn find_resources_in_path<'p>(py: Python<'p>, path: &PyAny) -> PyResu
         )));
     }
 
-    let sys_module = py.import("sys")?;
+    let sys_module = py.import_bound("sys")?;
     let implementation = sys_module.getattr("implementation")?;
     let cache_tag = implementation.getattr("cache_tag")?.extract::<String>()?;
 
-    let importlib_machinery = py.import("importlib.machinery")?;
+    let importlib_machinery = py.import_bound("importlib.machinery")?;
 
     let source = importlib_machinery
         .getattr("SOURCE_SUFFIXES")?
@@ -93,10 +93,10 @@ pub(crate) fn find_resources_in_path<'p>(py: Python<'p>, path: &PyAny) -> PyResu
         }
     }
 
-    Ok(PyList::new(py, &res))
+    Ok(PyList::new_bound(py, &res))
 }
 
-pub(crate) fn init_module(m: &PyModule) -> PyResult<()> {
+pub(crate) fn init_module(m: &Bound<PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(find_resources_in_path, m)?)?;
 
     Ok(())

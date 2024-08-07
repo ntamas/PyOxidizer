@@ -17,9 +17,10 @@ use {
 };
 
 // Emulates importlib.metadata.Distribution._discover_resolvers().
-fn discover_resolvers(py: Python) -> PyResult<&PyList> {
-    let sys_module = py.import("sys")?;
-    let meta_path = sys_module.getattr("meta_path")?.downcast::<PyList>()?;
+fn discover_resolvers(py: Python) -> PyResult<Bound<PyList>> {
+    let sys_module = py.import_bound("sys")?;
+    let meta_path = sys_module.getattr("meta_path")?;
+    let meta_path = meta_path.downcast::<PyList>()?;
 
     let mut resolvers = vec![];
 
@@ -31,7 +32,7 @@ fn discover_resolvers(py: Python) -> PyResult<&PyList> {
         }
     }
 
-    Ok(PyList::new(py, resolvers))
+    Ok(PyList::new_bound(py, resolvers))
 }
 
 /// A importlib.metadata.Distribution allowing access to package distribution data.
@@ -51,15 +52,15 @@ impl OxidizedDistribution {
 impl OxidizedDistribution {
     #[allow(unused)]
     #[classmethod]
-    fn from_name<'p>(cls: &PyType, py: Python<'p>, name: &PyString) -> PyResult<&'p PyAny> {
-        let importlib_metadata = py.import("importlib.metadata")?;
+    fn from_name<'p>(cls: &Bound<PyType>, py: Python<'p>, name: &Bound<PyString>) -> PyResult<Bound<'p, PyAny>> {
+        let importlib_metadata = py.import_bound("importlib.metadata")?;
         let finder = importlib_metadata.getattr("DistributionFinder")?;
         let context_type = finder.getattr("Context")?;
 
         for resolver in discover_resolvers(py)?.iter() {
-            let kwargs = PyDict::new(py);
+            let kwargs = PyDict::new_bound(py);
             kwargs.set_item("name", name)?;
-            let context = context_type.call((), Some(kwargs))?;
+            let context = context_type.call((), Some(&kwargs))?;
 
             let dists = resolver.call((context,), None)?;
 
@@ -74,7 +75,7 @@ impl OxidizedDistribution {
 
         let package_not_found_error = importlib_metadata.getattr("PackageNotFoundError")?;
 
-        Err(PyErr::from_value(
+        Err(PyErr::from_value_bound(
             package_not_found_error.call((name,), None)?,
         ))
     }
@@ -83,12 +84,12 @@ impl OxidizedDistribution {
     #[classmethod]
     #[pyo3(signature=(*py_args, **py_kwargs))]
     fn discover<'p>(
-        cls: &PyType,
+        cls: &Bound<PyType>,
         py: Python<'p>,
-        py_args: &PyTuple,
-        py_kwargs: Option<&PyDict>,
-    ) -> PyResult<&'p PyAny> {
-        let importlib_metadata = py.import("importlib.metadata")?;
+        py_args: &Bound<PyTuple>,
+        py_kwargs: Option<&Bound<PyDict>>,
+    ) -> PyResult<Bound<'p, PyAny>> {
+        let importlib_metadata = py.import_bound("importlib.metadata")?;
         let distribution_finder = importlib_metadata.getattr("DistributionFinder")?;
         let context_type = distribution_finder.getattr("Context")?;
 
@@ -111,18 +112,18 @@ impl OxidizedDistribution {
         let mut distributions = vec![];
 
         for resolver in discover_resolvers(py)?.iter() {
-            for distribution in resolver.call((context,), None)?.iter()? {
+            for distribution in resolver.call((&context,), None)?.iter()? {
                 distributions.push(distribution?);
             }
         }
 
         // Return an iterator for compatibility with older standard library
         // versions.
-        PyList::new(py, &distributions).call_method0("__iter__")
+        PyList::new_bound(py, &distributions).call_method0("__iter__")
     }
 
     /// Attempt to load metadata file given by the filename.
-    fn read_text<'p>(&self, py: Python<'p>, filename: String) -> PyResult<&'p PyAny> {
+    fn read_text<'p>(&self, py: Python<'p>, filename: String) -> PyResult<Bound<'p, PyAny>> {
         let resources_state = self.state.get_resources_state();
 
         let data = resources_state
@@ -133,12 +134,12 @@ impl OxidizedDistribution {
         let data = if let Some(data) = data {
             data
         } else {
-            return Ok(py.None().into_ref(py));
+            return Ok(py.None().into_bound(py));
         };
 
-        let data = PyBytes::new(py, &data);
+        let data = PyBytes::new_bound(py, &data);
 
-        let io = py.import("io")?;
+        let io = py.import_bound("io")?;
 
         let bytes_io = io.getattr("BytesIO")?.call((data,), None)?;
         let text_wrapper = io
@@ -153,7 +154,7 @@ impl OxidizedDistribution {
     /// The returned object will have keys that name the various bits of
     /// metadata.
     #[getter]
-    fn metadata<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
+    fn metadata<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyAny>> {
         let resources_state = self.state.get_resources_state();
 
         let data = resources_state
@@ -169,13 +170,13 @@ impl OxidizedDistribution {
                 .ok_or_else(|| PyIOError::new_err("package metadata not found"))?
         };
 
-        let data = PyBytes::new(py, &data);
-        let email = py.import("email")?;
+        let data = PyBytes::new_bound(py, &data);
+        let email = py.import_bound("email")?;
 
         let message = email.getattr("message_from_bytes")?.call((data,), None)?;
 
         // Python 3.10+ has an adapter class for the raw email Message.
-        if let Ok(adapters) = py.import("importlib.metadata._adapters") {
+        if let Ok(adapters) = py.import_bound("importlib.metadata._adapters") {
             let adapter_cls = adapters.getattr("Message")?;
             adapter_cls.call1((message,))
         } else {
@@ -185,7 +186,7 @@ impl OxidizedDistribution {
 
     /// Return the `Name` metadata for the distribution package.
     #[getter]
-    fn name<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
+    fn name<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyAny>> {
         let metadata = self.metadata(py)?;
 
         metadata.get_item("Name")
@@ -193,9 +194,9 @@ impl OxidizedDistribution {
 
     /// Return a normalized version of the name.
     #[getter]
-    fn _normalized_name<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
+    fn _normalized_name<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyAny>> {
         let name = self.name(py)?;
-        let re = py.import("re")?;
+        let re = py.import_bound("re")?;
 
         // PEP 503 normalization plus dashes as underscores.
         let value = re.call_method("sub", ("[-_.]+", "-", name), None)?;
@@ -206,15 +207,15 @@ impl OxidizedDistribution {
     }
 
     #[getter]
-    fn version<'p>(self_: PyRef<Self>, py: Python<'p>) -> PyResult<&'p PyAny> {
+    fn version<'p>(self_: PyRef<Self>, py: Python<'p>) -> PyResult<Bound<'p, PyAny>> {
         let metadata = self_.metadata(py)?;
 
         metadata.get_item("Version")
     }
 
     #[getter]
-    fn entry_points<'p>(self_: PyRef<Self>, py: Python<'p>) -> PyResult<&'p PyAny> {
-        let importlib_metadata = py.import("importlib.metadata")?;
+    fn entry_points<'p>(self_: PyRef<Self>, py: Python<'p>) -> PyResult<Bound<'p, PyAny>> {
+        let importlib_metadata = py.import_bound("importlib.metadata")?;
 
         let text = self_.read_text(py, "entry_points.txt".into())?;
 
@@ -233,7 +234,7 @@ impl OxidizedDistribution {
     }
 
     #[getter]
-    fn requires<'p>(&self, py: Python<'p>) -> PyResult<&'p PyAny> {
+    fn requires<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyAny>> {
         let requires = self
             .metadata(py)?
             .call_method("get_all", ("Requires-Dist",), None)?;
@@ -243,9 +244,9 @@ impl OxidizedDistribution {
             let source = self.read_text(py, "requires.txt".into())?;
 
             if source.is_none() {
-                py.None().into_ref(py)
+                py.None().into_bound(py)
             } else {
-                let importlib_metadata = py.import("importlib.metadata")?;
+                let importlib_metadata = py.import_bound("importlib.metadata")?;
                 let distribution = importlib_metadata.getattr("Distribution")?;
 
                 distribution.call_method("_deps_from_requires_text", (source,), None)?
@@ -255,12 +256,12 @@ impl OxidizedDistribution {
         };
 
         if requires.is_none() {
-            Ok(py.None().into_ref(py))
+            Ok(py.None().into_bound(py))
         } else {
-            let res = PyList::empty(py);
+            let res = PyList::empty_bound(py);
             res.call_method("extend", (requires,), None)?;
 
-            Ok(res.into())
+            Ok(res.into_any())
         }
     }
 }
@@ -269,9 +270,9 @@ impl OxidizedDistribution {
 pub(crate) fn find_distributions<'p>(
     py: Python<'p>,
     state: Arc<ImporterState>,
-    name: Option<&PyAny>,
-    _path: Option<&PyAny>,
-) -> PyResult<&'p PyList> {
+    name: Option<&Bound<PyAny>>,
+    _path: Option<&Bound<PyAny>>,
+) -> PyResult<Bound<'p, PyList>> {
     let distributions = state
         .get_resources_state()
         .package_distribution_names(|match_name| {
@@ -289,14 +290,14 @@ pub(crate) fn find_distributions<'p>(
         })
         .into_iter()
         .map(|name| {
-            PyCell::new(
+            Bound::new(
                 py,
                 OxidizedDistribution::new(state.clone(), name.to_string()),
             )
         })
         .collect::<Result<Vec<_>, _>>()?;
 
-    Ok(PyList::new(py, &distributions))
+    Ok(PyList::new_bound(py, &distributions))
 }
 
 /// pkg_resources distribution finder for sys.path entries.
@@ -312,10 +313,10 @@ pub(crate) fn find_pkg_resources_distributions<'p>(
     search_path: &str,
     only: bool,
     package_target: Option<&str>,
-) -> PyResult<&'p PyList> {
+) -> PyResult<Bound<'p, PyList>> {
     let resources = &state.get_resources_state();
 
-    let pkg_resources = py.import("pkg_resources")?;
+    let pkg_resources = py.import_bound("pkg_resources")?;
     let distribution_type = pkg_resources.getattr("Distribution")?;
 
     let distributions = resources
@@ -339,19 +340,19 @@ pub(crate) fn find_pkg_resources_distributions<'p>(
 
             let provider = create_oxidized_pkg_resources_provider(state.clone(), name.to_string())?;
 
-            let kwargs = PyDict::new(py);
-            kwargs.set_item("location", PyString::new(py, &location))?;
-            kwargs.set_item("metadata", PyCell::new(py, provider)?)?;
+            let kwargs = PyDict::new_bound(py);
+            kwargs.set_item("location", PyString::new_bound(py, &location))?;
+            kwargs.set_item("metadata", Bound::new(py, provider)?)?;
             kwargs.set_item("project_name", project_name)?;
             kwargs.set_item("version", version)?;
 
-            Ok((name, distribution_type.call((), Some(kwargs))?))
+            Ok((name, distribution_type.call((), Some(&kwargs))?))
         })
         // Collect into a BTreeMap to deduplicate and facilitate deterministic output.
-        .filter_map(|kv: PyResult<(_, &PyAny)>| kv.ok())
-        .collect::<BTreeMap<_, &PyAny>>();
+        .filter_map(|kv: PyResult<(_, Bound<PyAny>)>| kv.ok())
+        .collect::<BTreeMap<_, Bound<PyAny>>>();
 
-    Ok(PyList::new(
+    Ok(PyList::new_bound(
         py,
         &distributions.into_values().collect::<Vec<_>>(),
     ))
