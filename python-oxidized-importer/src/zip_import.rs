@@ -342,13 +342,13 @@ impl OxidizedZipFinder {
         path: Option<&Bound<'p, PyAny>>,
     ) -> PyResult<Self> {
         let path = if let Some(o) = path {
-            o
+            o.clone()
         } else {
             let sys_module = py.import_bound("sys")?;
-            &sys_module.getattr("executable")?
+            sys_module.getattr("executable")?
         };
 
-        let zip_path = pyobject_to_pathbuf(py, path)?;
+        let zip_path = pyobject_to_pathbuf(py, &path)?;
 
         Self::new_from_pyobject(py, zip_path, source, None)
     }
