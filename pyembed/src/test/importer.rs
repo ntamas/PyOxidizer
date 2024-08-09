@@ -26,7 +26,7 @@ fn get_importer(interp: &MainPythonInterpreter) -> Result<PyObject> {
         assert_eq!(meta_path.len().unwrap(), 2);
 
         let importer = meta_path.get_item(0).unwrap();
-        assert_eq!(importer.get_type().name().unwrap(), "OxidizedFinder");
+        assert_eq!(importer.get_type().name().unwrap(), "oxidized_importer.OxidizedFinder");
 
         Ok(importer.to_object(py))
     })
@@ -47,7 +47,7 @@ rusty_fork_test! {
             assert_eq!(meta_path.len().unwrap(), 2);
 
             let importer = meta_path.get_item(0).unwrap();
-            assert_eq!(importer.get_type().name().unwrap(), "OxidizedFinder");
+            assert_eq!(importer.get_type().name().unwrap(), "oxidized_importer.OxidizedFinder");
 
             let errno = py.import_bound("errno").unwrap();
             let loader = errno.getattr("__loader__").unwrap();
