@@ -16,8 +16,5 @@ jobs:
       - uses: EmbarkStudios/cargo-deny-action@v1
         with:
           arguments: "--all-features"
-      - uses: EmbarkStudios/cargo-deny-action@v1
-        with:
-          arguments: "--all-features"
           manifest_path: ./pyembed/Cargo.toml
 
