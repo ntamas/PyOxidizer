@@ -267,13 +267,13 @@ impl OxidizedResourceCollector {
     #[pyo3(signature=(python_exe=None))]
     fn oxidize<'p>(&self, py: Python<'p>, python_exe: Option<&Bound<PyAny>>) -> PyResult<Bound<'p, PyTuple>> {
         let python_exe = match python_exe {
-            Some(p) => p,
+            Some(p) => p.clone(),
             None => {
                 let sys_module = py.import_bound("sys")?;
-                &sys_module.getattr("executable")?
+                sys_module.getattr("executable")?
             }
         };
-        let python_exe = pyobject_to_pathbuf(py, python_exe)?;
+        let python_exe = pyobject_to_pathbuf(py, &python_exe)?;
         let temp_dir = PyTempDir::new(py)?;
         let collector = self.collector.borrow();
 
