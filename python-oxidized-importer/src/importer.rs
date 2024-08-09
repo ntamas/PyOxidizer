@@ -67,7 +67,7 @@ fn extension_module_shared_library_create_module(
     name: &str,
     library_data: &[u8],
 ) -> PyResult<Py<PyAny>> {
-    let origin = PyString::new(py, "memory");
+    let origin = PyString::new_bound(py, "memory");
 
     let existing_module =
         unsafe { pyffi::_PyImport_FindExtensionObject(name_py.as_ptr(), origin.as_ptr()) };
@@ -122,9 +122,9 @@ fn extension_module_shared_library_create_module(
 #[cfg(windows)]
 fn load_dynamic_library(
     py: Python,
-    sys_modules: &PyAny,
-    spec: &PyAny,
-    name_py: &PyAny,
+    sys_modules: &Bound<PyAny>,
+    spec: &Bound<PyAny>,
+    name_py: &Bound<PyAny>,
     name: &str,
     library_module: *const c_void,
 ) -> PyResult<Py<PyAny>> {
