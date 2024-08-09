@@ -2,7 +2,7 @@
 # pyembed to only use permissive licenses so a proprietary application
 # can be distributed with PyOxidizer.
 [licenses]
-unlicensed = "deny"
+version = 2
 allow = [
     "0BSD",
     "Apache-2.0",
@@ -15,7 +15,6 @@ allow = [
     "Unicode-DFS-2016",
     "Zlib",
 ]
-default = "deny"
 
 [bans]
 # We want to keep the dependency tree as slim as possible. Let's
