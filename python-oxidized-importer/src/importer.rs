@@ -10,6 +10,9 @@ for importing Python modules from memory.
 */
 
 #[cfg(windows)]
+use std::ptr::addr_of_mut;
+
+#[cfg(windows)]
 use {
     crate::memory_dll::{free_library_memory, get_proc_address_memory, load_library_memory},
     pyo3::exceptions::PySystemError,
