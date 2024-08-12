@@ -194,7 +194,7 @@ fn load_dynamic_library(
     // module by calling PyModule_FromDefAndSpec(). py_module is a borrowed reference. And
     // PyModule_FromDefAndSpec() returns a new reference. So we don't need to worry about refcounts
     // of py_module.
-    if unsafe { pyffi::PyObject_TypeCheck(py_module, &mut pyffi::PyModuleDef_Type) } != 0 {
+    if unsafe { pyffi::PyObject_TypeCheck(py_module, addr_of_mut!(pyffi::PyModuleDef_Type)) } != 0 {
         let py_module = unsafe {
             pyffi::PyModule_FromDefAndSpec(py_module as *mut pyffi::PyModuleDef, spec.as_ptr())
         };
@@ -211,7 +211,7 @@ fn load_dynamic_library(
     // leak it.
     let py_module = unsafe { PyObject::from_owned_ptr(py, py_module) };
 
-    let mut module_def = unsafe { pyffi::PyModule_GetDef(py_module.as_ptr()) };
+    let module_def = unsafe { pyffi::PyModule_GetDef(py_module.as_ptr()) };
     if module_def.is_null() {
         return Err(PySystemError::new_err(format!(
             "initialization of {} did not return an extension module",
