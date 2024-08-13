@@ -456,7 +456,7 @@ pub fn build_python_executable<'a>(
         release,
         // Always build with locked because we crated a Cargo.lock with the
         // Rust project we just created.
-        true,
+        false,
         // Don't include license for self because the Rust project is temporary and its
         // licensing isn't material.
         false,
