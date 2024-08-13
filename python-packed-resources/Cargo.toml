@@ -13,3 +13,4 @@ keywords = ["python"]
 [dependencies]
 anyhow = "1.0.68"
 byteorder = "1.4.3"
+safe-transmute = "0.11.3"
