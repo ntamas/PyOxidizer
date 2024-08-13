@@ -91,16 +91,16 @@ impl<'a> ResourceParserIterator<'a> {
         let raw = self.resolve_blob_data(resource_field, length);
 
         // raw.as_ptr() might not be aligned to u16 boundaries so we need to
-        // copy
-        let words = match transmute_many_pedantic::<u16>(raw) {
-            Ok(words) => words,
-            Err(Unaligned(e)) => &(e.copy()[..]),
+        // copy. Also, there isn't an API that lets us get a OsStr from &[u16],
+        // so we need to use owned types.
+        let path_string = match transmute_many_pedantic::<u16>(raw) {
+            Ok(words) => OsString::from_wide(words),
+            Err(Unaligned(e)) => {
+                let words = e.copy();
+                OsString::from_wide(words.as_slice())
+            },
             Err(e) => panic!("Unexpected error: {}", e)
         };
-
-        // There isn't an API that lets us get a OsStr from &[u16]. So we need to use
-        // owned types.
-        let path_string = OsString::from_wide(words);
 
         Cow::Owned(PathBuf::from(path_string))
     }
