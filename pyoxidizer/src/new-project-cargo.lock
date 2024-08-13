@@ -413,6 +413,7 @@ version = "0.12.0"
 dependencies = [
  "anyhow",
  "byteorder",
+ "safe-transmute",
 ]
 
 [[package]]
@@ -464,6 +465,12 @@ checksum = "bfa0f585226d2e68097d4f95d113b15b83a82e819ab25717ec0590d9584ef366"
 dependencies = [
  "semver",
 ]
+
+[[package]]
+name = "safe-transmute"
+version = "0.11.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3944826ff8fa8093089aba3acb4ef44b9446a99a16f3bf4e74af3f77d340ab7d"
 
 [[package]]
 name = "same-file"
