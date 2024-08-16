@@ -71,12 +71,12 @@ impl<R: Read + Seek> ZipIndex<R> {
                         continue;
                     }
 
-                    name.strip_prefix(prefix)?
+                    name.strip_prefix(prefix)?.to_path_buf()
                 } else {
                     name
                 };
 
-                members.insert(name.to_path_buf(), index);
+                members.insert(name, index);
             }
         }
 

@@ -32,9 +32,9 @@ name = "oxidized_importer"
 crate-type = ["cdylib", "lib"]
 
 [dependencies]
-anyhow = "1.0.68"
-memmap2 = "0.5.8"
-once_cell = "1.17.0"
+anyhow = "1.0.86"
+memmap2 = "0.9.4"
+once_cell = "1.19.0"
 simple-file-manifest = "0.11.0"
 
 [dependencies.python-packed-resources]
@@ -47,11 +47,11 @@ path = "../python-packaging"
 default-features = false
 
 [dependencies.pyo3]
-version = "0.21.2"
+version = "0.22.2"
 features = ["macros"]
 
 [dependencies.zip]
-version = "0.6.3"
+version = "2.1.6"
 optional = true
 default-features = false
 features = ["deflate"]

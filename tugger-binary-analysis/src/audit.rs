@@ -30,6 +30,9 @@ pub fn analyze_data(buffer: &[u8]) {
         goblin::Object::PE(_pe) => {
             panic!("PE not yet supported");
         }
+        goblin::Object::COFF(_coff) => {
+            panic!("COFF not yet supported");
+        }
         goblin::Object::Mach(_mach) => {
             panic!("mach not yet supported");
         }
@@ -37,6 +40,9 @@ pub fn analyze_data(buffer: &[u8]) {
             panic!("archive not yet supported");
         }
         goblin::Object::Unknown(magic) => panic!("unknown magic: {:#x}", magic),
+        _ => {
+            panic!("binary format not yet supported");
+        }
     }
 }
 

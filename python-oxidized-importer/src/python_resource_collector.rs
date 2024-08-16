@@ -110,7 +110,7 @@ impl OxidizedResourceCollector {
         let typ = resource.get_type();
         let repr = resource.repr()?;
 
-        match typ.qualname()?.as_str() {
+        match typ.name()?.to_str()? {
             "PythonExtensionModule" => {
                 let module_cell = resource.downcast::<PythonExtensionModule>()?;
                 let module = module_cell.borrow();
@@ -189,7 +189,7 @@ impl OxidizedResourceCollector {
 
         let repr = resource.repr()?;
 
-        match resource.get_type().qualname()?.as_str() {
+        match resource.get_type().qualname()?.to_str()? {
             "PythonExtensionModule" => {
                 let module_cell = resource.downcast::<PythonExtensionModule>()?;
                 let module = module_cell.borrow();

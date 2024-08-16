@@ -20,7 +20,7 @@ pub struct Manifest {
 impl Manifest {
     /// Obtain an instance by parsing TOML bytes.
     pub fn from_toml_bytes(data: &[u8]) -> Result<Self> {
-        let table = toml::from_slice(data)?;
+        let table = toml::from_str(std::str::from_utf8(data)?)?;
 
         Self::from_toml(table)
     }
