@@ -91,7 +91,7 @@ Default value: ``None``.
 ``Self::resolve()`` behavior: sets to ``std::env::current_exe()`` if not set.
 Will canonicalize the final path, which may entail filesystem I/O.
 
-Type: ``Option<PathBuf>``
+Type: ``Option<std::path::PathBuf>``
 
 .. _pyoxy_struct_OxidizedPythonInterpreterConfig_origin:
 
@@ -107,7 +107,7 @@ Default value: ``None``.
 
 ``Self::resolve()`` behavior: sets to ``Self::exe.parent()`` if not set.
 
-Type: ``Option<PathBuf>``
+Type: ``Option<std::path::PathBuf>``
 
 .. _pyoxy_struct_OxidizedPythonInterpreterConfig_interpreter_config:
 
@@ -123,7 +123,7 @@ Default value: ``PythonInterpreterConfig::default()`` with
 ``PythonInterpreterConfig::module_search_paths`` entries have the special token
 ``$ORIGIN`` expanded to the resolved value of ``Self::origin``.
 
-Type: ``PythonInterpreterConfig``
+Type: ``python_packaging::interpreter::PythonInterpreterConfig``
 
 .. _pyoxy_struct_OxidizedPythonInterpreterConfig_allocator_backend:
 
@@ -142,7 +142,7 @@ be installed as per ``Self::allocator_raw``, ``Self::allocator_mem``,
 allocator backend is defined but all the ``allocator_*`` flags are ``false``,
 the allocator won't be used.
 
-Type: ``MemoryAllocatorBackend``
+Type: ``python_packaging::interpreter::MemoryAllocatorBackend``
 
 .. _pyoxy_struct_OxidizedPythonInterpreterConfig_allocator_raw:
 
@@ -357,7 +357,7 @@ have the special string ``$ORIGIN`` expanded to the string value that
 
 This field is ignored during serialization.
 
-Type: ``Vec<PackedResourcesSource>``
+Type: ``Vec<oxidized_importer::PackedResourcesSource>``
 
 .. _pyoxy_struct_OxidizedPythonInterpreterConfig_extra_extension_modules:
 
@@ -394,7 +394,7 @@ Default value: ``None``
 Interpreter initialization behavior: the resolved ``Some`` value is used
 to populate ``PyConfig.argv``.
 
-Type: ``Option<Vec<OsString>>``
+Type: ``Option<Vec<std::ffi::OsString>>``
 
 .. _pyoxy_struct_OxidizedPythonInterpreterConfig_argvb:
 
@@ -454,7 +454,7 @@ Interpreter initialization behavior: if ``Self::oxidized_importer`` is ``true``,
 the ``OxidizedImporter`` will be taught to call ``multiprocessing.set_start_method()``
 when ``multiprocessing`` is imported. If ``false``, this value has no effect.
 
-Type: ``MultiprocessingStartMethod``
+Type: ``python_packaging::interpreter::MultiprocessingStartMethod``
 
 .. _pyoxy_struct_OxidizedPythonInterpreterConfig_sys_frozen:
 
@@ -509,7 +509,7 @@ instructs to do.
 ``terminfo`` is not used on Windows and this setting is ignored on that
 platform.
 
-Type: ``TerminfoResolution``
+Type: ``python_packaging::interpreter::TerminfoResolution``
 
 .. _pyoxy_struct_OxidizedPythonInterpreterConfig_tcl_library:
 
@@ -529,7 +529,7 @@ resolved value of ``Self::origin``.
 Interpreter initialization behavior: if set, the ``TCL_LIBRARY`` environment
 variable will be set for the current process.
 
-Type: ``Option<PathBuf>``
+Type: ``Option<std::path::PathBuf>``
 
 .. _pyoxy_struct_OxidizedPythonInterpreterConfig_write_modules_directory_env:
 
@@ -696,7 +696,7 @@ These will become ``sys.argv``.
 
 See https://docs.python.org/3/c-api/init_config.html#c.PyConfig.argv.
 
-Type: ``Option<Vec<OsString>>``
+Type: ``Option<Vec<std::ffi::OsString>>``
 
 .. _pyoxy_struct_PythonInterpreterConfig_base_exec_prefix:
 
@@ -707,7 +707,7 @@ Controls ``sys.base_exec_prefix``.
 
 See https://docs.python.org/3/c-api/init_config.html#c.PyConfig.base_exec_prefix.
 
-Type: ``Option<PathBuf>``
+Type: ``Option<std::path::PathBuf>``
 
 .. _pyoxy_struct_PythonInterpreterConfig_base_executable:
 
@@ -718,7 +718,7 @@ Controls ``sys._base_executable``.
 
 See https://docs.python.org/3/c-api/init_config.html#c.PyConfig.base_executable.
 
-Type: ``Option<PathBuf>``
+Type: ``Option<std::path::PathBuf>``
 
 .. _pyoxy_struct_PythonInterpreterConfig_base_prefix:
 
@@ -729,7 +729,7 @@ Controls ``sys.base_prefix``.
 
 See https://docs.python.org/3/c-api/init_config.html#c.PyConfig.base_prefix.
 
-Type: ``Option<PathBuf>``
+Type: ``Option<std::path::PathBuf>``
 
 .. _pyoxy_struct_PythonInterpreterConfig_buffered_stdio:
 
@@ -795,7 +795,7 @@ Controls ``sys.exec_prefix``.
 
 See https://docs.python.org/3/c-api/init_config.html#c.PyConfig.exec_prefix.
 
-Type: ``Option<PathBuf>``
+Type: ``Option<std::path::PathBuf>``
 
 .. _pyoxy_struct_PythonInterpreterConfig_executable:
 
@@ -806,7 +806,7 @@ Controls ``sys.executable``.
 
 See https://docs.python.org/3/c-api/init_config.html#c.PyConfig.executable.
 
-Type: ``Option<PathBuf>``
+Type: ``Option<std::path::PathBuf>``
 
 .. _pyoxy_struct_PythonInterpreterConfig_fault_handler:
 
@@ -850,7 +850,7 @@ Randomized hash function seed.
 
 See https://docs.python.org/3/c-api/init_config.html#c.PyConfig.hash_seed.
 
-Type: ``Option<c_ulong>``
+Type: ``Option<std::os::raw::c_ulong>``
 
 .. _pyoxy_struct_PythonInterpreterConfig_home:
 
@@ -861,7 +861,7 @@ Python home directory.
 
 See https://docs.python.org/3/c-api/init_config.html#c.PyConfig.home.
 
-Type: ``Option<PathBuf>``
+Type: ``Option<std::path::PathBuf>``
 
 .. _pyoxy_struct_PythonInterpreterConfig_import_time:
 
@@ -945,7 +945,7 @@ directory of the executable at run-time. For example, if the executable is
 ``/opt/my-application/pyapp``, ``$ORIGIN`` will expand to ``/opt/my-application`` and the
 value ``$ORIGIN/lib`` will expand to ``/opt/my-application/lib``.
 
-Type: ``Option<Vec<PathBuf>>``
+Type: ``Option<Vec<std::path::PathBuf>>``
 
 .. _pyoxy_struct_PythonInterpreterConfig_optimization_level:
 
@@ -959,7 +959,7 @@ See https://docs.python.org/3/c-api/init_config.html#c.PyConfig.optimization_lev
 This setting is only relevant if ``write_bytecode`` is true and Python modules are
 being imported from the filesystem using Python’s standard filesystem importer.
 
-Type: ``Option<BytecodeOptimizationLevel>``
+Type: ``Option<crate::resource::BytecodeOptimizationLevel>``
 
 .. _pyoxy_struct_PythonInterpreterConfig_parser_debug:
 
@@ -992,7 +992,7 @@ Defines ``sys.prefix``.
 
 See https://docs.python.org/3/c-api/init_config.html#c.PyConfig.prefix.
 
-Type: ``Option<PathBuf>``
+Type: ``Option<std::path::PathBuf>``
 
 .. _pyoxy_struct_PythonInterpreterConfig_program_name:
 
@@ -1003,7 +1003,7 @@ Program named used to initialize state during path configuration.
 
 See https://docs.python.org/3/c-api/init_config.html#c.PyConfig.program_name.
 
-Type: ``Option<PathBuf>``
+Type: ``Option<std::path::PathBuf>``
 
 .. _pyoxy_struct_PythonInterpreterConfig_pycache_prefix:
 
@@ -1014,7 +1014,7 @@ Directory where ``.pyc`` files are written.
 
 See https://docs.python.org/3/c-api/init_config.html#c.PyConfig.pycache_prefix.
 
-Type: ``Option<PathBuf>``
+Type: ``Option<std::path::PathBuf>``
 
 .. _pyoxy_struct_PythonInterpreterConfig_python_path_env:
 
@@ -1060,7 +1060,7 @@ Effectively defines the Python file to run in ``Py_RunMain()``.
 
 See https://docs.python.org/3/c-api/init_config.html#c.PyConfig.run_filename.
 
-Type: ``Option<PathBuf>``
+Type: ``Option<std::path::PathBuf>``
 
 .. _pyoxy_struct_PythonInterpreterConfig_run_module:
 
