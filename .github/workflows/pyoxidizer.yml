@@ -14,7 +14,7 @@ on:
   workflow_dispatch:
 
 env:
-  PYOXIDIZER_BUILD_GIT_URL: ${{ env.GITHUB_SERVER_URL }}/${{ env.GITHUB_REPOSITORY }}
+  PYOXIDIZER_BUILD_GIT_URL: ${{ github.server_url }}/${{ github.repository }}
 
 jobs:
   pyoxidizer-exes:
