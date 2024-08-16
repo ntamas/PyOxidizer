@@ -48,7 +48,12 @@ jobs:
           sudo apt-get install -y libyaml-dev snapcraft
 
       - name: Free disk space
+        if: runner.os == 'Linux'
         uses: jlumbroso/free-disk-space@main
+        with:
+          large-packages: false
+          docker-images: false
+          swap-storage: false
 
       - uses: actions/checkout@v4
         with:
