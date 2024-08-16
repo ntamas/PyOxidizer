@@ -12,6 +12,10 @@ on:
   schedule:
     - cron: '13 15 * * *'
   workflow_dispatch:
+
+env:
+  PYOXIDIZER_BUILD_GIT_URL: ${{ env.GITHUB_SERVER_URL }}/${{ env.GITHUB_REPOSITORY }}
+
 jobs:
   pyoxidizer-exes:
     uses: ./.github/workflows/build-exe.yml
