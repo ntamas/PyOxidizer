@@ -126,14 +126,14 @@ jobs:
 
       - name: Upload (non-Windows)
         if: runner.os != 'Windows'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: exe-${{ inputs.bin }}-${{ matrix.target.triple }}
           path: upload/${{ inputs.bin }}
 
       - name: Upload (Windows)
         if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: exe-${{ inputs.bin }}-${{ matrix.target.triple }}
           path: upload/${{ inputs.bin }}.exe
@@ -150,13 +150,13 @@ jobs:
       - uses: ./.github/actions/install-just
 
       - name: Download aarch64 executable
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: exe-${{ inputs.bin }}-aarch64-apple-darwin
           path: ${{ inputs.bin }}-aarch64
 
       - name: Download x86-64 executable
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: exe-${{ inputs.bin }}-x86_64-apple-darwin
           path: ${{ inputs.bin }}-x86-64
@@ -166,7 +166,7 @@ jobs:
           just actions-macos-universal ${{ inputs.bin }}
 
       - name: Upload Universal Executable
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: exe-${{ inputs.bin }}-macos-universal
           path: uploads/${{ inputs.bin }}
