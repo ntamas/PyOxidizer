@@ -37,7 +37,7 @@ fn main() {
         if packed_resources_path.exists() {
             println!("cargo:rerun-if-changed={}", packed_resources_path.display());
             println!("cargo:rustc-cfg=stdlib_packed_resources");
-            println!("cargo::rustc-check-cfg=cfg(stdlib_packed_resources)");
+            println!("cargo:rustc-check-cfg=cfg(stdlib_packed_resources)");
             println!(
                 "cargo:rustc-env=PYTHON_PACKED_RESOURCES_PATH={}",
                 packed_resources_path.display()
