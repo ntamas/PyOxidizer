@@ -555,7 +555,7 @@ pub fn data_signable(data: &[u8]) -> Result<Signability, SigningError> {
         // signtool.exe.
         return if cfg!(target_family = "windows") {
             Ok(Signability::Signable(Signable::WindowsData(
-                data.as_ref().to_vec(),
+                data.to_vec(),
             )))
         } else {
             Ok(Signability::PlatformUnsupported(

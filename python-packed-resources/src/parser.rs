@@ -21,6 +21,8 @@ use {
 use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
 #[cfg(windows)]
 use {std::ffi::OsString, std::os::windows::ffi::OsStringExt, std::path::PathBuf};
+#[cfg(windows)]
+use safe_transmute::{Error::Unaligned, transmute_many_pedantic};
 
 /// Represents a blob section in the blob index.
 #[derive(Debug)]
@@ -62,7 +64,7 @@ impl<'a> ResourceParserIterator<'a> {
     /// current blob section offsets, the resource field being accessed, and the
     /// length of the blob and returns a slice to that blob.
     fn resolve_blob_data(&mut self, resource_field: ResourceField, length: usize) -> &'a [u8] {
-        let mut state = self.blob_sections[resource_field as usize]
+        let state = self.blob_sections[resource_field as usize]
             .as_mut()
             .expect("blob state not found");
 
@@ -87,11 +89,18 @@ impl<'a> ResourceParserIterator<'a> {
     #[cfg(windows)]
     fn resolve_path(&mut self, resource_field: ResourceField, length: usize) -> Cow<'a, Path> {
         let raw = self.resolve_blob_data(resource_field, length);
-        let raw = unsafe { std::slice::from_raw_parts(raw.as_ptr() as *const u16, raw.len() / 2) };
 
-        // There isn't an API that lets us get a OsStr from &[u16]. So we need to use
-        // owned types.
-        let path_string = OsString::from_wide(raw);
+        // raw.as_ptr() might not be aligned to u16 boundaries so we need to
+        // copy. Also, there isn't an API that lets us get a OsStr from &[u16],
+        // so we need to use owned types.
+        let path_string = match transmute_many_pedantic::<u16>(raw) {
+            Ok(words) => OsString::from_wide(words),
+            Err(Unaligned(e)) => {
+                let words = e.copy();
+                OsString::from_wide(words.as_slice())
+            },
+            Err(e) => panic!("Unexpected error: {}", e)
+        };
 
         Cow::Owned(PathBuf::from(path_string))
     }

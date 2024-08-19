@@ -26,17 +26,16 @@ pub(crate) struct OxidizedPkgResourcesProvider {
 impl OxidizedPkgResourcesProvider {
     /// OxidizedPkgResourcesProvider.__new__(module)
     #[new]
-    fn new(py: Python, module: &PyAny) -> PyResult<Self> {
+    fn new(py: Python, module: &Bound<PyAny>) -> PyResult<Self> {
         let loader = module.getattr("__loader__")?;
         let package = module.getattr("__package__")?;
 
         let loader_type = loader.get_type();
-
-        if !loader_type.is(py.get_type::<OxidizedFinder>()) {
+        if !loader_type.is(py.get_type_bound::<OxidizedFinder>().as_ref()) {
             return Err(PyTypeError::new_err("__loader__ is not an OxidizedFinder"));
         }
 
-        let finder = loader.downcast::<PyCell<OxidizedFinder>>()?;
+        let finder = loader.downcast::<OxidizedFinder>()?;
         let state = finder.borrow().get_state();
 
         Ok(Self {
@@ -69,10 +68,10 @@ impl OxidizedPkgResourcesProvider {
             .map_err(|_| PyUnicodeDecodeError::new_err("metadata is not UTF-8"))
     }
 
-    fn get_metadata_lines<'p>(&self, py: Python<'p>, name: &str) -> PyResult<&'p PyAny> {
+    fn get_metadata_lines<'p>(&self, py: Python<'p>, name: &str) -> PyResult<Bound<'p, PyAny>> {
         let s = self.get_metadata(name)?;
 
-        let pkg_resources = py.import("pkg_resources")?;
+        let pkg_resources = py.import_bound("pkg_resources")?;
 
         pkg_resources.getattr("yield_lines")?.call((s,), None)
     }
@@ -83,20 +82,20 @@ impl OxidizedPkgResourcesProvider {
         Ok(resources_state.package_distribution_resource_name_is_directory(&self.package, name))
     }
 
-    fn metadata_listdir<'p>(&self, py: Python<'p>, name: &str) -> PyResult<&'p PyList> {
+    fn metadata_listdir<'p>(&self, py: Python<'p>, name: &str) -> PyResult<Bound<'p, PyList>> {
         let resources_state = self.state.get_resources_state();
 
         let entries = resources_state
             .package_distribution_resources_list_directory(&self.package, name)
             .into_iter()
-            .map(|s| PyString::new(py, s))
+            .map(|s| PyString::new_bound(py, s))
             .collect::<Vec<_>>();
 
-        Ok(PyList::new(py, &entries))
+        Ok(PyList::new_bound(py, &entries))
     }
 
     #[allow(unused)]
-    fn run_script(&self, script_name: &PyAny, namespace: &PyAny) -> PyResult<&PyAny> {
+    fn run_script(&self, script_name: &Bound<PyAny>, namespace: &Bound<PyAny>) -> PyResult<Bound<PyAny>> {
         Err(PyNotImplementedError::new_err(()))
     }
 
@@ -105,7 +104,7 @@ impl OxidizedPkgResourcesProvider {
     // Begin IResourceProvider interface.
 
     #[allow(unused)]
-    fn get_resource_filename(&self, manager: &PyAny, resource_name: &PyAny) -> PyResult<&PyAny> {
+    fn get_resource_filename(&self, manager: &Bound<PyAny>, resource_name: &Bound<PyAny>) -> PyResult<Bound<PyAny>> {
         // Raising NotImplementedError seems allowed per the implementation of
         // pkg_resources.ZipProvider, which also raises this error when resources
         // aren't backed by the filesystem.
@@ -119,9 +118,9 @@ impl OxidizedPkgResourcesProvider {
     fn get_resource_stream<'p>(
         &self,
         py: Python<'p>,
-        manager: &PyAny,
+        manager: &Bound<PyAny>,
         resource_name: &str,
-    ) -> PyResult<&'p PyAny> {
+    ) -> PyResult<Bound<'p, PyAny>> {
         self.state
             .get_resources_state()
             .get_package_resource_file(py, &self.package, resource_name)?
@@ -131,9 +130,9 @@ impl OxidizedPkgResourcesProvider {
     fn get_resource_string<'p>(
         &self,
         py: Python<'p>,
-        manager: &PyAny,
+        manager: &Bound<PyAny>,
         resource_name: &str,
-    ) -> PyResult<&'p PyAny> {
+    ) -> PyResult<Bound<'p, PyAny>> {
         let fh = self.get_resource_stream(py, manager, resource_name)?;
 
         fh.call_method0("read")
@@ -155,16 +154,16 @@ impl OxidizedPkgResourcesProvider {
             .is_package_resource_directory(&self.package, resource_name))
     }
 
-    fn resource_listdir<'p>(&self, py: Python<'p>, resource_name: &str) -> PyResult<&'p PyList> {
+    fn resource_listdir<'p>(&self, py: Python<'p>, resource_name: &str) -> PyResult<Bound<'p, PyList>> {
         let entries = self
             .state
             .get_resources_state()
             .package_resources_list_directory(&self.package, resource_name)
             .into_iter()
-            .map(|s| PyString::new(py, &s))
+            .map(|s| PyString::new_bound(py, &s))
             .collect::<Vec<_>>();
 
-        Ok(PyList::new(py, &entries))
+        Ok(PyList::new_bound(py, &entries))
     }
 
     // End IResourceProvider interface.
@@ -180,12 +179,12 @@ pub(crate) fn create_oxidized_pkg_resources_provider(
 /// Registers our types/callbacks with `pkg_resources`.
 pub(crate) fn register_pkg_resources_with_module(
     py: Python,
-    pkg_resources: &PyAny,
+    pkg_resources: &Bound<PyAny>,
 ) -> PyResult<()> {
     pkg_resources.call_method(
         "register_finder",
         (
-            py.get_type::<OxidizedPathEntryFinder>(),
+            py.get_type_bound::<OxidizedPathEntryFinder>(),
             wrap_pyfunction!(pkg_resources_find_distributions)(py)?,
         ),
         None,
@@ -194,8 +193,8 @@ pub(crate) fn register_pkg_resources_with_module(
     pkg_resources.call_method(
         "register_loader_type",
         (
-            py.get_type::<OxidizedFinder>(),
-            py.get_type::<OxidizedPkgResourcesProvider>(),
+            py.get_type_bound::<OxidizedFinder>(),
+            py.get_type_bound::<OxidizedPkgResourcesProvider>(),
         ),
         None,
     )?;
@@ -208,25 +207,24 @@ pub(crate) fn register_pkg_resources_with_module(
 #[pyo3(signature=(importer, path_item, only=false))]
 pub(crate) fn pkg_resources_find_distributions<'p>(
     py: Python<'p>,
-    importer: &PyAny,
-    path_item: &PyString,
+    importer: &Bound<'p, PyAny>,
+    path_item: &Bound<'p, PyString>,
     only: bool,
-) -> PyResult<&'p PyAny> {
+) -> PyResult<Bound<'p, PyAny>> {
     let importer_type = importer.get_type();
 
     // This shouldn't happen since that path hook type is mapped to this function.
     // But you never know.
-    if !importer_type.is(py.get_type::<OxidizedPathEntryFinder>()) {
-        return Ok(PyList::empty(py));
+    if !importer_type.is(py.get_type_bound::<OxidizedPathEntryFinder>().as_ref()) {
+        return Ok(PyList::empty_bound(py).into_any());
     }
 
-    let finder_cell = importer.downcast::<PyCell<OxidizedPathEntryFinder>>()?;
-    let finder = finder_cell.borrow();
+    let finder = importer.downcast::<OxidizedPathEntryFinder>()?.borrow();
 
     // The path_item we're handling should match what was registered to this path
     // entry finder. Reject if that's not the case.
     if path_item.compare(finder.get_source_path())? != std::cmp::Ordering::Equal {
-        return Ok(PyList::empty(py));
+        return Ok(PyList::empty_bound(py).into_any());
     }
 
     let meta_finder = finder.get_finder().borrow(py);
@@ -243,7 +241,7 @@ pub(crate) fn pkg_resources_find_distributions<'p>(
     dists.call_method0("__iter__")
 }
 
-pub(crate) fn init_module(m: &PyModule) -> PyResult<()> {
+pub(crate) fn init_module(m: &Bound<PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(pkg_resources_find_distributions, m)?)?;
 
     Ok(())

@@ -35,12 +35,13 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       CARGO_INCREMENTAL: '0'
       CARGO_TERM_COLOR: always
+      RUST_BACKTRACE: '1'
       SCCACHE_BUCKET: 'pyoxidizer-sccache'
       SCCACHE_S3_USE_SSL: '1'
       # Prevent sccache server from stopping due to inactivity.
       SCCACHE_IDLE_TIMEOUT: '0'
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           # Needed by build.rs, which needs to walk the Git history to find the
           # root commit. Without this, a shallow clone (depth=1) is performed.
@@ -53,7 +54,7 @@ jobs:
 
       # To minimize potential for Python interference, we delay install Python
       # until we need it for python-oxidized-importer/pyembed.
-      - uses: actions/setup-python@v2
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python_version }}
 

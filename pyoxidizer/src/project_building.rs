@@ -344,7 +344,7 @@ pub fn build_executable_with_rust_project<'a>(
 
     warn!(
         "build command: {}",
-        shlex::join(log_args.iter().map(|x| x.as_str()))
+        shlex::try_join(log_args.iter().map(|x| x.as_str()))?
     );
 
     // TODO force cargo to colorize output under certain circumstances?

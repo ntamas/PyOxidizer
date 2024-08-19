@@ -114,7 +114,7 @@ pub fn create_self_signed_code_signing_certificate_params(
 
 pub fn create_self_signed_code_signing_certificate(
     subject_name: &str,
-) -> std::result::Result<rcgen::Certificate, rcgen::RcgenError> {
+) -> std::result::Result<rcgen::Certificate, rcgen::Error> {
     let params = create_self_signed_code_signing_certificate_params(subject_name);
 
     rcgen::Certificate::from_params(params)
