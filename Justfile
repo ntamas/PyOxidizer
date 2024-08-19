@@ -469,7 +469,7 @@ pyoxidizer-release:
   just _release pyoxidizer 'PyOxidizer'
 
 pyoxidizer-update-python-distributions: _python_scripts_venv
-  scripts/venv/bin/python3 \
+  venv/bin/python3 \
     scripts/fetch-python-distributions.py \
     --api-token $GH_API_TOKEN > pyoxidizer/src/default_python_distributions.rs
   rustfmt pyoxidizer/src/default_python_distributions.rs
@@ -482,7 +482,7 @@ release-rust:
 # Create virtual environment and install dependencies for Python scripts in it.
 _python_scripts_venv:
   #!/usr/bin/env bash
-  if [ ! -d scripts/venv ]; then
-    python3 -m venv scripts/venv
-    scripts/venv/bin/pip install -r scripts/requirements.txt
+  if [ ! -d venv ]; then
+    python3 -m venv venv
+    venv/bin/pip install -r scripts/requirements.txt
   fi
