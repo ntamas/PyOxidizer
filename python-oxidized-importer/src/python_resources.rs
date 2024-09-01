@@ -569,10 +569,14 @@ impl<'a> PythonResourcesState<'a, u8> {
         Ok(())
     }
 
-    /// Load `frozen` modules from the Python interpreter.
-    pub fn index_interpreter_frozen_modules(&mut self) -> Result<(), &'static str> {
+    /// Load `frozen` modules from the Python interpreter using the given raw C array of frozen module definitions.
+    fn index_interpreter_frozen_modules_from_ptr(&mut self, ptr: *const pyffi::_frozen) -> Result<(), &'static str> {
+        if ptr.is_null() {
+            return Ok(())
+        }
+
         for i in 0.. {
-            let record = unsafe { pyffi::PyImport_FrozenModules.offset(i) };
+            let record = unsafe { ptr.offset(i) };
 
             if unsafe { *record }.name.is_null() {
                 break;
@@ -582,7 +586,7 @@ impl<'a> PythonResourcesState<'a, u8> {
             let name_str = match name.to_str() {
                 Ok(v) => v,
                 Err(_) => {
-                    return Err("unable to parse PyImport_FrozenModules");
+                    return Err("unable to parse Python frozen module list");
                 }
             };
 
@@ -597,6 +601,18 @@ impl<'a> PythonResourcesState<'a, u8> {
                     ..Resource::default()
                 });
         }
+
+        Ok(())
+    }
+
+    /// Load `frozen` modules from the Python interpreter.
+    pub fn index_interpreter_frozen_modules(&mut self) -> Result<(), &'static str> {
+        #[cfg(Py_3_11)] {
+            self.index_interpreter_frozen_modules_from_ptr(unsafe { pyffi::_PyImport_FrozenBootstrap })?;
+            self.index_interpreter_frozen_modules_from_ptr(unsafe { pyffi::_PyImport_FrozenStdlib })?;
+            self.index_interpreter_frozen_modules_from_ptr(unsafe { pyffi::_PyImport_FrozenTest })?;
+        }
+        self.index_interpreter_frozen_modules_from_ptr(unsafe { pyffi::PyImport_FrozenModules })?;
 
         Ok(())
     }

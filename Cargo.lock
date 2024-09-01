@@ -4372,6 +4372,7 @@ dependencies = [
  "memory-module-sys",
  "once_cell",
  "pyo3",
+ "pyo3-build-config",
  "python-packaging",
  "python-packed-resources",
  "simple-file-manifest",
