@@ -181,7 +181,7 @@ def main():
         format_record(records["3.10-i686-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.11-i686-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.12-i686-pc-windows-msvc-shared-pgo"]),
-        
+        "",
         format_record(records["3.8-x86_64-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.9-x86_64-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.10-x86_64-pc-windows-msvc-shared-pgo"]),
