@@ -43,7 +43,7 @@ jobs:
       CIBW_BUILD_VERBOSITY: '1'
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v5
         with:
           python-version: 3.9
@@ -79,7 +79,7 @@ jobs:
       CIBW_BUILD_VERBOSITY: '1'
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v5
         with:
           python-version: 3.9
@@ -110,7 +110,7 @@ jobs:
       CIBW_BUILD: ${{ matrix.py.build }}
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
+      - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v5
         with:
           python-version: 3.9
