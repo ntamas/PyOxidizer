@@ -138,6 +138,7 @@ jobs:
 
   merge_artifacts:
     runs-on: ubuntu-22.04
+    needs: [wheel_linux, wheel_windows, wheel_macos]
     steps:
       - uses: actions/upload-artifact/merge@v4
         with:
