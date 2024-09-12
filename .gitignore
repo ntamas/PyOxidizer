@@ -1,3 +1,4 @@
+.env
 .idea/
 build/
 docs/_build/

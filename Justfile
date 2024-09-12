@@ -1,3 +1,5 @@
+set dotenv-load
+
 default:
   cargo build
 
