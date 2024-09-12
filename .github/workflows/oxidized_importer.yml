@@ -62,9 +62,9 @@ jobs:
           python3 -m cibuildwheel --output-dir wheelhouse .
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheel-${{ matrix.py.build }}
           path: |
             wheelhouse
 
@@ -96,9 +96,9 @@ jobs:
           python3 -m cibuildwheel --output-dir wheelhouse .
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheel-${{ matrix.py.build }}
           path: |
             wheelhouse
 
@@ -130,8 +130,14 @@ jobs:
           python -m cibuildwheel --output-dir wheelhouse .
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: wheel-${{ matrix.py.build }}
           path: |
             wheelhouse
+
+  merge_artifacts:
+    with:
+      name: wheels
+      pattern: 'wheel-*'
+      delete-merged: true
