@@ -9,7 +9,9 @@ import argparse
 import hashlib
 import urllib.request
 import re
+import sys
 
+from contextlib import contextmanager
 from github import Github
 
 
@@ -27,6 +29,14 @@ PythonDistributionRecord {{
 
 RE_CAL_VER = re.compile(r"\d{8}")
 
+
+@contextmanager
+def progress(message):
+    print(message, end = " ", file = sys.stderr, flush=True)
+    yield
+    print("done.", file=sys.stderr)
+
+
 def download_and_hash(url):
     with urllib.request.urlopen(url) as r:
         h = hashlib.sha256()
@@ -42,14 +52,16 @@ def download_and_hash(url):
 
 
 def format_record(record):
-    record["sha256"] = download_and_hash(record["url"])
+    with progress(f"Downloading and hashing {record['name']}..."):
+        record["sha256"] = download_and_hash(record["url"])
 
     return ENTRY.format(**record)
 
 
 def get_latest_tag(repo):
     """Get the most recent CalVer tag, corresponding to latest."""
-    cal_ver_tags = [tag.name for tag in repo.get_tags() if RE_CAL_VER.match(tag.name)]
+    with progress("Finding latest tag..."):
+        cal_ver_tags = [tag.name for tag in repo.get_tags() if RE_CAL_VER.match(tag.name)]
     return max(cal_ver_tags)
 
 
@@ -68,50 +80,52 @@ def main():
 
     tag = args.tag if args.tag else get_latest_tag(repo)
 
-    release = repo.get_release(tag)
+    with progress(f"Getting release for tag {tag}..."):
+        release = repo.get_release(tag)
 
     records = {}
 
-    for asset in release.get_assets():
-        name = asset.name
-        url = asset.browser_download_url
+    with progress("Getting release asset list..."):
+        for asset in release.get_assets():
+            name = asset.name
+            url = asset.browser_download_url
 
-        if not name.startswith("cpython-") or not name.endswith("-full.tar.zst"):
-            continue
+            if not name.startswith("cpython-") or not name.endswith("-full.tar.zst"):
+                continue
 
-        # cpython-3.8.6+20220227-i686-pc-windows-msvc-shared-pgo-full.tar.zst
+            # cpython-3.8.6+20220227-i686-pc-windows-msvc-shared-pgo-full.tar.zst
 
-        parts = name.split("-")
+            parts = name.split("-")
 
-        parts = parts[:-1]
+            parts = parts[:-1]
 
-        _python_flavor = parts.pop(0)
-        version = parts.pop(0)
-        python_version, tag = version.split("+", 1)
-        major_minor = python_version.rsplit(".", 1)[0]
+            _python_flavor = parts.pop(0)
+            version = parts.pop(0)
+            python_version, tag = version.split("+", 1)
+            major_minor = python_version.rsplit(".", 1)[0]
 
-        if parts[-2] in ("shared", "static"):
-            target_triple = "-".join(parts[0:-2])
-            flavor = "-".join(parts[-2:])
-        else:
-            target_triple = "-".join(parts[0:-1])
-            flavor = parts[-1]
+            if parts[-2] in ("shared", "static"):
+                target_triple = "-".join(parts[0:-2])
+                flavor = "-".join(parts[-2:])
+            else:
+                target_triple = "-".join(parts[0:-1])
+                flavor = parts[-1]
 
-        supports_prebuilt_extension_modules = (
-            target_triple != "x86_64-unknown-linux-musl" and flavor != "static-noopt"
-        )
+            supports_prebuilt_extension_modules = (
+                target_triple != "x86_64-unknown-linux-musl" and flavor != "static-noopt"
+            )
 
-        key = "%s-%s-%s" % (major_minor, target_triple, flavor)
+            key = "%s-%s-%s" % (major_minor, target_triple, flavor)
 
-        records[key] = {
-            "name": name,
-            "url": url,
-            "major_minor": major_minor,
-            "target_triple": target_triple,
-            "supports_prebuilt_extension_modules": "true"
-            if supports_prebuilt_extension_modules
-            else "false",
-        }
+            records[key] = {
+                "name": name,
+                "url": url,
+                "major_minor": major_minor,
+                "target_triple": target_triple,
+                "supports_prebuilt_extension_modules": "true"
+                if supports_prebuilt_extension_modules
+                else "false",
+            }
 
     print("// This Source Code Form is subject to the terms of the Mozilla Public")
     print("// License, v. 2.0. If a copy of the MPL was not distributed with this")
@@ -187,18 +201,6 @@ def main():
         format_record(records["3.10-x86_64-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.11-x86_64-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.12-x86_64-pc-windows-msvc-shared-pgo"]),
-        "",
-        "// Windows static.",
-        format_record(records["3.8-i686-pc-windows-msvc-static-noopt"]),
-        format_record(records["3.9-i686-pc-windows-msvc-static-noopt"]),
-        format_record(records["3.10-i686-pc-windows-msvc-static-noopt"]),
-        format_record(records["3.11-i686-pc-windows-msvc-static-noopt"]),
-        format_record(records["3.12-i686-pc-windows-msvc-static-noopt"]),
-        format_record(records["3.8-x86_64-pc-windows-msvc-static-noopt"]),
-        format_record(records["3.9-x86_64-pc-windows-msvc-static-noopt"]),
-        format_record(records["3.10-x86_64-pc-windows-msvc-static-noopt"]),
-        format_record(records["3.11-x86_64-pc-windows-msvc-static-noopt"]),
-        format_record(records["3.12-x86_64-pc-windows-msvc-static-noopt"]),
         "",
         "// macOS.",
         format_record(records["3.8-aarch64-apple-darwin-pgo"]),
