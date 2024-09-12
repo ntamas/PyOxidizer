@@ -137,7 +137,11 @@ jobs:
             wheelhouse
 
   merge_artifacts:
-    with:
-      name: wheels
-      pattern: 'wheel-*'
-      delete-merged: true
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/upload-artifact/merge@v4
+        with:
+          name: wheels
+          pattern: 'wheel-*'
+          delete-merged: true
+
