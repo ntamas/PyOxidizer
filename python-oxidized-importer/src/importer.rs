@@ -10,6 +10,9 @@ for importing Python modules from memory.
 */
 
 #[cfg(windows)]
+use std::os::raw::c_char;
+
+#[cfg(windows)]
 use std::ptr::addr_of_mut;
 
 #[cfg(windows)]
@@ -119,6 +122,12 @@ fn extension_module_shared_library_create_module(
     _library_data: &[u8],
 ) -> PyResult<Py<PyAny>> {
     panic!("should only be called on Windows");
+}
+
+// pyo3-0.22.3 removed _Py_PackageContext but we need it
+#[cfg(windows)]
+extern "C" {
+    pub static mut _Py_PackageContext: *const c_char;
 }
 
 /// Reimplementation of `_PyImport_LoadDynamicModuleWithSpec()`.
