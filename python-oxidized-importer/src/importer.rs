@@ -165,10 +165,10 @@ fn load_dynamic_library(
 
     // Package context is needed for single-phase init.
     let py_module = unsafe {
-        let old_context = pyffi::_Py_PackageContext;
-        pyffi::_Py_PackageContext = name_cstring.as_ptr();
+        let old_context = _Py_PackageContext;
+        _Py_PackageContext = name_cstring.as_ptr();
         let py_module = init_fn();
-        pyffi::_Py_PackageContext = old_context;
+        _Py_PackageContext = old_context;
         py_module
     };
 
