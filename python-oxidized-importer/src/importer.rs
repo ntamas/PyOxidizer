@@ -154,15 +154,13 @@ fn load_dynamic_library(
 
     // Package context is needed for single-phase init.
     // Disabled since PyO3-0.22.4 removed access to _Py_PackageContext
-    /*
     let py_module = unsafe {
-        let old_context = pyffi::_Py_PackageContext;
-        pyffi::_Py_PackageContext = name_cstring.as_ptr();
+        // let old_context = pyffi::_Py_PackageContext;
+        // pyffi::_Py_PackageContext = name_cstring.as_ptr();
         let py_module = init_fn();
-        pyffi::_Py_PackageContext = old_context;
+        // pyffi::_Py_PackageContext = old_context;
         py_module
     };
-    */
 
     // The initialization function will return a new/owned reference for single-phase initialization
     // and a borrowed reference for multi-phase initialization. Since we don't know which form
