@@ -9,8 +9,8 @@ on:
     tags-ignore:
       - '**'
   pull_request:
-  schedule:
-    - cron: '13 15 * * *'
+  # schedule:
+  #   - cron: '13 15 * * *'
   workflow_dispatch:
 
 env:
@@ -52,7 +52,7 @@ jobs:
   pyoxidizer-macos-universal-exe-check:
     needs:
       - pyoxidizer-exes
-    runs-on: 'macos-12'
+    runs-on: 'macos-13'
     steps:
       - name: Download macOS Executable
         uses: actions/download-artifact@v4

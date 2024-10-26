@@ -5,8 +5,8 @@ on:
     tags-ignore:
       - '**'
   pull_request:
-  schedule:
-    - cron: '13 15 * * *'
+  # schedule:
+  #   - cron: '13 15 * * *'
   workflow_dispatch:
 jobs:
   build-and-test:
@@ -23,7 +23,7 @@ jobs:
         target:
           - os: 'ubuntu-22.04'
             triple: 'x86_64-unknown-linux-gnu'
-          - os: 'macos-12'
+          - os: 'macos-13'
             triple: 'x86_64-apple-darwin'
           - os: 'windows-2019'
             triple: 'x86_64-pc-windows-msvc'

@@ -5,8 +5,8 @@ on:
     tags-ignore:
       - '**'
   pull_request:
-  schedule:
-    - cron: '13 15 * * *'
+  # schedule:
+  #   - cron: '13 15 * * *'
   workflow_dispatch:
 jobs:
   wheel_linux:
@@ -73,7 +73,7 @@ jobs:
           - build: 'cp38-macosx_x86_64'
           - build: 'cp39-macosx_x86_64'
           - build: 'cp310-macosx_x86_64'
-    runs-on: macos-12
+    runs-on: macos-13
     env:
       CIBW_BUILD: ${{ matrix.py.build }}
       CIBW_BUILD_VERBOSITY: '1'
