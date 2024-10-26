@@ -52,7 +52,7 @@ jobs:
   pyoxidizer-macos-universal-exe-check:
     needs:
       - pyoxidizer-exes
-    runs-on: 'macos-12'
+    runs-on: 'macos-13'
     steps:
       - name: Download macOS Executable
         uses: actions/download-artifact@v4
