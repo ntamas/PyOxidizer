@@ -10,16 +10,11 @@ for importing Python modules from memory.
 */
 
 #[cfg(windows)]
-use std::os::raw::c_char;
-
-#[cfg(windows)]
-use std::ptr::addr_of_mut;
-
-#[cfg(windows)]
 use {
     crate::memory_dll::{free_library_memory, get_proc_address_memory, load_library_memory},
     pyo3::exceptions::PySystemError,
     std::ffi::{c_void, CString},
+    std::ptr::addr_of_mut,
 };
 use {
     crate::{
@@ -124,12 +119,6 @@ fn extension_module_shared_library_create_module(
     panic!("should only be called on Windows");
 }
 
-// pyo3-0.22.3 removed _Py_PackageContext but we need it
-#[cfg(windows)]
-extern "C" {
-    pub static mut _Py_PackageContext: *const c_char;
-}
-
 /// Reimplementation of `_PyImport_LoadDynamicModuleWithSpec()`.
 #[cfg(windows)]
 fn load_dynamic_library(
@@ -164,13 +153,16 @@ fn load_dynamic_library(
     let init_fn: py_init_fn = unsafe { std::mem::transmute(address) };
 
     // Package context is needed for single-phase init.
+    // Disabled since PyO3-0.22.4 removed access to _Py_PackageContext
+    /*
     let py_module = unsafe {
-        let old_context = _Py_PackageContext;
-        _Py_PackageContext = name_cstring.as_ptr();
+        let old_context = pyffi::_Py_PackageContext;
+        pyffi::_Py_PackageContext = name_cstring.as_ptr();
         let py_module = init_fn();
-        _Py_PackageContext = old_context;
+        pyffi::_Py_PackageContext = old_context;
         py_module
     };
+    */
 
     // The initialization function will return a new/owned reference for single-phase initialization
     // and a borrowed reference for multi-phase initialization. Since we don't know which form
