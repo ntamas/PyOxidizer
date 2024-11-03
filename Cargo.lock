@@ -223,7 +223,7 @@ dependencies = [
  "clap",
  "cryptographic-message-syntax",
  "der 0.7.9",
- "dialoguer 0.11.0",
+ "dialoguer",
  "difference",
  "digest",
  "dirs",
@@ -1868,18 +1868,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ffdd80ce8ce993de27e9f063a444a4d53ce8e8db4c1f00cc03af5ad5a9867a1e"
 dependencies = [
  "cipher",
-]
-
-[[package]]
-name = "dialoguer"
-version = "0.10.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "59c6f2989294b9a498d3ad5491a79c6deb604617378e1cdc4bfc1c1361fe2f87"
-dependencies = [
- "console",
- "shell-words",
- "tempfile",
- "zeroize",
 ]
 
 [[package]]
@@ -6166,7 +6154,7 @@ dependencies = [
  "codemap",
  "codemap-diagnostic",
  "console",
- "dialoguer 0.10.4",
+ "dialoguer",
  "linked-hash-map",
  "log",
  "plist",
