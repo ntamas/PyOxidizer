@@ -51,7 +51,7 @@ version = "0.22.2"
 features = ["macros"]
 
 [dependencies.zip]
-version = "2.1.6"
+version = "2.2.0"
 optional = true
 default-features = false
 features = ["deflate"]
