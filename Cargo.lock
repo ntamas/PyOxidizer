@@ -4541,7 +4541,7 @@ dependencies = [
  "tempfile",
  "time",
  "walkdir",
- "zip 0.6.6",
+ "zip 2.2.1",
 ]
 
 [[package]]
