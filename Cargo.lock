@@ -194,7 +194,7 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 1.0.69",
- "x509-certificate",
+ "x509-certificate 0.23.1",
 ]
 
 [[package]]
@@ -297,7 +297,7 @@ dependencies = [
  "widestring",
  "windows-sys 0.52.0",
  "x509",
- "x509-certificate",
+ "x509-certificate 0.23.1",
  "xml-rs",
  "yasna",
  "zeroize",
@@ -356,7 +356,7 @@ dependencies = [
  "signature 2.2.0",
  "thiserror 1.0.69",
  "url",
- "x509-certificate",
+ "x509-certificate 0.23.1",
  "xml-rs",
  "xz2",
 ]
@@ -1674,7 +1674,7 @@ dependencies = [
  "reqwest 0.11.27",
  "ring",
  "signature 2.2.0",
- "x509-certificate",
+ "x509-certificate 0.23.1",
 ]
 
 [[package]]
@@ -6277,7 +6277,7 @@ dependencies = [
  "tugger-windows-codesign",
  "tugger-wix",
  "walkdir",
- "x509-certificate",
+ "x509-certificate 0.24.0",
 ]
 
 [[package]]
@@ -6318,7 +6318,7 @@ dependencies = [
  "tempfile",
  "thiserror 1.0.69",
  "tugger-windows-codesign",
- "x509-certificate",
+ "x509-certificate 0.24.0",
  "yasna",
 ]
 
@@ -7104,6 +7104,25 @@ name = "x509-certificate"
 version = "0.23.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "66534846dec7a11d7c50a74b7cdb208b9a581cad890b7866430d438455847c85"
+dependencies = [
+ "bcder",
+ "bytes",
+ "chrono",
+ "der 0.7.9",
+ "hex",
+ "pem",
+ "ring",
+ "signature 2.2.0",
+ "spki 0.7.3",
+ "thiserror 1.0.69",
+ "zeroize",
+]
+
+[[package]]
+name = "x509-certificate"
+version = "0.24.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e57b9f8bcae7c1f36479821ae826d75050c60ce55146fd86d3553ed2573e2762"
 dependencies = [
  "bcder",
  "bytes",
