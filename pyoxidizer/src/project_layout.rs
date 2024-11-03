@@ -134,7 +134,7 @@ fn populate_template_data(source: &PyOxidizerSource, data: &mut TemplateData) {
     }
 }
 
-/// Write a new .cargo/config file for a project path.
+/// Write a new .cargo/config.toml file for a project path.
 pub fn write_new_cargo_config(project_path: &Path) -> Result<()> {
     let cargo_path = project_path.join(".cargo");
 
