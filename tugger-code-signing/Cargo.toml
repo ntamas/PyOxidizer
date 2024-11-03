@@ -11,7 +11,7 @@ repository = "https://github.com/indygreg/PyOxidizer.git"
 readme = "README.md"
 
 [dependencies]
-anyhow = "1.0.86"
+anyhow = "1.0.92"
 apple-bundles = "0.19.0"
 apple-codesign = "0.27.0"
 bcder = "0.7.4"
@@ -21,8 +21,8 @@ log = "0.4.22"
 p12 = "0.6.3"
 reqwest = { version = "0.12.5", default-features = false, features = ["blocking", "rustls-tls"] }
 simple-file-manifest = "0.11.0"
-tempfile = "3.12.0"
-thiserror = "1.0.63"
+tempfile = "3.13.0"
+thiserror = "1.0.67"
 x509-certificate = "0.23.1"
 yasna = "0.5.2"
 
