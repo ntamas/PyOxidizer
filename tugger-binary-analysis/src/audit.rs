@@ -41,7 +41,7 @@ pub fn analyze_data(buffer: &[u8]) {
         }
         goblin::Object::Unknown(magic) => panic!("unknown magic: {:#x}", magic),
         _ => {
-            panic!("binary format not yet supported");
+            panic!("unhandled object file format");
         }
     }
 }
