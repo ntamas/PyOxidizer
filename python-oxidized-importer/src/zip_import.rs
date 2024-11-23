@@ -73,7 +73,7 @@ impl<R: Read + Seek> ZipIndex<R> {
 
                     name.strip_prefix(prefix)?.to_path_buf()
                 } else {
-                    name.as_path()
+                    name.to_path_buf()
                 };
 
                 members.insert(name, index);
