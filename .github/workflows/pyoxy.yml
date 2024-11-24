@@ -84,7 +84,7 @@ jobs:
 
       - name: Restore Docker Image Cache
         id: cache-image
-        uses: actions/cache@v2
+        uses: actions/cache@v4
         with:
           path: ~/image.tar
           key: ${{ runner.os }}-${{ hashFiles('ci/linux-portable-binary.Dockerfile') }}
