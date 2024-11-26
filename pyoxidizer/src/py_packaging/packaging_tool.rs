@@ -446,7 +446,7 @@ mod tests {
                 &*target_dist,
                 &policy,
                 false,
-                &["zstandard==0.19.0".to_string()],
+                &["zstandard==0.23.0".to_string()],
             )?;
 
             assert!(!resources.is_empty());
@@ -545,7 +545,7 @@ mod tests {
                 &*target_dist,
                 &policy,
                 false,
-                &["numpy==1.24.1".to_string()],
+                &["numpy==1.26.4".to_string()],
             );
 
             let resources = res?;
