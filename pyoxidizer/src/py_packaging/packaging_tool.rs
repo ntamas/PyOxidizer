@@ -464,6 +464,7 @@ mod tests {
             let mut expected_names = [
                 "zstandard",
                 "zstandard.__init__.pyi",
+                "zstandard._cffi",
                 "zstandard.backend_c",
                 "zstandard.backend_cffi",
                 "zstandard.py.typed",
@@ -477,17 +478,8 @@ mod tests {
             .map(|x| x.to_string())
             .collect::<BTreeSet<String>>();
 
-            let mut expected_extensions_count = 1;
-            let mut expected_first_extension_name = "zstandard.backend_c";
-
-            if matches!(
-                target_dist.target_triple.as_str(),
-                "i686-pc-windows-msvc" | "x86_64-pc-windows-msvc"
-            ) {
-                expected_names.insert("zstandard._cffi".to_string());
-                expected_extensions_count = 2;
-                expected_first_extension_name = "zstandard._cffi";
-            }
+            let expected_extensions_count = 2;
+            let expected_first_extension_name = "zstandard._cffi";
 
             assert_eq!(
                 full_names, expected_names,
@@ -539,13 +531,21 @@ mod tests {
             policy.set_file_scanner_emit_files(true);
             policy.set_file_scanner_classify_files(true);
 
+            let mut numpy_dep = "numpy==1.26.4";
+            if matches!(
+                target_dist.python_major_minor_version().as_str(),
+                "3.8"
+            ) {
+                numpy_dep = "numpy==1.24.1";
+            };
+
             let res = pip_download(
                 &env,
                 &*host_dist,
                 &*target_dist,
                 &policy,
                 false,
-                &["numpy==1.26.4".to_string()],
+                &[numpy_dep.to_string()],
             );
 
             let resources = res?;
