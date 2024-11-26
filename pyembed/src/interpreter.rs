@@ -267,7 +267,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
 
         let resources_state = Box::new(PythonResourcesState::try_from(&self.config)?);
 
-        let oxidized_importer = py.import_bound(OXIDIZED_IMPORTER_NAME_STR).map_err(|err| {
+        let oxidized_importer = py.import(OXIDIZED_IMPORTER_NAME_STR).map_err(|err| {
             NewInterpreterError::new_from_pyerr(py, err, "import of oxidized importer module")
         })?;
 
@@ -321,7 +321,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         oxidized_finder_loaded: bool,
     ) -> Result<Option<PathBuf>, NewInterpreterError> {
         let sys_module = py
-            .import_bound("sys")
+            .import("sys")
             .map_err(|e| NewInterpreterError::new_from_pyerr(py, e, "obtaining sys module"))?;
 
         // When the main initialization ran, it initialized the "external"
@@ -363,7 +363,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
                 .map_err(|err| {
                     NewInterpreterError::new_from_pyerr(py, err, "obtaining sys.meta_path")
                 })?
-                .iter()
+                .try_iter()
                 .map_err(|err| {
                     NewInterpreterError::new_from_pyerr(
                         py,
@@ -374,7 +374,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
                 .find(|finder| {
                     // This should never fail.
                     if let Ok(finder) = finder {
-                        OxidizedFinder::is_type_of_bound(finder)
+                        OxidizedFinder::is_type_of(finder)
                     } else {
                         false
                     }
@@ -401,7 +401,9 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
                 .map(|x| osstring_to_bytes(py, x.clone()))
                 .collect::<Vec<_>>();
 
-            let args = args_objs.to_object(py);
+            let args = args_objs
+                .into_pyobject(py)
+                .map_err(|_| NewInterpreterError::Simple("unable to convert args"))?;
             let argvb = b"argvb\0";
 
             let res =
@@ -416,7 +418,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         // As a convention, sys.oxidized is set to indicate we are running from
         // a self-contained application.
         let oxidized = b"oxidized\0";
-        let py_true = true.into_py(py);
+        let py_true = true.into_pyobject(py).unwrap();
 
         let res =
             unsafe { pyffi::PySys_SetObject(oxidized.as_ptr() as *const c_char, py_true.as_ptr()) };
@@ -439,7 +441,12 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
 
         if self.config.sys_meipass {
             let meipass = b"_MEIPASS\0";
-            let value = self.config.origin().display().to_string().to_object(py);
+            let value = self.config
+                .origin()
+                .display()
+                .to_string()
+                .into_pyobject(py)
+                .map_err(|_| NewInterpreterError::Simple("unable to convert _MEIPASS"))?;
 
             match unsafe {
                 pyffi::PySys_SetObject(meipass.as_ptr() as *const c_char, value.as_ptr())
@@ -462,7 +469,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
 
                 // We use Python's uuid module to generate a filename. This avoids
                 // a dependency on a Rust crate, which cuts down on dependency bloat.
-                let uuid_mod = py.import_bound("uuid").map_err(|e| {
+                let uuid_mod = py.import("uuid").map_err(|e| {
                     NewInterpreterError::new_from_pyerr(py, e, "importing uuid module")
                 })?;
                 let uuid4 = uuid_mod.getattr("uuid4").map_err(|e| {
@@ -541,7 +548,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         }
 
         self.with_gil(|py| {
-            let kwargs = PyDict::new_bound(py);
+            let kwargs = PyDict::new(py);
 
             for arg in argv.iter().skip(2) {
                 let arg = arg.to_string_lossy();
@@ -565,13 +572,13 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
                         ))
                     })?;
 
-                    v.into_py(py)
+                    v.into_pyobject(py)?.into_any().unbind()
                 };
 
                 kwargs.set_item(key, value)?;
             }
 
-            let spawn_module = py.import_bound("multiprocessing.spawn")?;
+            let spawn_module = py.import("multiprocessing.spawn")?;
             spawn_module.getattr("spawn_main")?.call1((kwargs,))?;
 
             Ok(0)
@@ -696,7 +703,7 @@ fn write_modules_to_path(py: Python, path: &Path) -> Result<(), &'static str> {
     // TODO this needs better error handling all over.
 
     let sys = py
-        .import_bound("sys")
+        .import("sys")
         .map_err(|_| "could not obtain sys module")?;
     let modules = sys
         .getattr("modules")

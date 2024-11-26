@@ -52,7 +52,7 @@ fn assert_importer(oxidized: bool, filesystem: bool) {
     let interp = MainPythonInterpreter::new(config).unwrap();
 
     interp.with_gil(|py| {
-        let sys = py.import_bound("sys").unwrap();
+        let sys = py.import("sys").unwrap();
         let meta_path_reprs = reprs(&sys.getattr("meta_path").unwrap()).unwrap();
         let path_hook_reprs = reprs(&sys.getattr("path_hooks").unwrap()).unwrap();
         const PATH_HOOK_REPR: &str =
@@ -106,7 +106,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
             let meta_path = sys.getattr("meta_path").unwrap();
             assert_eq!(meta_path.len().unwrap(), 3);
 
@@ -154,7 +154,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
             let flags = sys.getattr("flags").unwrap();
 
             assert_eq!(
@@ -357,7 +357,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let argv = sys
                 .getattr("argv")
@@ -385,7 +385,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let argv = sys
                 .getattr("argv")
@@ -408,7 +408,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let argv = sys
                 .getattr("argv")
@@ -428,7 +428,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let argvb_raw = sys.getattr("argvb").unwrap();
             let argvb = argvb_raw.downcast::<PyList>().unwrap();
@@ -457,7 +457,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let argv_raw = sys.getattr("argv").unwrap();
             let argv = argv_raw.downcast::<PyList>().unwrap();
@@ -483,7 +483,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let argv_raw = sys.getattr("argv").unwrap();
             let argv = argv_raw.downcast::<PyList>().unwrap();
@@ -522,7 +522,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let argv_raw = sys.getattr("argv").unwrap();
             let argv = argv_raw.downcast::<PyList>().unwrap();
@@ -563,7 +563,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert!(flags.getattr("dev_mode").unwrap().extract::<bool>().unwrap());
@@ -579,7 +579,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert_eq!(flags.getattr("ignore_environment").unwrap().extract::<i64>().unwrap(), 1);
@@ -594,7 +594,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert_eq!(flags.getattr("utf8_mode").unwrap().extract::<i64>().unwrap(), 1);
@@ -609,7 +609,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert_eq!(flags.getattr("bytes_warning").unwrap().extract::<i64>().unwrap(), 1);
@@ -624,7 +624,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert_eq!(flags.getattr("bytes_warning").unwrap().extract::<i64>().unwrap(), 2);
@@ -639,7 +639,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert_eq!(flags.getattr("optimize").unwrap().extract::<i64>().unwrap(), 1);
@@ -654,7 +654,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert_eq!(flags.getattr("optimize").unwrap().extract::<i64>().unwrap(), 2);
@@ -669,7 +669,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert_eq!(flags.getattr("inspect").unwrap().extract::<i64>().unwrap(), 1);
@@ -684,7 +684,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert_eq!(flags.getattr("interactive").unwrap().extract::<i64>().unwrap(), 1);
@@ -699,7 +699,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert_eq!(flags.getattr("quiet").unwrap().extract::<i64>().unwrap(), 1);
@@ -714,7 +714,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert_eq!(flags.getattr("no_site").unwrap().extract::<i64>().unwrap(), 1);
@@ -728,7 +728,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert_eq!(flags.getattr("no_site").unwrap().extract::<i64>().unwrap(), 0);
@@ -743,7 +743,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert_eq!(flags.getattr("no_user_site").unwrap().extract::<i64>().unwrap(), 1);
@@ -758,7 +758,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert_eq!(flags.getattr("no_user_site").unwrap().extract::<i64>().unwrap(), 0);
@@ -773,7 +773,7 @@ rusty_fork_test! {
         let interp = MainPythonInterpreter::new(config).unwrap();
 
         interp.with_gil(|py| {
-            let sys = py.import_bound("sys").unwrap();
+            let sys = py.import("sys").unwrap();
 
             let flags = sys.getattr("flags").unwrap();
             assert_eq!(flags.getattr("dont_write_bytecode").unwrap().extract::<i64>().unwrap(), 1);

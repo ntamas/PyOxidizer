@@ -194,7 +194,7 @@ impl DerefMut for BorrowedAllocationTracker {
 
 impl Drop for BorrowedAllocationTracker {
     fn drop(&mut self) {
-        Box::into_raw(self.inner.take().unwrap());
+        let _ = Box::into_raw(self.inner.take().unwrap());
     }
 }
 

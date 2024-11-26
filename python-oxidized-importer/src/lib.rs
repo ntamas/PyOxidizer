@@ -141,13 +141,13 @@ pub extern "C" fn PyInit_oxidized_importer() -> *mut pyffi::PyObject {
 /// importlib._bootstrap_external.decode_source().
 #[pyfunction]
 pub(crate) fn decode_source<'p>(
-    py: Python,
+    py: Python<'p>,
     io_module: &Bound<'p, PyModule>,
     source_bytes: &Bound<'p, PyAny>,
 ) -> PyResult<Bound<'p, PyAny>> {
     // .py based module, so can't be instantiated until importing mechanism
     // is bootstrapped.
-    let tokenize_module = py.import_bound("tokenize")?;
+    let tokenize_module = py.import("tokenize")?;
 
     let buffer = io_module.getattr("BytesIO")?.call((source_bytes,), None)?;
     let readline = buffer.getattr("readline")?;
@@ -163,7 +163,7 @@ pub(crate) fn decode_source<'p>(
 
 #[pyfunction]
 fn register_pkg_resources(py: Python) -> PyResult<()> {
-    register_pkg_resources_with_module(py, py.import_bound("pkg_resources")?.as_ref())
+    register_pkg_resources_with_module(py, py.import("pkg_resources")?.as_ref())
 }
 
 /// Initialize the Python module object.

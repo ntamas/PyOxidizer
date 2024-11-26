@@ -19,12 +19,12 @@ use {
         PythonPackageResource as RawPythonPackageResource,
     },
     simple_file_manifest::FileData,
-    std::cell::{Ref, RefCell},
+    std::sync::{RwLock, RwLockReadGuard},
 };
 
 #[pyclass(module = "oxidized_importer")]
 pub(crate) struct PythonModuleSource {
-    resource: RefCell<RawPythonModuleSource>,
+    resource: RwLock<RawPythonModuleSource>,
 }
 
 impl PythonModuleSource {
@@ -32,13 +32,13 @@ impl PythonModuleSource {
         Bound::new(
             py,
             PythonModuleSource {
-                resource: RefCell::new(resource),
+                resource: RwLock::new(resource),
             },
         )
     }
 
-    pub fn get_resource(&self) -> Ref<RawPythonModuleSource> {
-        self.resource.borrow()
+    pub fn get_resource(&self) -> RwLockReadGuard<RawPythonModuleSource> {
+        self.resource.read().unwrap()
     }
 }
 
@@ -47,19 +47,19 @@ impl PythonModuleSource {
     fn __repr__(&self) -> String {
         format!(
             "<PythonModuleSource module=\"{}\">",
-            self.resource.borrow().name
+            self.resource.read().unwrap().name
         )
     }
 
     #[getter]
     fn get_module(&self) -> PyResult<String> {
-        Ok(self.resource.borrow().name.to_string())
+        Ok(self.resource.read().unwrap().name.to_string())
     }
 
     #[setter]
     fn set_module(&self, value: Option<&str>) -> PyResult<()> {
         if let Some(value) = value {
-            self.resource.borrow_mut().name = value.to_string();
+            self.resource.write().unwrap().name = value.to_string();
 
             Ok(())
         } else {
@@ -71,18 +71,19 @@ impl PythonModuleSource {
     fn get_source<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyBytes>> {
         let source = self
             .resource
-            .borrow()
+            .read()
+            .unwrap()
             .source
             .resolve_content()
             .map_err(|_| PyValueError::new_err("error resolving source code"))?;
 
-        Ok(PyBytes::new_bound(py, &source))
+        Ok(PyBytes::new(py, &source))
     }
 
     #[setter]
     fn set_source(&self, value: Option<&Bound<PyAny>>) -> PyResult<()> {
         if let Some(value) = value {
-            self.resource.borrow_mut().source = FileData::Memory(pyobject_to_owned_bytes(value)?);
+            self.resource.write().unwrap().source = FileData::Memory(pyobject_to_owned_bytes(value)?);
 
             Ok(())
         } else {
@@ -92,13 +93,13 @@ impl PythonModuleSource {
 
     #[getter]
     fn get_is_package(&self) -> bool {
-        self.resource.borrow().is_package
+        self.resource.read().unwrap().is_package
     }
 
     #[setter]
     fn set_is_package(&self, value: Option<bool>) -> PyResult<()> {
         if let Some(value) = value {
-            self.resource.borrow_mut().is_package = value;
+            self.resource.write().unwrap().is_package = value;
 
             Ok(())
         } else {
@@ -109,7 +110,7 @@ impl PythonModuleSource {
 
 #[pyclass(module = "oxidized_importer")]
 pub(crate) struct PythonModuleBytecode {
-    resource: RefCell<RawPythonModuleBytecode>,
+    resource: RwLock<RawPythonModuleBytecode>,
 }
 
 impl PythonModuleBytecode {
@@ -117,13 +118,13 @@ impl PythonModuleBytecode {
         Bound::new(
             py,
             Self {
-                resource: RefCell::new(resource),
+                resource: RwLock::new(resource),
             },
         )
     }
 
-    pub fn get_resource(&self) -> Ref<RawPythonModuleBytecode> {
-        self.resource.borrow()
+    pub fn get_resource(&self) -> RwLockReadGuard<RawPythonModuleBytecode> {
+        self.resource.read().unwrap()
     }
 }
 
@@ -132,19 +133,19 @@ impl PythonModuleBytecode {
     fn __repr__(&self) -> String {
         format!(
             "<PythonModuleBytecode module=\"{}\">",
-            self.resource.borrow().name
+            self.resource.read().unwrap().name
         )
     }
 
     #[getter]
     fn get_module(&self) -> String {
-        self.resource.borrow().name.to_string()
+        self.resource.read().unwrap().name.to_string()
     }
 
     #[setter]
     fn set_module(&self, value: Option<&str>) -> PyResult<()> {
         if let Some(value) = value {
-            self.resource.borrow_mut().name = value.to_string();
+            self.resource.write().unwrap().name = value.to_string();
 
             Ok(())
         } else {
@@ -156,18 +157,18 @@ impl PythonModuleBytecode {
     fn get_bytecode<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyBytes>> {
         let bytecode = self
             .resource
-            .borrow()
+            .read().unwrap()
             .resolve_bytecode()
             .map_err(|_| PyValueError::new_err("error resolving bytecode"))?;
 
-        Ok(PyBytes::new_bound(py, &bytecode))
+        Ok(PyBytes::new(py, &bytecode))
     }
 
     #[setter]
     fn set_bytecode(&self, value: Option<&Bound<PyAny>>) -> PyResult<()> {
         if let Some(value) = value {
             self.resource
-                .borrow_mut()
+                .write().unwrap()
                 .set_bytecode(&pyobject_to_owned_bytes(value)?);
 
             Ok(())
@@ -178,7 +179,7 @@ impl PythonModuleBytecode {
 
     #[getter]
     fn get_optimize_level(&self) -> i32 {
-        self.resource.borrow().optimize_level.into()
+        self.resource.read().unwrap().optimize_level.into()
     }
 
     #[setter]
@@ -187,7 +188,7 @@ impl PythonModuleBytecode {
             let value = BytecodeOptimizationLevel::try_from(value)
                 .map_err(|_| PyValueError::new_err("invalid bytecode optimization level"))?;
 
-            self.resource.borrow_mut().optimize_level = value;
+            self.resource.write().unwrap().optimize_level = value;
 
             Ok(())
         } else {
@@ -197,13 +198,13 @@ impl PythonModuleBytecode {
 
     #[getter]
     fn get_is_package(&self) -> bool {
-        self.resource.borrow().is_package
+        self.resource.read().unwrap().is_package
     }
 
     #[setter]
     fn set_is_package(&self, value: Option<bool>) -> PyResult<()> {
         if let Some(value) = value {
-            self.resource.borrow_mut().is_package = value;
+            self.resource.write().unwrap().is_package = value;
 
             Ok(())
         } else {
@@ -214,7 +215,7 @@ impl PythonModuleBytecode {
 
 #[pyclass(module = "oxidized_importer")]
 pub(crate) struct PythonPackageResource {
-    resource: RefCell<RawPythonPackageResource>,
+    resource: RwLock<RawPythonPackageResource>,
 }
 
 impl PythonPackageResource {
@@ -222,20 +223,20 @@ impl PythonPackageResource {
         Bound::new(
             py,
             Self {
-                resource: RefCell::new(resource),
+                resource: RwLock::new(resource),
             },
         )
     }
 
-    pub fn get_resource(&self) -> Ref<RawPythonPackageResource> {
-        self.resource.borrow()
+    pub fn get_resource(&self) -> RwLockReadGuard<RawPythonPackageResource> {
+        self.resource.read().unwrap()
     }
 }
 
 #[pymethods]
 impl PythonPackageResource {
     fn __repr__(&self) -> String {
-        let resource = self.resource.borrow();
+        let resource = self.resource.read().unwrap();
         format!(
             "<PythonPackageResource package=\"{}\", path=\"{}\">",
             resource.leaf_package, resource.relative_name
@@ -244,13 +245,13 @@ impl PythonPackageResource {
 
     #[getter]
     fn get_package(&self) -> String {
-        self.resource.borrow().leaf_package.clone()
+        self.resource.read().unwrap().leaf_package.clone()
     }
 
     #[setter]
     fn set_package(&self, value: Option<&str>) -> PyResult<()> {
         if let Some(value) = value {
-            self.resource.borrow_mut().leaf_package = value.to_string();
+            self.resource.write().unwrap().leaf_package = value.to_string();
 
             Ok(())
         } else {
@@ -260,13 +261,13 @@ impl PythonPackageResource {
 
     #[getter]
     fn get_name(&self) -> String {
-        self.resource.borrow().relative_name.clone()
+        self.resource.read().unwrap().relative_name.clone()
     }
 
     #[setter]
     fn set_name(&self, value: Option<&str>) -> PyResult<()> {
         if let Some(value) = value {
-            self.resource.borrow_mut().relative_name = value.to_string();
+            self.resource.write().unwrap().relative_name = value.to_string();
 
             Ok(())
         } else {
@@ -278,18 +279,18 @@ impl PythonPackageResource {
     fn get_data<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyBytes>> {
         let data = self
             .resource
-            .borrow()
+            .read().unwrap()
             .data
             .resolve_content()
             .map_err(|_| PyValueError::new_err("error resolving data"))?;
 
-        Ok(PyBytes::new_bound(py, &data))
+        Ok(PyBytes::new(py, &data))
     }
 
     #[setter]
     fn set_data(&self, value: Option<&Bound<PyAny>>) -> PyResult<()> {
         if let Some(value) = value {
-            self.resource.borrow_mut().data = FileData::Memory(pyobject_to_owned_bytes(value)?);
+            self.resource.write().unwrap().data = FileData::Memory(pyobject_to_owned_bytes(value)?);
 
             Ok(())
         } else {
@@ -300,7 +301,7 @@ impl PythonPackageResource {
 
 #[pyclass(module = "oxidized_importer")]
 pub(crate) struct PythonPackageDistributionResource {
-    resource: RefCell<RawPythonPackageDistributionResource>,
+    resource: RwLock<RawPythonPackageDistributionResource>,
 }
 
 impl PythonPackageDistributionResource {
@@ -311,20 +312,20 @@ impl PythonPackageDistributionResource {
         Bound::new(
             py,
             Self {
-                resource: RefCell::new(resource),
+                resource: RwLock::new(resource),
             },
         )
     }
 
-    pub fn get_resource(&self) -> Ref<RawPythonPackageDistributionResource> {
-        self.resource.borrow()
+    pub fn get_resource(&self) -> RwLockReadGuard<RawPythonPackageDistributionResource> {
+        self.resource.read().unwrap()
     }
 }
 
 #[pymethods]
 impl PythonPackageDistributionResource {
     fn __repr__(&self) -> String {
-        let resource = self.resource.borrow();
+        let resource = self.resource.read().unwrap();
         format!(
             "<PythonPackageDistributionResource package=\"{}\", path=\"{}\">",
             resource.package, resource.name
@@ -333,13 +334,13 @@ impl PythonPackageDistributionResource {
 
     #[getter]
     fn get_package(&self) -> String {
-        self.resource.borrow().package.clone()
+        self.resource.read().unwrap().package.clone()
     }
 
     #[setter]
     fn set_package(&self, value: Option<&str>) -> PyResult<()> {
         if let Some(value) = value {
-            self.resource.borrow_mut().package = value.to_string();
+            self.resource.write().unwrap().package = value.to_string();
 
             Ok(())
         } else {
@@ -349,13 +350,13 @@ impl PythonPackageDistributionResource {
 
     #[getter]
     fn get_version(&self) -> String {
-        self.resource.borrow().version.clone()
+        self.resource.read().unwrap().version.clone()
     }
 
     #[setter]
     fn set_version(&self, value: Option<&str>) -> PyResult<()> {
         if let Some(value) = value {
-            self.resource.borrow_mut().version = value.to_string();
+            self.resource.write().unwrap().version = value.to_string();
 
             Ok(())
         } else {
@@ -365,13 +366,13 @@ impl PythonPackageDistributionResource {
 
     #[getter]
     fn get_name(&self) -> String {
-        self.resource.borrow().name.clone()
+        self.resource.read().unwrap().name.clone()
     }
 
     #[setter]
     fn set_name(&self, value: Option<&str>) -> PyResult<()> {
         if let Some(value) = value {
-            self.resource.borrow_mut().name = value.to_string();
+            self.resource.write().unwrap().name = value.to_string();
 
             Ok(())
         } else {
@@ -383,18 +384,18 @@ impl PythonPackageDistributionResource {
     fn get_data<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyBytes>> {
         let data = self
             .resource
-            .borrow()
+            .read().unwrap()
             .data
             .resolve_content()
             .map_err(|_| PyValueError::new_err("error resolving data"))?;
 
-        Ok(PyBytes::new_bound(py, &data))
+        Ok(PyBytes::new(py, &data))
     }
 
     #[setter]
     fn set_data(&self, value: Option<&Bound<PyAny>>) -> PyResult<()> {
         if let Some(value) = value {
-            self.resource.borrow_mut().data = FileData::Memory(pyobject_to_owned_bytes(value)?);
+            self.resource.write().unwrap().data = FileData::Memory(pyobject_to_owned_bytes(value)?);
 
             Ok(())
         } else {
@@ -405,7 +406,7 @@ impl PythonPackageDistributionResource {
 
 #[pyclass(module = "oxidized_importer")]
 pub(crate) struct PythonExtensionModule {
-    resource: RefCell<RawPythonExtensionModule>,
+    resource: RwLock<RawPythonExtensionModule>,
 }
 
 impl PythonExtensionModule {
@@ -413,13 +414,13 @@ impl PythonExtensionModule {
         Bound::new(
             py,
             Self {
-                resource: RefCell::new(resource),
+                resource: RwLock::new(resource),
             },
         )
     }
 
-    pub fn get_resource(&self) -> Ref<RawPythonExtensionModule> {
-        self.resource.borrow()
+    pub fn get_resource(&self) -> RwLockReadGuard<RawPythonExtensionModule> {
+        self.resource.read().unwrap()
     }
 }
 
@@ -428,12 +429,12 @@ impl PythonExtensionModule {
     fn __repr__(&self) -> String {
         format!(
             "<PythonExtensionModule module=\"{}\">",
-            self.resource.borrow().name
+            self.resource.read().unwrap().name
         )
     }
 
     #[getter]
     fn name(&self) -> String {
-        self.resource.borrow().name.clone()
+        self.resource.read().unwrap().name.clone()
     }
 }

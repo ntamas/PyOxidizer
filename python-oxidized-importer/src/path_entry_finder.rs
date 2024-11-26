@@ -61,12 +61,12 @@ impl OxidizedPathEntryFinder {
             return Ok(py.None());
         }
 
-        self.finder.call_method_bound(
+        self.finder.call_method(
             py,
             "find_spec",
             (
                 fullname,
-                PyList::new_bound(py, &[self.source_path.clone_ref(py)]),
+                PyList::new(py, &[self.source_path.clone_ref(py)])?,
                 target,
             ),
             None,

@@ -17,16 +17,16 @@ use std::{ffi::OsStr, os::unix::ffi::OsStrExt};
 
 /// Convert a Rust Path to a pathlib.Path.
 pub fn path_to_pathlib_path<'p>(py: Python<'p>, path: &Path) -> PyResult<Bound<'p, PyAny>> {
-    let py_str = path.into_py(py).into_bound(py);
+    let py_str = path.into_pyobject(py)?;
 
-    let pathlib = py.import_bound("pathlib")?;
+    let pathlib = py.import("pathlib")?;
 
     pathlib.getattr("Path")?.call((py_str,), None)
 }
 
 #[cfg(unix)]
 pub fn pyobject_to_pathbuf(py: Python, value: &Bound<PyAny>) -> PyResult<PathBuf> {
-    let os = py.import_bound("os")?;
+    let os = py.import("os")?;
 
     let encoded = os
         .getattr("fsencode")?
@@ -39,7 +39,7 @@ pub fn pyobject_to_pathbuf(py: Python, value: &Bound<PyAny>) -> PyResult<PathBuf
 
 #[cfg(windows)]
 pub fn pyobject_to_pathbuf(py: Python, value: &Bound<PyAny>) -> PyResult<PathBuf> {
-    let os = py.import_bound("os")?;
+    let os = py.import("os")?;
 
     // This conversion is a bit wonky. First, the PyObject could be of various
     // types: str, bytes, or a path-like object. We normalize to a PyString
@@ -70,7 +70,7 @@ pub fn pyobject_to_pathbuf_optional(py: Python, value: &Bound<PyAny>) -> PyResul
 
 /// Attempt to convert a PyObject to an owned Vec<u8>.
 pub fn pyobject_to_owned_bytes(value: &Bound<PyAny>) -> PyResult<Vec<u8>> {
-    let buffer = PyBuffer::<u8>::get_bound(value)?;
+    let buffer = PyBuffer::<u8>::get(value)?;
 
     let data = unsafe {
         std::slice::from_raw_parts::<u8>(buffer.buf_ptr() as *const _, buffer.len_bytes())

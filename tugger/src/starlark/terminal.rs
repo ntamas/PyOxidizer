@@ -72,7 +72,7 @@ fn starlark_prompt_confirm(
             return prompt_or_default(term, default);
         }
 
-        let mut confirm = Confirm::new();
+        let confirm = Confirm::new();
 
         let confirm = if let Some(default) = default {
             confirm
@@ -108,7 +108,7 @@ fn starlark_prompt_input(type_values: &TypeValues, prompt: String, default: Valu
             return prompt_or_default(term, default);
         }
 
-        let mut input = Input::new();
+        let input = Input::new();
 
         let input = if let Some(default) = default {
             input
