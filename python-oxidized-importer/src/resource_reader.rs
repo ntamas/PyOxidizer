@@ -4,7 +4,7 @@
 
 use {
     crate::importer::ImporterState,
-    pyo3::{exceptions::PyFileNotFoundError, prelude::*},
+    pyo3::{exceptions::PyFileNotFoundError, prelude::*, types::PyList},
     std::sync::Arc,
 };
 
@@ -75,7 +75,7 @@ impl OxidizedResourceReader {
     /// For instance, returning subdirectory names is allowed so that when it is known that the
     /// package and resources are stored on the file system then those subdirectory names can be
     /// used directly.
-    fn contents<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyAny>> {
+    fn contents<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyList>> {
         self.state
             .get_resources_state()
             .package_resource_names(py, &self.package)

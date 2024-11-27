@@ -31,7 +31,7 @@ impl OxidizedPkgResourcesProvider {
         let package = module.getattr("__package__")?;
 
         let loader_type = loader.get_type();
-        if !loader_type.is(py.get_type_bound::<OxidizedFinder>().as_ref()) {
+        if !loader_type.is(py.get_type::<OxidizedFinder>().as_ref()) {
             return Err(PyTypeError::new_err("__loader__ is not an OxidizedFinder"));
         }
 
@@ -71,7 +71,7 @@ impl OxidizedPkgResourcesProvider {
     fn get_metadata_lines<'p>(&self, py: Python<'p>, name: &str) -> PyResult<Bound<'p, PyAny>> {
         let s = self.get_metadata(name)?;
 
-        let pkg_resources = py.import_bound("pkg_resources")?;
+        let pkg_resources = py.import("pkg_resources")?;
 
         pkg_resources.getattr("yield_lines")?.call((s,), None)
     }
@@ -88,10 +88,10 @@ impl OxidizedPkgResourcesProvider {
         let entries = resources_state
             .package_distribution_resources_list_directory(&self.package, name)
             .into_iter()
-            .map(|s| PyString::new_bound(py, s))
+            .map(|s| PyString::new(py, s))
             .collect::<Vec<_>>();
 
-        Ok(PyList::new_bound(py, &entries))
+        PyList::new(py, &entries)
     }
 
     #[allow(unused)]
@@ -160,10 +160,10 @@ impl OxidizedPkgResourcesProvider {
             .get_resources_state()
             .package_resources_list_directory(&self.package, resource_name)
             .into_iter()
-            .map(|s| PyString::new_bound(py, &s))
+            .map(|s| PyString::new(py, &s))
             .collect::<Vec<_>>();
 
-        Ok(PyList::new_bound(py, &entries))
+        PyList::new(py, &entries)
     }
 
     // End IResourceProvider interface.
@@ -184,7 +184,7 @@ pub(crate) fn register_pkg_resources_with_module(
     pkg_resources.call_method(
         "register_finder",
         (
-            py.get_type_bound::<OxidizedPathEntryFinder>(),
+            py.get_type::<OxidizedPathEntryFinder>(),
             wrap_pyfunction!(pkg_resources_find_distributions)(py)?,
         ),
         None,
@@ -193,8 +193,8 @@ pub(crate) fn register_pkg_resources_with_module(
     pkg_resources.call_method(
         "register_loader_type",
         (
-            py.get_type_bound::<OxidizedFinder>(),
-            py.get_type_bound::<OxidizedPkgResourcesProvider>(),
+            py.get_type::<OxidizedFinder>(),
+            py.get_type::<OxidizedPkgResourcesProvider>(),
         ),
         None,
     )?;
@@ -215,8 +215,8 @@ pub(crate) fn pkg_resources_find_distributions<'p>(
 
     // This shouldn't happen since that path hook type is mapped to this function.
     // But you never know.
-    if !importer_type.is(py.get_type_bound::<OxidizedPathEntryFinder>().as_ref()) {
-        return Ok(PyList::empty_bound(py).into_any());
+    if !importer_type.is(py.get_type::<OxidizedPathEntryFinder>().as_ref()) {
+        return Ok(PyList::empty(py).into_any());
     }
 
     let finder = importer.downcast::<OxidizedPathEntryFinder>()?.borrow();
@@ -224,7 +224,7 @@ pub(crate) fn pkg_resources_find_distributions<'p>(
     // The path_item we're handling should match what was registered to this path
     // entry finder. Reject if that's not the case.
     if path_item.compare(finder.get_source_path())? != std::cmp::Ordering::Equal {
-        return Ok(PyList::empty_bound(py).into_any());
+        return Ok(PyList::empty(py).into_any());
     }
 
     let meta_finder = finder.get_finder().borrow(py);

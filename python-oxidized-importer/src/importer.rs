@@ -68,7 +68,7 @@ fn extension_module_shared_library_create_module(
     name: &str,
     library_data: &[u8],
 ) -> PyResult<Py<PyAny>> {
-    let origin = PyString::new_bound(py, "memory");
+    let origin = PyString::new(py, "memory");
 
     let existing_module =
         unsafe { pyffi::_PyImport_FindExtensionObject(name_py.as_ptr(), origin.as_ptr()) };
@@ -297,10 +297,10 @@ impl ImporterState {
         bootstrap_module: &Bound<PyModule>,
         resources_state: Box<PythonResourcesState<'a, u8>>,
     ) -> Result<Self, PyErr> {
-        let decode_source = importer_module.getattr("decode_source")?.into_py(py);
+        let decode_source = importer_module.getattr("decode_source")?.unbind();
 
-        let io_module = py.import_bound("_io")?.unbind();
-        let marshal_module = py.import_bound("marshal")?;
+        let io_module = py.import("_io")?.unbind();
+        let marshal_module = py.import("marshal")?;
 
         let imp_module = bootstrap_module.getattr("_imp")?;
         let imp_module = imp_module.downcast::<PyModule>()?;
@@ -321,14 +321,14 @@ impl ImporterState {
             ));
         }
 
-        let builtin_importer = meta_path.get_item(0)?.into_py(py);
-        let frozen_importer = meta_path.get_item(1)?.into_py(py);
+        let builtin_importer = meta_path.get_item(0)?.unbind();
+        let frozen_importer = meta_path.get_item(1)?.unbind();
 
-        let marshal_loads = marshal_module.getattr("loads")?.into_py(py);
+        let marshal_loads = marshal_module.getattr("loads")?.unbind();
         let call_with_frames_removed = bootstrap_module
             .getattr("_call_with_frames_removed")?
-            .into_py(py);
-        let module_spec_type = bootstrap_module.getattr("ModuleSpec")?.into_py(py);
+            .unbind();
+        let module_spec_type = bootstrap_module.getattr("ModuleSpec")?.unbind();
 
         let builtins_module = unsafe { Py::from_borrowed_ptr_or_err(py, pyffi::PyEval_GetBuiltins()) }?;
         let builtins_module_dict = builtins_module.downcast_bound::<PyDict>(py)?;
@@ -337,8 +337,7 @@ impl ImporterState {
             None => {
                 return Err(PyValueError::new_err("could not obtain __builtins__.exec"));
             }
-        }
-        .into_py(py);
+        }.unbind();
 
         let sys_flags = sys_module.getattr("flags")?;
 
@@ -488,7 +487,7 @@ impl OxidizedFinder {
         resources_state: Box<PythonResourcesState<'a, u8>>,
         importer_state_callback: Option<impl FnOnce(&mut ImporterState)>,
     ) -> PyResult<OxidizedFinder> {
-        let bootstrap_module = py.import_bound("_frozen_importlib")?;
+        let bootstrap_module = py.import("_frozen_importlib")?;
 
         let mut importer_state = Arc::new(ImporterState::new(
             py,
@@ -549,21 +548,21 @@ impl OxidizedFinder {
                 Ok(finder
                     .state
                     .builtin_importer
-                    .call_method_bound(py, "find_spec", (fullname,), None)?
+                    .call_method(py, "find_spec", (fullname,), None)?
                     .into_bound(py))
             }
             ModuleFlavor::Frozen => Ok(finder
                 .state
                 .frozen_importer
-                .call_method_bound(py, "find_spec", (fullname, path, target), None)?
+                .call_method(py, "find_spec", (fullname, path, target), None)?
                 .into_bound(py)),
         }
     }
 
     fn find_module<'p>(
         slf: &Bound<'p, Self>,
-        fullname: &Bound<PyAny>,
-        path: &Bound<PyAny>,
+        fullname: &Bound<'p, PyAny>,
+        path: &Bound<'p, PyAny>,
     ) -> PyResult<Bound<'p, PyAny>> {
         let find_spec = slf.getattr("find_spec")?;
         let spec = find_spec.call((fullname, path), None)?;
@@ -628,7 +627,7 @@ impl OxidizedFinder {
 
                 state
                     .call_with_frames_removed
-                    .call_bound(py, (&create_dynamic, spec), None)
+                    .call(py, (&create_dynamic, spec), None)
             }
         } else {
             Ok(py.None())
@@ -661,27 +660,27 @@ impl OxidizedFinder {
             state.decode_source.bind(py),
             state.io_module.bind(py),
         )? {
-            let code = state.marshal_loads.call_bound(py, (bytecode,), None)?;
+            let code = state.marshal_loads.call(py, (bytecode,), None)?;
             let dict = module.getattr("__dict__")?;
 
             state
                 .call_with_frames_removed
-                .call_bound(py, (&state.exec_fn, code, dict), None)
+                .call(py, (&state.exec_fn, code, dict), None)
         } else if entry.flavor == ModuleFlavor::Builtin {
             state
                 .builtin_importer
-                .call_method_bound(py, "exec_module", (module,), None)
+                .call_method(py, "exec_module", (module,), None)
         } else if entry.flavor == ModuleFlavor::Frozen {
             state
                 .frozen_importer
-                .call_method_bound(py, "exec_module", (module,), None)
+                .call_method(py, "exec_module", (module,), None)
         } else if entry.flavor == ModuleFlavor::Extension {
             // `ExtensionFileLoader.exec_module()` simply calls `imp.exec_dynamic()`.
             let exec_dynamic = state.imp_module.getattr(py, "exec_dynamic")?;
 
             state
                 .call_with_frames_removed
-                .call_bound(py, (&exec_dynamic, module), None)
+                .call(py, (&exec_dynamic, module), None)
         } else {
             Ok(py.None())
         }?;
@@ -691,7 +690,7 @@ impl OxidizedFinder {
             "multiprocessing" => {
                 if let Some(method) = state.multiprocessing_set_start_method.as_ref() {
                     // We pass force=True to ensure the call doesn't fail.
-                    let kwargs = PyDict::new_bound(py);
+                    let kwargs = PyDict::new(py);
                     kwargs.set_item("force", true)?;
                     module.call_method("set_start_method", (method,), Some(&kwargs))?;
                 }
@@ -750,11 +749,11 @@ impl OxidizedFinder {
             state.decode_source.bind(py),
             state.io_module.bind(py),
         )? {
-            state.marshal_loads.call_bound(py, (bytecode,), None)
+            state.marshal_loads.call(py, (bytecode,), None)
         } else if module.flavor == ModuleFlavor::Frozen {
             state
                 .imp_module
-                .call_method_bound(py, "get_frozen_object", (fullname,), None)
+                .call_method(py, "get_frozen_object", (fullname,), None)
         } else {
             Ok(py.None())
         }
@@ -781,7 +780,7 @@ impl OxidizedFinder {
         )?;
 
         Ok(if let Some(source) = source {
-            source.into_py(py)
+            source.into_pyobject(py)?.unbind()
         } else {
             py.None()
         })
@@ -795,7 +794,7 @@ impl OxidizedFinder {
     ///
     /// If source code is available, then the method should return the path to the
     /// source file, regardless of whether a bytecode was used to load the module.
-    fn get_filename<'p>(slf: &'p Bound<Self>, fullname: &str) -> PyResult<Bound<'p, PyAny>> {
+    fn get_filename<'p>(slf: &'p Bound<'p, Self>, fullname: &str) -> PyResult<Bound<'p, PyString>> {
         let finder = slf.borrow();
         let state = &finder.state;
         let key = fullname.to_string();
@@ -835,11 +834,15 @@ impl OxidizedFinder {
 
         // Resources are only available on packages.
         if entry.is_package {
-            Ok(Bound::new(
-                slf.py(),
-                OxidizedResourceReader::new(state.clone(), key.to_string()),
-            )?
-            .into_py(slf.py()))
+            Ok(
+                Bound::new(
+                    slf.py(),
+                    OxidizedResourceReader::new(state.clone(), key.to_string()),
+                )?
+                .as_any()
+                .clone()
+                .unbind()
+            )
         } else {
             Ok(slf.py().None())
         }
@@ -914,8 +917,8 @@ impl OxidizedFinder {
         // few items...
 
         // The module references are easy to obtain.
-        let m = py.import_bound(OXIDIZED_IMPORTER_NAME_STR)?;
-        let bootstrap_module = py.import_bound("_frozen_importlib")?;
+        let m = py.import(OXIDIZED_IMPORTER_NAME_STR)?;
+        let bootstrap_module = py.import("_frozen_importlib")?;
 
         let mut resources_state =
             Box::new(PythonResourcesState::new_from_env().map_err(PyValueError::new_err)?);
@@ -945,21 +948,21 @@ impl OxidizedFinder {
     }
 
     #[getter]
-    fn origin<'p>(&self, py: Python<'p>) -> Bound<'p, PyAny> {
+    fn origin<'p>(&self, py: Python<'p>) -> Bound<'p, PyString> {
         self.state
             .get_resources_state()
             .origin()
-            .into_py(py)
-            .into_bound(py)
+            .into_pyobject(py)
+            .unwrap()
     }
 
     #[getter]
-    fn path_hook_base_str<'p>(&self, py: Python<'p>) -> Bound<'p, PyAny> {
+    fn path_hook_base_str<'p>(&self, py: Python<'p>) -> Bound<'p, PyString> {
         self.state
             .get_resources_state()
             .current_exe()
-            .into_py(py)
-            .into_bound(py)
+            .into_pyobject(py)
+            .unwrap()
     }
 
     #[getter]
@@ -971,11 +974,11 @@ impl OxidizedFinder {
         Self::path_hook_inner(slf, path).map_err(|inner| {
             let err = PyImportError::new_err("error running OxidizedFinder.path_hook");
 
-            if let Err(err) = err.value_bound(slf.py()).setattr("__suppress_context__", true) {
+            if let Err(err) = err.value(slf.py()).setattr("__suppress_context__", true) {
                 err
             } else if let Err(err) = err
-                .value_bound(slf.py())
-                .setattr("__cause__", inner.value_bound(slf.py()))
+                .value(slf.py())
+                .setattr("__cause__", inner.value(slf.py()))
             {
                 err
             } else {
@@ -1049,7 +1052,7 @@ impl OxidizedFinder {
     fn add_resources(&self, resources: &Bound<PyAny>) -> PyResult<()> {
         let resources_state = self.state.get_resources_state_mut();
 
-        for resource in resources.iter()? {
+        for resource in resources.try_iter()? {
             let resource_raw = resource?;
             let resource = resource_raw.downcast::<OxidizedResource>()?;
 
@@ -1074,7 +1077,7 @@ impl OxidizedFinder {
             .serialize_resources(ignore_builtin, ignore_frozen)
             .map_err(|e| PyValueError::new_err(format!("error serializing: {}", e)))?;
 
-        Ok(PyBytes::new_bound(py, &data))
+        Ok(PyBytes::new(py, &data))
     }
 }
 
@@ -1115,7 +1118,7 @@ impl OxidizedFinder {
             let unix_prefix = path_hook_base.call_method("__add__", ("/",), None)?;
             let windows_prefix = path_hook_base.call_method("__add__", ("\\",), None)?;
 
-            let prefix = PyTuple::new_bound(py, [unix_prefix, windows_prefix]);
+            let prefix = PyTuple::new(py, [unix_prefix, windows_prefix])?;
 
             if !path
                 .call_method("startswith", (prefix,), None)?
@@ -1197,7 +1200,7 @@ impl OxidizedFinder {
                 },
             )?
             .into(),
-            source_path: path.into_py(py),
+            source_path: path.clone().unbind(),
             target_package,
         })
     }
@@ -1215,17 +1218,17 @@ pub(crate) struct PyOxidizerTraversable {
 #[pymethods]
 impl PyOxidizerTraversable {
     /// Yield Traversable objects in self.
-    fn iterdir(&self) -> PyResult<&PyAny> {
+    fn iterdir(&self) -> PyResult<Bound<PyAny>> {
         unimplemented!()
     }
 
     /// Read contents of self as bytes.
-    fn read_bytes(&self) -> PyResult<&PyAny> {
+    fn read_bytes(&self) -> PyResult<Bound<PyAny>> {
         unimplemented!()
     }
 
     /// Read contents of self as text.
-    fn read_text(&self) -> PyResult<&PyAny> {
+    fn read_text(&self) -> PyResult<Bound<PyAny>> {
         unimplemented!()
     }
 
@@ -1249,7 +1252,7 @@ impl PyOxidizerTraversable {
     }
 
     /// Return True if self is a file.
-    fn is_file(&self) -> PyResult<&PyAny> {
+    fn is_file(&self) -> PyResult<Bound<PyAny>> {
         unimplemented!()
     }
 
@@ -1292,7 +1295,7 @@ pub fn replace_meta_path_importers<'a, 'p>(
 ) -> PyResult<Bound<'p, OxidizedFinder>> {
     let state = get_module_state(oxidized_importer)?;
 
-    let sys_module = py.import_bound("sys")?;
+    let sys_module = py.import("sys")?;
 
     // Construct and register our custom meta path importer. Because our meta path
     // importer is able to handle builtin and frozen modules, the existing meta path

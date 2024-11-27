@@ -15,7 +15,7 @@ rusty_fork_test! {
         let config = default_interpreter_config();
         let interp = MainPythonInterpreter::new(config).unwrap();
         interp.with_gil(|py| {
-            py.import_bound("sys").unwrap();
+            py.import("sys").unwrap();
         });
     }
 

@@ -41,7 +41,7 @@ fn python_interpreter_import_all_modules(
     interp.with_gil(|py| {
         for name in modules {
             // println!("{}", name);
-            py.import_bound(*name).map_err(|e| {
+            py.import(*name).map_err(|e| {
                 e.print(py);
                 anyhow!("error importing module {}", name)
             })?;
@@ -170,11 +170,11 @@ pub fn bench_zip(c: &mut Criterion) {
                 },
                 |(interp, zip_data_bytes)| {
                     interp.with_gil(|py| {
-                        let oxidized_importer = py.import_bound("oxidized_importer").unwrap();
+                        let oxidized_importer = py.import("oxidized_importer").unwrap();
                         let zip_type = oxidized_importer.getattr("OxidizedZipFinder").unwrap();
                         let constructor = zip_type.getattr("from_zip_data").unwrap();
                         let finder = constructor.call((zip_data_bytes,), None).unwrap();
-                        let sys = py.import_bound("sys").unwrap();
+                        let sys = py.import("sys").unwrap();
                         let meta_path = sys.getattr("meta_path").unwrap();
                         meta_path.call_method("insert", (0, finder), None).unwrap();
                     });
@@ -194,13 +194,13 @@ pub fn bench_zip(c: &mut Criterion) {
                 || get_interpreter_with_oxidized().expect("unable to obtain interpreter"),
                 |interp| {
                     interp.with_gil(|py| {
-                        let oxidized_importer = py.import_bound("oxidized_importer").unwrap();
+                        let oxidized_importer = py.import("oxidized_importer").unwrap();
                         let zip_type = oxidized_importer.getattr("OxidizedZipFinder").unwrap();
                         let constructor = zip_type.getattr("from_path").unwrap();
                         let finder = constructor
                             .call((format!("{}", zip_path.display()),), None)
                             .unwrap();
-                        let sys = py.import_bound("sys").unwrap();
+                        let sys = py.import("sys").unwrap();
                         let meta_path = sys.getattr("meta_path").unwrap();
                         meta_path.call_method("insert", (0, finder), None).unwrap();
                     });

@@ -77,7 +77,7 @@ pub fn get_interpreter_zip<'interpreter, 'resources>(
     let interp = get_interpreter_plain()?;
 
     interp.with_gil(|py| -> PyResult<()> {
-        let sys = py.import_bound("sys")?;
+        let sys = py.import("sys")?;
         let sys_path = sys.getattr("path")?;
         sys_path.call_method("insert", (0, zip_path), None)?;
 
@@ -119,16 +119,16 @@ pub fn get_interpreter_and_oxidized_finder<'interpreter, 'resources>(
     let interp = get_interpreter_with_oxidized()?;
 
     let finder = interp.with_gil(|py| -> PyResult<_> {
-        let oxidized_importer = py.import_bound("oxidized_importer")?;
+        let oxidized_importer = py.import("oxidized_importer")?;
         let finder_type = oxidized_importer.getattr("OxidizedFinder")?;
         let finder = finder_type.call0()?;
 
-        let resources_bytes = PyBytes::new_bound(py, packed_resources);
+        let resources_bytes = PyBytes::new(py, packed_resources);
         finder.call_method("index_bytes", (resources_bytes,), None)?;
 
-        let finder = finder.into_py(py);
+        let finder = finder.into_pyobject(py)?;
 
-        Ok(finder)
+        Ok(finder.into_any().unbind())
     })?;
 
     Ok((interp, finder))
@@ -212,7 +212,7 @@ pub fn resolve_zip_archive() -> Result<Vec<u8>> {
         .map_err(|e| anyhow!("error creating Python interpreter: {}", e.to_string()))?;
 
     let archive_path = interp.with_gil(|py| -> PyResult<_> {
-        let zipapp = py.import_bound("zipapp")?;
+        let zipapp = py.import("zipapp")?;
 
         let archive_path = temp_dir.path().join("stdlib.zip");
 

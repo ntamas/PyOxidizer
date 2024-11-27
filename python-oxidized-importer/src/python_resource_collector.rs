@@ -18,7 +18,7 @@ use {
         exceptions::{PyTypeError, PyValueError},
         ffi as pyffi,
         prelude::*,
-        types::{PyBytes, PyList, PyTuple},
+        types::{PyBytes, PyList, PyString, PyTuple},
     },
     python_packaging::{
         bytecode::BytecodeCompiler,
@@ -26,8 +26,7 @@ use {
         resource_collection::{CompiledResourcesCollection, PythonResourceCollector},
     },
     std::{
-        cell::RefCell,
-        path::{Path, PathBuf},
+        path::{Path, PathBuf}, sync::RwLock,
     },
 };
 
@@ -40,10 +39,10 @@ pub struct PyTempDir {
 impl PyTempDir {
     pub fn new(py: Python) -> PyResult<Self> {
         let temp_dir = py
-            .import_bound("tempfile")?
+            .import("tempfile")?
             .getattr("TemporaryDirectory")?
             .call0()?;
-        let cleanup = temp_dir.getattr("cleanup")?.into_py(py);
+        let cleanup = temp_dir.getattr("cleanup")?.unbind();
         let path = pyobject_to_pathbuf(py, &temp_dir.getattr("name")?)?;
 
         Ok(Self { cleanup, path })
@@ -67,7 +66,7 @@ impl Drop for PyTempDir {
 
 #[pyclass(module = "oxidized_importer")]
 pub(crate) struct OxidizedResourceCollector {
-    collector: RefCell<PythonResourceCollector>,
+    collector: RwLock<PythonResourceCollector>,
 }
 
 #[pymethods]
@@ -88,7 +87,7 @@ impl OxidizedResourceCollector {
             PythonResourceCollector::new(allowed_locations.clone(), allowed_locations, true, true);
 
         Ok(Self {
-            collector: RefCell::new(collector),
+            collector: RwLock::new(collector),
         })
     }
 
@@ -96,17 +95,18 @@ impl OxidizedResourceCollector {
     fn allowed_locations<'p>(&self, py: Python<'p>) -> PyResult<Bound<'p, PyList>> {
         let values = self
             .collector
-            .borrow()
+            .read()
+            .unwrap()
             .allowed_locations()
             .iter()
-            .map(|l| l.to_string().into_py(py))
-            .collect::<Vec<Py<PyAny>>>();
+            .map(|l| l.to_string().into_pyobject(py).unwrap())
+            .collect::<Vec<Bound<'p, PyString>>>();
 
-        Ok(PyList::new_bound(py, &values))
+        PyList::new(py, &values)
     }
 
     fn add_in_memory(&self, resource: &Bound<PyAny>) -> PyResult<()> {
-        let mut collector = self.collector.borrow_mut();
+        let mut collector = self.collector.write().unwrap();
         let typ = resource.get_type();
         let repr = resource.repr()?;
 
@@ -185,7 +185,7 @@ impl OxidizedResourceCollector {
     }
 
     fn add_filesystem_relative(&self, prefix: String, resource: &Bound<PyAny>) -> PyResult<()> {
-        let mut collector = self.collector.borrow_mut();
+        let mut collector = self.collector.write().unwrap();
 
         let repr = resource.repr()?;
 
@@ -269,13 +269,13 @@ impl OxidizedResourceCollector {
         let python_exe = match python_exe {
             Some(p) => p.clone(),
             None => {
-                let sys_module = py.import_bound("sys")?;
+                let sys_module = py.import("sys")?;
                 sys_module.getattr("executable")?
             }
         };
         let python_exe = pyobject_to_pathbuf(py, &python_exe)?;
         let temp_dir = PyTempDir::new(py)?;
-        let collector = self.collector.borrow();
+        let collector = self.collector.read().unwrap();
 
         let mut compiler = BytecodeCompiler::new(&python_exe, temp_dir.path()).map_err(|e| {
             PyValueError::new_err(format!("error constructing bytecode compiler: {:?}", e))
@@ -299,15 +299,12 @@ impl OxidizedResourceCollector {
             let data = location
                 .resolve_content()
                 .map_err(|e| PyValueError::new_err(e.to_string()))?;
-            let data = PyBytes::new_bound(py, &data);
-            let executable = executable.to_object(py);
+            let data = PyBytes::new(py, &data);
+            let executable = executable.into_pyobject(py)?;
 
-            file_installs.push((path, data, executable).to_object(py));
+            file_installs.push((path, data, executable).into_pyobject(py)?);
         }
 
-        Ok(PyTuple::new_bound(
-            py,
-            &[resources.to_object(py), file_installs.to_object(py)],
-        ))
+        (resources, file_installs).into_pyobject(py)
     }
 }

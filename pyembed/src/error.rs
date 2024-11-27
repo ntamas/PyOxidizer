@@ -16,12 +16,12 @@ use {
 /// call PyErr_Print() because sys.stdout may not be available yet.
 fn format_pyerr(py: Python, err: PyErr) -> Result<String, &'static str> {
     let type_repr = err
-        .get_type_bound(py)
+        .get_type(py)
         .repr()
         .map_err(|_| "unable to get repr of error type")?;
 
     let value_repr = err
-        .value_bound(py)
+        .value(py)
         .repr()
         .map_err(|_| "unable to get repr of error value")?;
 
