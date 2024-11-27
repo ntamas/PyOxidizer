@@ -461,7 +461,7 @@ mod tests {
                 .map(|r| r.full_name())
                 .collect::<BTreeSet<_>>();
 
-            let mut expected_names = [
+            let expected_names = [
                 "zstandard",
                 "zstandard.__init__.pyi",
                 "zstandard._cffi",
