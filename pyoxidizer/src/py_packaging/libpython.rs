@@ -240,6 +240,9 @@ pub fn link_libpython(
         };
         
         hasher.write(dirname.to_string_lossy().as_bytes());
+        if let Some(extension) = config_c_path.extension() {
+            hasher.write(extension.to_string_lossy().as_bytes());
+        }
 
         config_c_dir.join(format!("{:016x}-{}", hasher.finish(), "config.o"))
     } else {
