@@ -1232,7 +1232,7 @@ impl<'a> PythonResourcesState<'a, u8> {
         let objects = resources
             .iter()
             .map(|r| resource_to_pyobject(py, r))
-            .collect::<Result<Vec<_>, _>>();
+            .collect::<Result<Vec<_>, _>>()?;
 
         PyList::new(py, objects)
     }
