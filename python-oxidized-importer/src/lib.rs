@@ -25,6 +25,8 @@ mod zip_import;
 
 use std::ptr::addr_of_mut;
 
+use pyo3::types::PyList;
+
 pub use crate::{
     importer::{
         install_path_hook, remove_external_importers, replace_meta_path_importers, ImporterState,
@@ -186,6 +188,8 @@ fn module_init(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     let state = get_module_state(m)?;
 
     state.initialized = false;
+
+    m.setattr("__all__", PyList::empty(py))?;
 
     crate::pkg_resources::init_module(m)?;
     crate::resource_scanning::init_module(m)?;
