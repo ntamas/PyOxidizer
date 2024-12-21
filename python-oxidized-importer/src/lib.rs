@@ -189,6 +189,24 @@ fn module_init(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
 
     state.initialized = false;
 
+    // We need to set the __all__ attribute of the module to an empty list in
+    // advance. This is because of the following:
+    //
+    // - This function can potentially be called during the multi-stage init of
+    //   Python when the interpreter is only partially initialized and certain
+    //   functions are not available, AND
+    // - PyModule.add_function() attempts to extend __all__ with the name of the
+    //   newly added function, AND
+    // - The same piece of code runs an isinstance() check on an error when
+    //   attempting to access __all__ to catch an AttributeError and create it
+    //   on-demand, BUT
+    // - PyO3 0.23.0 introduced a change in its own code where this code path
+    //   eventually attempts to call PyO3::allow_threads(), which is not allowed
+    //   during the multi-stage init of Python until the interpreter is fully
+    //   initialized.
+    //
+    // Therefore, we create __all__ in advance to prevent PyO3 from hitting the
+    // code path that is to blame for the above sequence of events.
     m.setattr("__all__", PyList::empty(py))?;
 
     crate::pkg_resources::init_module(m)?;
