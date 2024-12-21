@@ -37,6 +37,7 @@ sys.exit(
             "nextest",
             "run",
             "--no-fail-fast",
+            "--no-tests=pass",
             "-p",
             sys.argv[1],
         ],
