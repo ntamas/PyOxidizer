@@ -1086,7 +1086,7 @@ impl<'a> PythonResourcesState<'a, u8> {
             })
             .collect();
 
-        PyList::new(py, &infos)
+        PyList::new(py, &infos?)
     }
 
     /// Resolve the names of package distributions matching a name filter.
