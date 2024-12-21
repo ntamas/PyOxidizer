@@ -38,7 +38,7 @@ fn get_unicode_argument() -> OsString {
 
 fn reprs(container: &Bound<PyAny>) -> PyResult<Vec<String>> {
     let mut names = Vec::new();
-    for x in container.iter()? {
+    for x in container.try_iter()? {
         names.push(x?.to_string());
     }
     Ok(names)

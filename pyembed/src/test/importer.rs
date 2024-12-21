@@ -28,7 +28,7 @@ fn get_importer(interp: &MainPythonInterpreter) -> Result<PyObject> {
         let importer = meta_path.get_item(0).unwrap();
         assert_eq!(importer.get_type().name().unwrap(), "OxidizedFinder");
 
-        Ok(importer.to_object(py))
+        Ok(importer.into_pyobject(py).unwrap().unbind())
     })
 }
 
