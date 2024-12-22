@@ -51,7 +51,7 @@ path = "../python-oxidized-importer"
 default-features = false
 
 [dependencies.pyo3]
-version = "0.23.2"
+version = "0.23.3"
 default-features = false
 features = ["macros"]
 
