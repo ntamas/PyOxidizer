@@ -9,7 +9,7 @@ Getting Started
 Requirements
 ============
 
-``oxidized_importer`` requires CPython 3.8 or newer. This is because it
+``oxidized_importer`` requires CPython 3.9 or newer. This is because it
 relies on modern C and Python standard library APIs only available in that
 version.
 

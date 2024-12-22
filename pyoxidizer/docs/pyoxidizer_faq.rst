@@ -48,12 +48,20 @@ opinion it isn't worth the effort.
 
 .. _faq_python_38:
 
-Why is Python 3.8 Required?
+Why is Python 3.9 Required?
 ===========================
 
-Python 3.8 contains a new C API for controlling how embedded Python
-interpreters are started. This makes the run-time code that native
-binaries execute much, much simpler.
+The upstream ``python-build-standalone`` project that PyOxidizer relies on
+does not support Python 3.8 any more. The last PyOxidizer version that
+supported Python 3.8 was PyOxidizer 0.24.0. That being said, it would probably
+be possible to continue supporting Python 3.8, but the effort to do so is
+not justified by the added value. If you need Python 3.8 support, file an
+issue on Github.
+
+Versions earlier than Python 3.8 are not supported because Python 3.8
+contains a new C API for controlling how embedded Python interpreters are
+started. This makes the run-time code that native binaries execute much, much
+simpler.
 
 PyOxidizer versions up to 0.7 supported Python 3.7. But a decision
 was made to require Python 3.8 because the run-time code to manage

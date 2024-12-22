@@ -320,23 +320,6 @@ mod tests {
     }
 
     #[test]
-    // Python 3.8 not supported on aarch64.
-    #[cfg(not(target_arch = "aarch64"))]
-    fn test_add_python_executable_38() -> Result<()> {
-        let mut env = test_evaluation_context_builder()?.into_context()?;
-
-        env.eval("dist = default_python_distribution(python_version='3.8')")?;
-        env.eval("exe = dist.to_python_executable('testapp')")?;
-
-        let m = FileManifestValue::new_from_args().unwrap();
-
-        env.set_var("m", m).unwrap();
-        env.eval("m.add_python_resource('bin', exe)")?;
-
-        Ok(())
-    }
-
-    #[test]
     fn test_add_python_executable_310() -> Result<()> {
         let mut env = test_evaluation_context_builder()?.into_context()?;
 
@@ -371,6 +354,21 @@ mod tests {
         let mut env = test_evaluation_context_builder()?.into_context()?;
 
         env.eval("dist = default_python_distribution(python_version='3.12')")?;
+        env.eval("exe = dist.to_python_executable('testapp')")?;
+
+        let m = FileManifestValue::new_from_args().unwrap();
+
+        env.set_var("m", m).unwrap();
+        env.eval("m.add_python_resource('bin', exe)")?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_add_python_executable_313() -> Result<()> {
+        let mut env = test_evaluation_context_builder()?.into_context()?;
+
+        env.eval("dist = default_python_distribution(python_version='3.13')")?;
         env.eval("exe = dist.to_python_executable('testapp')")?;
 
         let m = FileManifestValue::new_from_args().unwrap();

@@ -179,8 +179,8 @@ fn module_init(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     //
     // Some features likely work on older Python versions. But we can't
     // guarantee it. Let's prevent footguns.
-    if py.version_info() < (3, 8) {
-        return Err(PyImportError::new_err("module requires Python 3.8+"));
+    if py.version_info() < (3, 9) {
+        return Err(PyImportError::new_err("module requires Python 3.9+"));
     }
 
     let state = get_module_state(m)?;

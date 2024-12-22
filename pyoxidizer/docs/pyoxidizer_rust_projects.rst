@@ -99,7 +99,7 @@ This mode is intended to be used for performing quick testing on the
 in this mode unless you take additional actions to point Cargo at
 appropriate libraries.
 
-``pyembed`` has a dependency on Python 3.8+. If an older Python is detected,
+``pyembed`` has a dependency on Python 3.9+. If an older Python is detected,
 it can result in build errors, including unresolved symbol errors.
 
 ``build-mode-pyoxidizer-exe``

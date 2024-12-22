@@ -236,8 +236,8 @@ debugging PyOxidizer's resource scanning code.
 Simply give the command a path to a directory or Python wheel archive
 and it will tell you what it discovers. e.g.::
 
-   $ pyoxidizer find-resources dist/oxidized_importer-0.1-cp38-cp38-manylinux1_x86_64.whl
-   parsing dist/oxidized_importer-0.1-cp38-cp38-manylinux1_x86_64.whl as a wheel archive
+   $ pyoxidizer find-resources dist/oxidized_importer-0.1-cp39-cp39-manylinux2014_x86_64.whl
+   parsing dist/oxidized_importer-0.1-cp39-cp39-manylinux2014_x86_64.whl as a wheel archive
    PythonExtensionModule { name: oxidized_importer }
    PythonPackageDistributionResource { package: oxidized-importer, version: 0.1, name: LICENSE }
    PythonPackageDistributionResource { package: oxidized-importer, version: 0.1, name: WHEEL }
@@ -247,7 +247,7 @@ and it will tell you what it discovers. e.g.::
 
 Or give it the path to a ``site-packages`` directory::
 
-   $ pyoxidizer find-resources ~/.pyenv/versions/3.8.6/lib/python3.8/site-packages
+   $ pyoxidizer find-resources ~/.pyenv/versions/3.9.21/lib/python3.9/site-packages
    ...
 
 This command needs to use a Python distribution so it knows what file
@@ -257,7 +257,7 @@ download one of the
 compatible with the current machine and use that. You can specify a
 ``--distributions-dir`` to use to cache downloaded distributions::
 
-   $ pyoxidizer find-resources --distributions-dir distributions /usr/lib/python3.8
+   $ pyoxidizer find-resources --distributions-dir distributions /usr/lib/python3.9
    ...
 
 .. _pyoxidizer_cli_extra_starlark_variables:

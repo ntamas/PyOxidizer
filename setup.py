@@ -101,7 +101,7 @@ setuptools.setup(
     description="Python importer implemented in Rust",
     long_description=long_description,
     license="MPL 2.0",
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     classifiers=[
         "Intended Audience :: Developers",
         "Programming Language :: Rust",

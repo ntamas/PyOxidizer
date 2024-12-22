@@ -717,29 +717,6 @@ mod tests {
         Ok(())
     }
 
-    // Skip on aarch64-apple-darwin because we don't have 3.8 builds.
-    #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
-    #[test]
-    fn test_empty_project_python_38() -> Result<()> {
-        let env = get_env()?;
-        let options = StandalonePythonExecutableBuilderOptions {
-            distribution_version: Some("3.8".to_string()),
-            ..Default::default()
-        };
-        let pre_built = options.new_builder()?;
-
-        build_python_executable(
-            &env,
-            "myapp",
-            pre_built.as_ref(),
-            default_target_triple(),
-            "0",
-            false,
-        )?;
-
-        Ok(())
-    }
-
     #[test]
     fn test_empty_project_python_310() -> Result<()> {
         let env = get_env()?;
@@ -804,6 +781,27 @@ mod tests {
     }
 
     #[test]
+    fn test_empty_project_python_313() -> Result<()> {
+        let env = get_env()?;
+        let options = StandalonePythonExecutableBuilderOptions {
+            distribution_version: Some("3.13".to_string()),
+            ..Default::default()
+        };
+        let pre_built = options.new_builder()?;
+
+        build_python_executable(
+            &env,
+            "myapp",
+            pre_built.as_ref(),
+            default_target_triple(),
+            "0",
+            false,
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
     fn test_empty_project_system_rust() -> Result<()> {
         let mut env = get_env()?;
         env.unmanage_rust()?;
@@ -827,29 +825,6 @@ mod tests {
     fn test_empty_project_standalone_static() -> Result<()> {
         let env = get_env()?;
         let options = StandalonePythonExecutableBuilderOptions {
-            distribution_flavor: DistributionFlavor::StandaloneStatic,
-            ..Default::default()
-        };
-        let pre_built = options.new_builder()?;
-
-        build_python_executable(
-            &env,
-            "myapp",
-            pre_built.as_ref(),
-            default_target_triple(),
-            "0",
-            false,
-        )?;
-
-        Ok(())
-    }
-
-    #[test]
-    #[cfg(target_env = "msvc")]
-    fn test_empty_project_standalone_static_38() -> Result<()> {
-        let env = get_env()?;
-        let options = StandalonePythonExecutableBuilderOptions {
-            distribution_version: Some("3.8".to_string()),
             distribution_flavor: DistributionFlavor::StandaloneStatic,
             ..Default::default()
         };
@@ -919,6 +894,29 @@ mod tests {
         let env = get_env()?;
         let options = StandalonePythonExecutableBuilderOptions {
             distribution_version: Some("3.12".to_string()),
+            distribution_flavor: DistributionFlavor::StandaloneStatic,
+            ..Default::default()
+        };
+        let pre_built = options.new_builder()?;
+
+        build_python_executable(
+            &env,
+            "myapp",
+            pre_built.as_ref(),
+            default_target_triple(),
+            "0",
+            false,
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    #[cfg(target_env = "msvc")]
+    fn test_empty_project_standalone_static_313() -> Result<()> {
+        let env = get_env()?;
+        let options = StandalonePythonExecutableBuilderOptions {
+            distribution_version: Some("3.13".to_string()),
             distribution_flavor: DistributionFlavor::StandaloneStatic,
             ..Default::default()
         };

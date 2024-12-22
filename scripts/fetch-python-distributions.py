@@ -7,12 +7,16 @@
 
 import argparse
 import hashlib
+import urllib.error
 import urllib.request
 import re
+import socket
 import sys
+import time
 
 from contextlib import contextmanager
 from github import Github
+from tqdm import tqdm
 
 
 ENTRY = """
@@ -37,8 +41,15 @@ def progress(message):
     print("done.", file=sys.stderr)
 
 
-def download_and_hash(url):
-    with urllib.request.urlopen(url) as r:
+def download_and_hash(url, *, title="Downloading..."):
+    with (
+        urllib.request.urlopen(url) as r,
+        tqdm(unit='B', desc=title, unit_scale=True, unit_divisor=1024, miniters=1) as t
+    ):
+        length = r.getheader("content-length")
+        if length:
+            t.total = int(length)
+
         h = hashlib.sha256()
 
         while True:
@@ -47,14 +58,27 @@ def download_and_hash(url):
                 break
 
             h.update(chunk)
+            t.update(len(chunk))
 
         return h.hexdigest()
 
 
-def format_record(record):
-    with progress(f"Downloading and hashing {record['name']}..."):
-        record["sha256"] = download_and_hash(record["url"])
+def download_and_hash_with_retries(*args, **kwds):
+    for i in range(5):
+        try:
+            return download_and_hash(*args, **kwds)
+        except TimeoutError:
+            pass
+        except urllib.error.HTTPError:
+            pass
+        time.sleep(0.5)
+    else:
+        return download_and_hash(*args, **kwds)
 
+
+def format_record(record):
+    title = f"Downloading {record['name']}..."
+    record["sha256"] = download_and_hash_with_retries(record["url"], title=title)
     return ENTRY.format(**record)
 
 
@@ -66,6 +90,8 @@ def get_latest_tag(repo):
 
 
 def main():
+    socket.setdefaulttimeout(60)
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--api-token", help="GitHub API token", required=True)
     parser.add_argument(
@@ -76,7 +102,7 @@ def main():
 
     g = Github(args.api_token)
 
-    repo = g.get_repo("indygreg/python-build-standalone")
+    repo = g.get_repo("astral-sh/python-build-standalone")
 
     tag = args.tag if args.tag else get_latest_tag(repo)
 
@@ -149,7 +175,6 @@ def main():
 
     lines = [
         "// Linux glibc linked.",
-        format_record(records["3.8-x86_64-unknown-linux-gnu-pgo"]),
         format_record(records["3.9-aarch64-unknown-linux-gnu-noopt"]),
         format_record(records["3.9-x86_64-unknown-linux-gnu-pgo"]),
         format_record(records["3.9-x86_64_v2-unknown-linux-gnu-pgo"]),
@@ -166,9 +191,12 @@ def main():
         format_record(records["3.12-x86_64-unknown-linux-gnu-pgo"]),
         format_record(records["3.12-x86_64_v2-unknown-linux-gnu-pgo"]),
         format_record(records["3.12-x86_64_v3-unknown-linux-gnu-pgo"]),
+        format_record(records["3.13-aarch64-unknown-linux-gnu-noopt"]),
+        format_record(records["3.13-x86_64-unknown-linux-gnu-pgo"]),
+        format_record(records["3.13-x86_64_v2-unknown-linux-gnu-pgo"]),
+        format_record(records["3.13-x86_64_v3-unknown-linux-gnu-pgo"]),
         "",
         "// Linux musl.",
-        format_record(records["3.8-x86_64-unknown-linux-musl-noopt"]),
         format_record(records["3.9-x86_64-unknown-linux-musl-noopt"]),
         format_record(records["3.9-x86_64_v2-unknown-linux-musl-noopt"]),
         format_record(records["3.9-x86_64_v3-unknown-linux-musl-noopt"]),
@@ -181,6 +209,9 @@ def main():
         format_record(records["3.12-x86_64-unknown-linux-musl-noopt"]),
         format_record(records["3.12-x86_64_v2-unknown-linux-musl-noopt"]),
         format_record(records["3.12-x86_64_v3-unknown-linux-musl-noopt"]),
+        format_record(records["3.13-x86_64-unknown-linux-musl-noopt"]),
+        format_record(records["3.13-x86_64_v2-unknown-linux-musl-noopt"]),
+        format_record(records["3.13-x86_64_v3-unknown-linux-musl-noopt"]),
         "",
         "// The order here is important because we will choose the",
         "// first one. We prefer shared distributions on Windows because",
@@ -190,29 +221,29 @@ def main():
         "// with.",
         "",
         "// Windows shared.",
-        format_record(records["3.8-i686-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.9-i686-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.10-i686-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.11-i686-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.12-i686-pc-windows-msvc-shared-pgo"]),
+        format_record(records["3.13-i686-pc-windows-msvc-shared-pgo"]),
         "",
-        format_record(records["3.8-x86_64-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.9-x86_64-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.10-x86_64-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.11-x86_64-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.12-x86_64-pc-windows-msvc-shared-pgo"]),
+        format_record(records["3.13-x86_64-pc-windows-msvc-shared-pgo"]),
         "",
         "// macOS.",
-        format_record(records["3.8-aarch64-apple-darwin-pgo"]),
         format_record(records["3.9-aarch64-apple-darwin-pgo"]),
         format_record(records["3.10-aarch64-apple-darwin-pgo"]),
         format_record(records["3.11-aarch64-apple-darwin-pgo"]),
         format_record(records["3.12-aarch64-apple-darwin-pgo"]),
-        format_record(records["3.8-x86_64-apple-darwin-pgo"]),
+        format_record(records["3.13-aarch64-apple-darwin-pgo"]),
         format_record(records["3.9-x86_64-apple-darwin-pgo"]),
         format_record(records["3.10-x86_64-apple-darwin-pgo"]),
         format_record(records["3.11-x86_64-apple-darwin-pgo"]),
         format_record(records["3.12-x86_64-apple-darwin-pgo"]),
+        format_record(records["3.13-x86_64-apple-darwin-pgo"]),
     ]
 
     for line in "\n".join(lines).splitlines(False):

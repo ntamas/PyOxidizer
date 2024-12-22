@@ -30,10 +30,6 @@ Operating System Requirements
 The default :ref:`Python distributions <packaging_python_distributions>` used
 by PyOxidizer require Windows 8 or Windows 2012 or newer.
 
-The official Python 3.8 Windows distributions available on www.python.org
-support Windows 7. PyOxidizer has chosen to drop support for Windows 7 to
-simplify support.
-
 In addition to the restrictions imposed by the Python distribution in use,
 Rust may impose its own restrictions. However, Rust has historically produced
 binaries that work on Windows 8 and Windows 2012, so this likely is not

@@ -531,12 +531,12 @@ mod tests {
             policy.set_file_scanner_emit_files(true);
             policy.set_file_scanner_classify_files(true);
 
-            let mut numpy_dep = "numpy==1.26.4";
+            let mut numpy_dep = "numpy==2.2.1";
             if matches!(
                 target_dist.python_major_minor_version().as_str(),
-                "3.8"
+                "3.9"
             ) {
-                numpy_dep = "numpy==1.24.1";
+                numpy_dep = "numpy==1.26.4";
             };
 
             let res = pip_download(

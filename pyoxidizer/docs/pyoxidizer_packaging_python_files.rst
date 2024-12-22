@@ -201,7 +201,7 @@ following:
 
 Of course, you need a populated virtualenv!::
 
-   $ python3.8 -m venv /path/to/virtualenv
+   $ python3.9 -m venv /path/to/virtualenv
    $ /path/to/virtualenv/bin/pip install -r /path/to/requirements.txt
 
 Once all the pieces are in place, simply run ``pyoxidizer`` to build and

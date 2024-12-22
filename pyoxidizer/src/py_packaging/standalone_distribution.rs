@@ -1493,7 +1493,7 @@ pub mod tests {
 
             // 3.10 distributions stopped shipping GPL licensed extensions.
             let (linux_dropped, linux_added) =
-                if ["3.8", "3.9"].contains(&dist.python_major_minor_version().as_str()) {
+                if ["3.9"].contains(&dist.python_major_minor_version().as_str()) {
                     (
                         vec![
                             ("_gdbm".to_string(), Some("default".to_string())),

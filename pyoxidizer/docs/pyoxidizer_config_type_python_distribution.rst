@@ -38,9 +38,9 @@
         A Python distribution is a zstandard-compressed tar archive containing a
         specially produced build of Python. These distributions are typically
         produced by the
-        `python-build-standalone <https://github.com/indygreg/python-build-standalone>`_
+        `python-build-standalone <https://github.com/astral-sh/python-build-standalone>`_
         project. Pre-built distributions are available at
-        https://github.com/indygreg/python-build-standalone/releases.
+        https://github.com/astral-sh/python-build-standalone/releases.
 
         A distribution is defined by a location and a hash.
 
@@ -138,7 +138,7 @@
        ``X.Y`` *major.minor* string denoting the Python release version
        to use.
 
-       Supported values are ``3.8``, ``3.9``, ``3.10``, ``3.11``, and ``3.12``.
+       Supported values are ``3.9``, ``3.10``, ``3.11``, ``3.12``, and ``3.13``.
 
     ``flavor`` is a string denoting the distribution *flavor*. Values can be one
     of the following:
