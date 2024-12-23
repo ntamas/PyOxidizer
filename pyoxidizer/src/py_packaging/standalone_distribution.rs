@@ -186,6 +186,7 @@ struct PythonJsonMain {
     version: String,
     target_triple: String,
     optimizations: String,
+    build_options: String,
     python_tag: String,
     python_abi_tag: Option<String>,
     python_config_vars: HashMap<String, String>,
@@ -236,9 +237,9 @@ fn parse_python_json(path: &Path) -> Result<PythonJsonMain> {
                 .as_str()
                 .ok_or_else(|| anyhow!("unable to parse version as a string"))?;
 
-            if version != "7" {
+            if version != "8" {
                 return Err(anyhow!(
-                    "expected version 7 standalone distribution; found version {}",
+                    "expected version 8 standalone distribution; found version {}",
                     version
                 ));
             }
