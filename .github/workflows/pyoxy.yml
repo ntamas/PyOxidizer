@@ -60,9 +60,11 @@ jobs:
       fail-fast: false
       matrix:
         python_version:
-          - '3.8'
           - '3.9'
           - '3.10'
+          - '3.11'
+          - '3.12'
+          - '3.13'
         target_triple:
           - 'x86_64-unknown-linux-gnu'
           # Not yet working due to rust config issues.
@@ -121,9 +123,11 @@ jobs:
       fail-fast: false
       matrix:
         python_version:
-          - '3.8'
           - '3.9'
           - '3.10'
+          - '3.11'
+          - '3.12'
+          - '3.13'
         target_triple:
           - 'aarch64-apple-darwin'
           - 'x86_64-apple-darwin'
@@ -173,9 +177,11 @@ jobs:
       fail-fast: false
       matrix:
         python_version:
-          - '3.8'
           - '3.9'
           - '3.10'
+          - '3.11'
+          - '3.12'
+          - '3.13'
     runs-on: 'macos-14'
     steps:
       - uses: actions/checkout@v4
