@@ -60,7 +60,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.11
       - name: Run cibuildwheel
         run: |
           if [ "${CIBW_ARCHS}" = "aarch64" ]; then
@@ -98,7 +98,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.11
       - name: Run cibuildwheel
         run: |
           python3 -m pip install --upgrade pip==24.3.1
@@ -131,7 +131,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.9
+          python-version: 3.11
       - name: Run cibuildwheel
         run: |
           python -m pip install --upgrade pip==24.3.1
