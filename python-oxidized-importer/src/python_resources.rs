@@ -1102,7 +1102,7 @@ impl<'a> PythonResourcesState<'a, u8> {
             })
             .collect();
 
-        PyList::new(py, &infos)
+        PyList::new(py, &infos?)
     }
 
     /// Resolve the names of package distributions matching a name filter.
@@ -1248,7 +1248,7 @@ impl<'a> PythonResourcesState<'a, u8> {
         let objects = resources
             .iter()
             .map(|r| resource_to_pyobject(py, r))
-            .collect::<Result<Vec<_>, _>>();
+            .collect::<Result<Vec<_>, _>>()?;
 
         PyList::new(py, objects)
     }

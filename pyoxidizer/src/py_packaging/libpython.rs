@@ -217,7 +217,32 @@ pub fn link_libpython(
             .parent()
             .ok_or_else(|| anyhow!("could not determine parent directory"))?;
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
+
+        // The code below is copied from cc@v1.2.2, and it needs to be updated
+        // whenever cc decides to change its behaviour regarding the generated
+        // hashes in the compiled object files.
+        //
+        // In the future we should probably avoid this and rely on
+        // compile_intermediates() of the Build object to retrieve the final
+        // filename.
+
+        // Make the dirname relative (if possible) to avoid full system paths influencing the sha
+        // and making the output system-dependent
+        //
+        // NOTE: Here we allow using std::env::var (instead of Build::getenv) because
+        // CARGO_* variables always trigger a rebuild when changed
+        #[allow(clippy::disallowed_methods)]
+        let dirname = if let Some(root) = std::env::var_os("CARGO_MANIFEST_DIR") {
+            let root = root.to_string_lossy();
+            dirname.strip_prefix(&*root).unwrap_or(&dirname)
+        } else {
+            dirname
+        };
+        
         hasher.write(dirname.to_string_lossy().as_bytes());
+        if let Some(extension) = config_c_path.extension() {
+            hasher.write(extension.to_string_lossy().as_bytes());
+        }
 
         config_c_dir.join(format!("{:016x}-{}", hasher.finish(), "config.o"))
     } else {
