@@ -2,6 +2,7 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import sys
 import unittest
 
 SYMBOL_ATTRIBUTES = {
@@ -189,6 +190,12 @@ COMMON_FUNCTION_DUNDER_ATTRIBUTES = {
     "__subclasshook__",
     "__text_signature__",
 }
+
+
+if sys.version_info >= (3, 11):
+    # object.__getstate__ was added in Python 3.11
+    COMMON_CLASS_DUNDER_ATTRIBUTES.add("__getstate__")
+    COMMON_FUNCTION_DUNDER_ATTRIBUTES.add("__getstate__")
 
 
 class TestImporterModule(unittest.TestCase):

@@ -221,6 +221,11 @@ class TestImporterMetadata(unittest.TestCase):
 
         eps = dists[0].entry_points
 
+        if sys.version_info >= (3, 12):
+            # From Python version 3.12 entry_points seems to be an iterable but
+            # not necessarily a list (we usually get tuples)
+            eps = list(eps)
+
         # This is kinda weird but it is what the stdlib does when it receives None.
         self.assertIsInstance(eps, list)
         self.assertEqual(len(eps), 0)
@@ -238,6 +243,11 @@ class TestImporterMetadata(unittest.TestCase):
         dists = list(f.find_distributions())
 
         eps = dists[0].entry_points
+
+        if sys.version_info >= (3, 12):
+            # From Python version 3.12 entry_points seems to be an iterable but
+            # not necessarily a list (we usually get tuples)
+            eps = list(eps)
 
         self.assertIsInstance(eps, list)
         self.assertEqual(len(eps), 1)
