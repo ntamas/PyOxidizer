@@ -720,7 +720,7 @@ mod tests {
                 packaging_policy = policy
             )
 
-            exe.add_python_resources(exe.pip_install(["zstandard==0.16.0"]))
+            exe.add_python_resources(exe.pip_install(["zstandard==0.23.0"]))
 
             exe
         "#})?;
@@ -753,7 +753,7 @@ mod tests {
                 packaging_policy = policy,
             )
 
-            exe.add_python_resources(exe.pip_install(["zstandard==0.16.0"]))
+            exe.add_python_resources(exe.pip_install(["zstandard==0.23.0"]))
 
             exe
         "#})?;
