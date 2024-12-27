@@ -105,6 +105,22 @@ pub static NO_BYTECODE_MODULES: Lazy<Vec<&'static str>> = Lazy::new(|| {
         "test.badsyntax_future9",
         "test.badsyntax_future10",
         "test.badsyntax_pep3120",
+        // Python 3.11 moved test.badsyntax_future* to test.test_future_stmt.
+        // They were also renamed to badsyntax_future later.
+        "test.test_future_stmt.badsyntax_future",
+        "test.test_future_stmt.badsyntax_future3",
+        "test.test_future_stmt.badsyntax_future4",
+        "test.test_future_stmt.badsyntax_future5",
+        "test.test_future_stmt.badsyntax_future6",
+        "test.test_future_stmt.badsyntax_future7",
+        "test.test_future_stmt.badsyntax_future8",
+        "test.test_future_stmt.badsyntax_future9",
+        "test.test_future_stmt.badsyntax_future10",
+        // test.badsyntax_3131 and test.badsyntax_pep3120 were moved
+        "test.tokenizedata.bad_coding",
+        "test.tokenizedata.bad_coding2",
+        "test.tokenizedata.badsyntax_3131",
+        "test.tokenizedata.badsyntax_pep3120",
     ]
 });
 
