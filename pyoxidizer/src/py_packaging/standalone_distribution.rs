@@ -121,6 +121,13 @@ pub static NO_BYTECODE_MODULES: Lazy<Vec<&'static str>> = Lazy::new(|| {
         "test.tokenizedata.bad_coding2",
         "test.tokenizedata.badsyntax_3131",
         "test.tokenizedata.badsyntax_pep3120",
+        // lib2to3.tests were moved to test.test_lib2to3, later removed in 3.13
+        "test.test_lib2to3.data.bom",
+        "test.test_lib2to3.data.crlf",
+        "test.test_lib2to3.data.different_encoding",
+        "test.test_lib2to3.data.false_encoding",
+        "test.test_lib2to3.data.py2_test_grammar",
+        "test.test_lib2to3.data.py3_test_grammar",
     ]
 });
 
