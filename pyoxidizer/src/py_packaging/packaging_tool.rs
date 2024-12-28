@@ -531,7 +531,11 @@ mod tests {
             policy.set_file_scanner_emit_files(true);
             policy.set_file_scanner_classify_files(true);
 
-            let mut numpy_dep = "numpy==2.2.1";
+            // Use numpy 2.1.1 as a testbed because this is the latest NumPy
+            // that provides wheels for Python 3.12 with macOS deployment
+            // target 10.9. However, NumPy 2.1.1 is not compatible with Python
+            // 3.9 so we use the latest NumPy 1.26.4 for Python 3.9.
+            let mut numpy_dep = "numpy==2.1.1";
             if matches!(
                 target_dist.python_major_minor_version().as_str(),
                 "3.9"
