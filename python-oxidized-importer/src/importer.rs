@@ -136,7 +136,7 @@ fn load_dynamic_library(
         name
     };
 
-    let name_cstring = CString::new(name).unwrap();
+    // let name_cstring = CString::new(name).unwrap();
     let init_fn_name = CString::new(format!("PyInit_{}", last_name_part)).unwrap();
 
     let address = unsafe { get_proc_address_memory(library_module, &init_fn_name) };
@@ -154,13 +154,14 @@ fn load_dynamic_library(
 
     // Package context is needed for single-phase init.
     // Disabled since PyO3-0.22.4 removed access to _Py_PackageContext
-    let py_module = unsafe {
+    // let py_module = unsafe {
         // let old_context = pyffi::_Py_PackageContext;
         // pyffi::_Py_PackageContext = name_cstring.as_ptr();
-        let py_module = init_fn();
+        // let py_module = init_fn();
         // pyffi::_Py_PackageContext = old_context;
-        py_module
-    };
+        // py_module
+    // };
+    let py_module = init_fn();
 
     // The initialization function will return a new/owned reference for single-phase initialization
     // and a borrowed reference for multi-phase initialization. Since we don't know which form
