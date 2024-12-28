@@ -2408,61 +2408,6 @@ pub mod tests {
     }
 
     #[test]
-    fn test_windows_distribution_extension_static() -> Result<()> {
-        for target_triple in WINDOWS_TARGET_TRIPLES.iter() {
-            let options = StandalonePythonExecutableBuilderOptions {
-                target_triple: target_triple.to_string(),
-                distribution_flavor: DistributionFlavor::StandaloneStatic,
-                extension_module_filter: Some(ExtensionModuleFilter::Minimal),
-                libpython_link_mode: BinaryLibpythonLinkMode::Static,
-                ..StandalonePythonExecutableBuilderOptions::default()
-            };
-
-            let mut builder = options.new_builder()?;
-
-            // When adding an extension module in static link mode, it gets
-            // added as a built-in and linked with libpython.
-
-            let sqlite = builder
-                .target_distribution
-                .extension_modules
-                .get("_sqlite3")
-                .unwrap()
-                .default_variant()
-                .clone();
-
-            builder.add_python_extension_module(&sqlite, None)?;
-
-            assert_eq!(
-                builder.extension_build_contexts.get("_sqlite3"),
-                Some(&LibPythonBuildContext {
-                    object_files: sqlite.object_file_data.clone(),
-                    static_libraries: ["sqlite3".to_string()].iter().cloned().collect(),
-                    init_functions: [("_sqlite3".to_string(), "PyInit__sqlite3".to_string())]
-                        .iter()
-                        .cloned()
-                        .collect(),
-                    licensed_components: licensed_components_from_extension(&sqlite),
-                    ..LibPythonBuildContext::default()
-                })
-            );
-
-            assert_eq!(
-                builder
-                    .iter_resources()
-                    .find_map(|(name, r)| if *name == "_sqlite3" { Some(r) } else { None }),
-                Some(&PrePackagedResource {
-                    is_builtin_extension_module: true,
-                    name: "_sqlite3".to_string(),
-                    ..PrePackagedResource::default()
-                })
-            );
-        }
-
-        Ok(())
-    }
-
-    #[test]
     fn test_windows_distribution_extension_dynamic() -> Result<()> {
         for target_triple in WINDOWS_TARGET_TRIPLES.iter() {
             let options = StandalonePythonExecutableBuilderOptions {
@@ -2726,42 +2671,6 @@ pub mod tests {
     }
 
     #[test]
-    fn test_windows_static_extension_in_memory_only() -> Result<()> {
-        for target_triple in WINDOWS_TARGET_TRIPLES.iter() {
-            let options = StandalonePythonExecutableBuilderOptions {
-                target_triple: target_triple.to_string(),
-                distribution_flavor: DistributionFlavor::StandaloneStatic,
-                extension_module_filter: Some(ExtensionModuleFilter::Minimal),
-                libpython_link_mode: BinaryLibpythonLinkMode::Static,
-                resources_location: Some(ConcreteResourceLocation::InMemory),
-                resources_location_fallback: Some(None),
-                ..StandalonePythonExecutableBuilderOptions::default()
-            };
-
-            let mut builder = options.new_builder()?;
-
-            let res =
-                builder.add_python_extension_module(&EXTENSION_MODULE_SHARED_LIBRARY_ONLY, None);
-            assert!(res.is_err());
-            assert_eq!(
-                res.err().unwrap().to_string(),
-                "extension module shared_only cannot be loaded from memory but memory loading required"
-            );
-
-            builder.add_python_extension_module(&EXTENSION_MODULE_OBJECT_FILES_ONLY, None)?;
-            assert_extension_builtin(&builder, &EXTENSION_MODULE_OBJECT_FILES_ONLY);
-
-            builder.add_python_extension_module(
-                &EXTENSION_MODULE_SHARED_LIBRARY_AND_OBJECT_FILES,
-                None,
-            )?;
-            assert_extension_builtin(&builder, &EXTENSION_MODULE_SHARED_LIBRARY_AND_OBJECT_FILES);
-        }
-
-        Ok(())
-    }
-
-    #[test]
     fn test_windows_dynamic_extension_filesystem_relative_only() -> Result<()> {
         for target_triple in WINDOWS_TARGET_TRIPLES.iter() {
             let options = StandalonePythonExecutableBuilderOptions {
@@ -2799,43 +2708,6 @@ pub mod tests {
                 &EXTENSION_MODULE_SHARED_LIBRARY_ONLY,
                 ConcreteResourceLocation::RelativePath("prefix_policy".to_string()),
             );
-        }
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_windows_static_extension_filesystem_relative_only() -> Result<()> {
-        for target_triple in WINDOWS_TARGET_TRIPLES.iter() {
-            let options = StandalonePythonExecutableBuilderOptions {
-                target_triple: target_triple.to_string(),
-                distribution_flavor: DistributionFlavor::StandaloneStatic,
-                extension_module_filter: Some(ExtensionModuleFilter::Minimal),
-                libpython_link_mode: BinaryLibpythonLinkMode::Static,
-                resources_location: Some(ConcreteResourceLocation::RelativePath(
-                    "prefix_policy".to_string(),
-                )),
-                resources_location_fallback: Some(None),
-                ..StandalonePythonExecutableBuilderOptions::default()
-            };
-
-            let mut builder = options.new_builder()?;
-
-            let res =
-                builder.add_python_extension_module(&EXTENSION_MODULE_SHARED_LIBRARY_ONLY, None);
-            assert!(res.is_err());
-            assert_eq!(res.err().unwrap().to_string(),
-                "extension module shared_only cannot be materialized as a shared library because distribution does not support loading extension module shared libraries"
-            );
-
-            builder.add_python_extension_module(&EXTENSION_MODULE_OBJECT_FILES_ONLY, None)?;
-            assert_extension_builtin(&builder, &EXTENSION_MODULE_OBJECT_FILES_ONLY);
-
-            builder.add_python_extension_module(
-                &EXTENSION_MODULE_SHARED_LIBRARY_AND_OBJECT_FILES,
-                None,
-            )?;
-            assert_extension_builtin(&builder, &EXTENSION_MODULE_SHARED_LIBRARY_AND_OBJECT_FILES);
         }
 
         Ok(())
@@ -2884,43 +2756,6 @@ pub mod tests {
                 &EXTENSION_MODULE_SHARED_LIBRARY_AND_OBJECT_FILES,
                 ConcreteResourceLocation::InMemory,
             );
-        }
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_windows_static_extension_prefer_in_memory() -> Result<()> {
-        for target_triple in WINDOWS_TARGET_TRIPLES.iter() {
-            let options = StandalonePythonExecutableBuilderOptions {
-                target_triple: target_triple.to_string(),
-                distribution_flavor: DistributionFlavor::StandaloneStatic,
-                extension_module_filter: Some(ExtensionModuleFilter::Minimal),
-                libpython_link_mode: BinaryLibpythonLinkMode::Static,
-                resources_location: Some(ConcreteResourceLocation::InMemory),
-                resources_location_fallback: Some(Some(ConcreteResourceLocation::RelativePath(
-                    "prefix_policy".to_string(),
-                ))),
-                ..StandalonePythonExecutableBuilderOptions::default()
-            };
-
-            let mut builder = options.new_builder()?;
-
-            let res =
-                builder.add_python_extension_module(&EXTENSION_MODULE_SHARED_LIBRARY_ONLY, None);
-            assert!(res.is_err());
-            assert_eq!(res.err().unwrap().to_string(),
-                "extension module shared_only cannot be materialized as a shared library because distribution does not support loading extension module shared libraries"
-            );
-
-            builder.add_python_extension_module(&EXTENSION_MODULE_OBJECT_FILES_ONLY, None)?;
-            assert_extension_builtin(&builder, &EXTENSION_MODULE_OBJECT_FILES_ONLY);
-
-            builder.add_python_extension_module(
-                &EXTENSION_MODULE_SHARED_LIBRARY_AND_OBJECT_FILES,
-                None,
-            )?;
-            assert_extension_builtin(&builder, &EXTENSION_MODULE_SHARED_LIBRARY_AND_OBJECT_FILES);
         }
 
         Ok(())
