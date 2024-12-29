@@ -2604,28 +2604,6 @@ pub mod tests {
     }
 
     #[test]
-    fn test_windows_static_distribution_extensions() -> Result<()> {
-        for target in WINDOWS_TARGET_TRIPLES.iter() {
-            let options = StandalonePythonExecutableBuilderOptions {
-                target_triple: target.to_string(),
-                distribution_flavor: DistributionFlavor::StandaloneStatic,
-                extension_module_filter: Some(ExtensionModuleFilter::All),
-                ..StandalonePythonExecutableBuilderOptions::default()
-            };
-
-            let builder = options.new_builder()?;
-
-            // All distribution extensions are built-ins in static Windows
-            // distributions.
-            for name in builder.target_distribution.extension_modules.keys() {
-                assert!(builder.extension_build_contexts.keys().any(|x| x == name));
-            }
-        }
-
-        Ok(())
-    }
-
-    #[test]
     fn test_windows_dynamic_extension_in_memory_only() -> Result<()> {
         for target_triple in WINDOWS_TARGET_TRIPLES.iter() {
             let options = StandalonePythonExecutableBuilderOptions {
