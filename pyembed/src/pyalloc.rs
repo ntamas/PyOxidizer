@@ -248,7 +248,7 @@ extern "C" fn snmalloc_malloc(_ctx: *mut c_void, size: usize) -> *mut c_void {
         val => val,
     };
 
-    unsafe { snmalloc_sys::sn_malloc(size) as *mut _ }
+    unsafe { snmalloc_sys::malloc(size) as *mut _ }
 }
 
 extern "C" fn rust_calloc(ctx: *mut c_void, nelem: usize, elsize: usize) -> *mut c_void {
@@ -294,7 +294,7 @@ extern "C" fn snmalloc_calloc(_ctx: *mut c_void, nelem: usize, elsize: usize) ->
         val => val,
     };
 
-    unsafe { snmalloc_sys::sn_calloc(nelem, size) as *mut _ }
+    unsafe { snmalloc_sys::calloc(nelem, size) as *mut _ }
 }
 
 extern "C" fn rust_realloc(ctx: *mut c_void, ptr: *mut c_void, new_size: usize) -> *mut c_void {
@@ -358,7 +358,7 @@ extern "C" fn snmalloc_realloc(ctx: *mut c_void, ptr: *mut c_void, new_size: usi
         val => val,
     };
 
-    unsafe { snmalloc_sys::sn_realloc(ptr as *mut _, new_size) as *mut _ }
+    unsafe { snmalloc_sys::realloc(ptr as *mut _, new_size) as *mut _ }
 }
 
 extern "C" fn rust_free(ctx: *mut c_void, ptr: *mut c_void) {
@@ -403,7 +403,7 @@ extern "C" fn snmalloc_free(_ctx: *mut c_void, ptr: *mut c_void) {
         return;
     }
 
-    unsafe { snmalloc_sys::sn_free(ptr as *mut _) }
+    unsafe { snmalloc_sys::free(ptr as *mut _) }
 }
 
 extern "C" fn rust_arena_free(ctx: *mut c_void, ptr: *mut c_void, _size: usize) {
@@ -448,7 +448,7 @@ extern "C" fn snmalloc_arena_free(_ctx: *mut c_void, ptr: *mut c_void, _size: us
         return;
     }
 
-    unsafe { snmalloc_sys::sn_free(ptr as *mut _) }
+    unsafe { snmalloc_sys::free(ptr as *mut _) }
 }
 
 /// Represents a `PyMemAllocatorEx` that can be installed as a memory allocator.
