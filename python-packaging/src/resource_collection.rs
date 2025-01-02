@@ -1340,16 +1340,6 @@ impl PythonResourceCollector {
             self.allow_new_builtin_extension_modules
                 && !extension_module.object_file_data.is_empty()
         };
-        println!(
-            "extension module {}: is_stdlib = {}, builtin_default = {}, shared_library = {:?}, in_libpython = {}, allow_new_builtin_extension_modules = {}, object_file_data = {:?}",
-            extension_module.name,
-            extension_module.is_stdlib,
-            extension_module.builtin_default,
-            extension_module.shared_library,
-            extension_module.in_libpython(),
-            self.allow_new_builtin_extension_modules,
-            extension_module.object_file_data
-        );
 
         // Whether we can produce a standalone shared library extension module.
         // TODO consider allowing this if object files are present.
