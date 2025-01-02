@@ -36,8 +36,6 @@ Here are the built-in Python distributions:
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.12.8  | standalone_dynamic | aarch64-unknown-linux-gnu |
 +---------+----------+--------------------+---------------------------+
-| CPython |  3.13.1  | standalone_dynamic | aarch64-unknown-linux-gnu |
-+---------+----------+--------------------+---------------------------+
 | CPython |  3.8.20  | standalone_dynamic | x86_64-unknown-linux-gnu  |
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.9.21  | standalone_dynamic | x86_64-unknown-linux-gnu  |
@@ -48,8 +46,6 @@ Here are the built-in Python distributions:
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.12.8  | standalone_dynamic | x86_64-unknown-linux-gnu  |
 +---------+----------+--------------------+---------------------------+
-| CPython |  3.13.1  | standalone_dynamic | x86_64-unknown-linux-gnu  |
-+---------+----------+--------------------+---------------------------+
 | CPython |  3.9.21  | standalone_static  | x86_64-unknown-linux-musl |
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.10.16 | standalone_static  | x86_64-unknown-linux-musl |
@@ -57,8 +53,6 @@ Here are the built-in Python distributions:
 | CPython |  3.11.2  | standalone_static  | x86_64-unknown-linux-musl |
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.12.8  | standalone_static  | x86_64-unknown-linux-musl |
-+---------+----------+--------------------+---------------------------+
-| CPython |  3.13.1  | standalone_static  | x86_64-unknown-linux-musl |
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.9.21  | standalone_dynamic | i686-pc-windows-msvc      |
 +---------+----------+--------------------+---------------------------+
@@ -68,8 +62,6 @@ Here are the built-in Python distributions:
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.12.8  | standalone_dynamic | i686-pc-windows-msvc      |
 +---------+----------+--------------------+---------------------------+
-| CPython |  3.13.1  | standalone_dynamic | i686-pc-windows-msvc      |
-+---------+----------+--------------------+---------------------------+
 | CPython |  3.9.21  | standalone_static  | i686-pc-windows-msvc      |
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.10.16 | standalone_static  | i686-pc-windows-msvc      |
@@ -77,8 +69,6 @@ Here are the built-in Python distributions:
 | CPython |  3.11.11 | standalone_static  | i686-pc-windows-msvc      |
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.12.8  | standalone_static  | i686-pc-windows-msvc      |
-+---------+----------+--------------------+---------------------------+
-| CPython |  3.13.1  | standalone_static  | i686-pc-windows-msvc      |
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.9.21  | standalone_dynamic | x86_64-pc-windows-msvc    |
 +---------+----------+--------------------+---------------------------+
@@ -88,8 +78,6 @@ Here are the built-in Python distributions:
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.12.8  | standalone_dynamic | x86_64-pc-windows-msvc    |
 +---------+----------+--------------------+---------------------------+
-| CPython |  3.13.1  | standalone_dynamic | x86_64-pc-windows-msvc    |
-+---------+----------+--------------------+---------------------------+
 | CPython |  3.9.21  | standalone_static  | x86_64-pc-windows-msvc    |
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.10.16 | standalone_static  | x86_64-pc-windows-msvc    |
@@ -97,8 +85,6 @@ Here are the built-in Python distributions:
 | CPython |  3.11.11 | standalone_static  | x86_64-pc-windows-msvc    |
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.12.8  | standalone_static  | x86_64-pc-windows-msvc    |
-+---------+----------+--------------------+---------------------------+
-| CPython |  3.13.1  | standalone_static  | x86_64-pc-windows-msvc    |
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.9.21  | standalone_dynamic | aarch64-apple-darwin      |
 +---------+----------+--------------------+---------------------------+
@@ -108,8 +94,6 @@ Here are the built-in Python distributions:
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.12.8  | standalone_dynamic | aarch64-apple-darwin      |
 +---------+----------+--------------------+---------------------------+
-| CPython |  3.13.1  | standalone_dynamic | aarch64-apple-darwin      |
-+---------+----------+--------------------+---------------------------+
 | CPython |  3.9.21  | standalone_dynamic | x86_64-apple-darwin       |
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.10.16 | standalone_dynamic | x86_64-apple-darwin       |
@@ -117,8 +101,6 @@ Here are the built-in Python distributions:
 | CPython |  3.11.11 | standalone_dynamic | x86_64-apple-darwin       |
 +---------+----------+--------------------+---------------------------+
 | CPython |  3.12.8  | standalone_dynamic | x86_64-apple-darwin       |
-+---------+----------+--------------------+---------------------------+
-| CPython |  3.13.1  | standalone_dynamic | x86_64-apple-darwin       |
 +---------+----------+--------------------+---------------------------+
 
 All of these distributions are provided by the
@@ -147,7 +129,7 @@ Here is what those target triple values translate to:
 Python Version Compatibility
 ============================
 
-PyOxidizer is capable of working with Python 3.9, 3.10, 3.11, 3.12 and 3.13.
+PyOxidizer is capable of working with Python 3.9, 3.10, 3.11 and 3.12.
 
 Python 3.10 is the default Python version because it has been around
 for a while and is relatively stable.

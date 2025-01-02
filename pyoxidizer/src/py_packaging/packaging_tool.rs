@@ -440,6 +440,8 @@ mod tests {
 
             let policy = target_dist.create_packaging_policy()?;
 
+            // - zstandard 0.23.0 does not provide wheels for Python 3.13 with macOS
+            //   deployment target 10.9 so that test fails at the moment
             let resources = pip_download(
                 &env,
                 &*host_dist,
@@ -533,8 +535,12 @@ mod tests {
 
             // Use numpy 2.1.1 as a testbed because this is the latest NumPy
             // that provides wheels for Python 3.12 with macOS deployment
-            // target 10.9. However, NumPy 2.1.1 is not compatible with Python
-            // 3.9 so we use the latest NumPy 1.26.4 for Python 3.9.
+            // target 10.9. However:
+            //
+            // - NumPy 2.1.1 is not compatible with Python 3.9 so we use the
+            //   latest NumPy 1.26.4 for Python 3.9.
+            // - NumPy 2.1.1 does not provide wheels for Python 3.13 with macOS
+            //   deployment target 10.9 so that test fails at the moment
             let mut numpy_dep = "numpy==2.1.1";
             if matches!(
                 target_dist.python_major_minor_version().as_str(),

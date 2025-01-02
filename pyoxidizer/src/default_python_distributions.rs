@@ -158,42 +158,6 @@ pub static PYTHON_DISTRIBUTIONS: Lazy<PythonDistributionCollection> = Lazy::new(
             target_triple: "x86_64_v3-unknown-linux-gnu".to_string(),
             supports_prebuilt_extension_modules: true,
         },
-        PythonDistributionRecord {
-            python_major_minor_version: "3.13".to_string(),
-            location: PythonDistributionLocation::Url {
-                url: "https://github.com/astral-sh/python-build-standalone/releases/download/20241206/cpython-3.13.1%2B20241206-aarch64-unknown-linux-gnu-noopt-full.tar.zst".to_string(),
-                sha256: "74a0e6d6980c3625f8ed88a3985d98729e5b2308c9c82112ae97a1871152753a".to_string(),
-            },
-            target_triple: "aarch64-unknown-linux-gnu".to_string(),
-            supports_prebuilt_extension_modules: true,
-        },
-        PythonDistributionRecord {
-            python_major_minor_version: "3.13".to_string(),
-            location: PythonDistributionLocation::Url {
-                url: "https://github.com/astral-sh/python-build-standalone/releases/download/20241206/cpython-3.13.1%2B20241206-x86_64-unknown-linux-gnu-pgo-full.tar.zst".to_string(),
-                sha256: "220489b488a8fb7aee766e731cac87290208110820ce97413f66cc0904a486cf".to_string(),
-            },
-            target_triple: "x86_64-unknown-linux-gnu".to_string(),
-            supports_prebuilt_extension_modules: true,
-        },
-        PythonDistributionRecord {
-            python_major_minor_version: "3.13".to_string(),
-            location: PythonDistributionLocation::Url {
-                url: "https://github.com/astral-sh/python-build-standalone/releases/download/20241206/cpython-3.13.1%2B20241206-x86_64_v2-unknown-linux-gnu-pgo-full.tar.zst".to_string(),
-                sha256: "cc448ae8501baa4a47f8adb28aa0802fcd564d7d85044a2b36e03d844ec4e954".to_string(),
-            },
-            target_triple: "x86_64_v2-unknown-linux-gnu".to_string(),
-            supports_prebuilt_extension_modules: true,
-        },
-        PythonDistributionRecord {
-            python_major_minor_version: "3.13".to_string(),
-            location: PythonDistributionLocation::Url {
-                url: "https://github.com/astral-sh/python-build-standalone/releases/download/20241206/cpython-3.13.1%2B20241206-x86_64_v3-unknown-linux-gnu-pgo-full.tar.zst".to_string(),
-                sha256: "c81ab5fcbf3b935b016510baa90ad39266b930bb3e43af8620ecb122d3e04a2d".to_string(),
-            },
-            target_triple: "x86_64_v3-unknown-linux-gnu".to_string(),
-            supports_prebuilt_extension_modules: true,
-        },
 
         // Linux musl.
         PythonDistributionRecord {
@@ -304,33 +268,6 @@ pub static PYTHON_DISTRIBUTIONS: Lazy<PythonDistributionCollection> = Lazy::new(
             target_triple: "x86_64_v3-unknown-linux-musl".to_string(),
             supports_prebuilt_extension_modules: true,
         },
-        PythonDistributionRecord {
-            python_major_minor_version: "3.13".to_string(),
-            location: PythonDistributionLocation::Url {
-                url: "https://github.com/astral-sh/python-build-standalone/releases/download/20241206/cpython-3.13.1%2B20241206-x86_64-unknown-linux-musl-noopt-full.tar.zst".to_string(),
-                sha256: "190ad5d7519913858ee198ceeedba5d93781c7cab5a95eca52d57d7dcfd520a5".to_string(),
-            },
-            target_triple: "x86_64-unknown-linux-musl".to_string(),
-            supports_prebuilt_extension_modules: false,
-        },
-        PythonDistributionRecord {
-            python_major_minor_version: "3.13".to_string(),
-            location: PythonDistributionLocation::Url {
-                url: "https://github.com/astral-sh/python-build-standalone/releases/download/20241206/cpython-3.13.1%2B20241206-x86_64_v2-unknown-linux-musl-noopt-full.tar.zst".to_string(),
-                sha256: "f4bca57123d79dc0e84e2c2571e93b1c9f5bae5ba9a74168a3471621c65fa227".to_string(),
-            },
-            target_triple: "x86_64_v2-unknown-linux-musl".to_string(),
-            supports_prebuilt_extension_modules: true,
-        },
-        PythonDistributionRecord {
-            python_major_minor_version: "3.13".to_string(),
-            location: PythonDistributionLocation::Url {
-                url: "https://github.com/astral-sh/python-build-standalone/releases/download/20241206/cpython-3.13.1%2B20241206-x86_64_v3-unknown-linux-musl-noopt-full.tar.zst".to_string(),
-                sha256: "a9d7105e2da0f5b05a3bc235f5ae1bb4ce503e8cbedf9b9b8d6ea64f9a0b7704".to_string(),
-            },
-            target_triple: "x86_64_v3-unknown-linux-musl".to_string(),
-            supports_prebuilt_extension_modules: true,
-        },
 
         // The order here is important because we will choose the
         // first one. We prefer shared distributions on Windows because
@@ -376,15 +313,6 @@ pub static PYTHON_DISTRIBUTIONS: Lazy<PythonDistributionCollection> = Lazy::new(
             target_triple: "i686-pc-windows-msvc".to_string(),
             supports_prebuilt_extension_modules: true,
         },
-        PythonDistributionRecord {
-            python_major_minor_version: "3.13".to_string(),
-            location: PythonDistributionLocation::Url {
-                url: "https://github.com/astral-sh/python-build-standalone/releases/download/20241206/cpython-3.13.1%2B20241206-i686-pc-windows-msvc-shared-pgo-full.tar.zst".to_string(),
-                sha256: "e4b0d9bfa0b8ecfc04625b530e58be0ff4ddcc9ce0c1ab3e509224ee6b362923".to_string(),
-            },
-            target_triple: "i686-pc-windows-msvc".to_string(),
-            supports_prebuilt_extension_modules: true,
-        },
 
         PythonDistributionRecord {
             python_major_minor_version: "3.9".to_string(),
@@ -418,15 +346,6 @@ pub static PYTHON_DISTRIBUTIONS: Lazy<PythonDistributionCollection> = Lazy::new(
             location: PythonDistributionLocation::Url {
                 url: "https://github.com/astral-sh/python-build-standalone/releases/download/20241206/cpython-3.12.8%2B20241206-x86_64-pc-windows-msvc-shared-pgo-full.tar.zst".to_string(),
                 sha256: "7b4e910a414291389c5ec277abc532d7c09b158b5ec6ecb0e91920a193675eba".to_string(),
-            },
-            target_triple: "x86_64-pc-windows-msvc".to_string(),
-            supports_prebuilt_extension_modules: true,
-        },
-        PythonDistributionRecord {
-            python_major_minor_version: "3.13".to_string(),
-            location: PythonDistributionLocation::Url {
-                url: "https://github.com/astral-sh/python-build-standalone/releases/download/20241206/cpython-3.13.1%2B20241206-x86_64-pc-windows-msvc-shared-pgo-full.tar.zst".to_string(),
-                sha256: "3a97cd23c8470f3dc340538f3287cec8df8d168e3da67e4435d7697f5f57fc41".to_string(),
             },
             target_triple: "x86_64-pc-windows-msvc".to_string(),
             supports_prebuilt_extension_modules: true,
@@ -470,15 +389,6 @@ pub static PYTHON_DISTRIBUTIONS: Lazy<PythonDistributionCollection> = Lazy::new(
             supports_prebuilt_extension_modules: true,
         },
         PythonDistributionRecord {
-            python_major_minor_version: "3.13".to_string(),
-            location: PythonDistributionLocation::Url {
-                url: "https://github.com/astral-sh/python-build-standalone/releases/download/20241206/cpython-3.13.1%2B20241206-aarch64-apple-darwin-pgo-full.tar.zst".to_string(),
-                sha256: "343159531c6298f4ac4d86c143f1b7f53eabf53b4ce4d91d57cab238c9403e10".to_string(),
-            },
-            target_triple: "aarch64-apple-darwin".to_string(),
-            supports_prebuilt_extension_modules: true,
-        },
-        PythonDistributionRecord {
             python_major_minor_version: "3.9".to_string(),
             location: PythonDistributionLocation::Url {
                 url: "https://github.com/astral-sh/python-build-standalone/releases/download/20241206/cpython-3.9.21%2B20241206-x86_64-apple-darwin-pgo-full.tar.zst".to_string(),
@@ -510,15 +420,6 @@ pub static PYTHON_DISTRIBUTIONS: Lazy<PythonDistributionCollection> = Lazy::new(
             location: PythonDistributionLocation::Url {
                 url: "https://github.com/astral-sh/python-build-standalone/releases/download/20241206/cpython-3.12.8%2B20241206-x86_64-apple-darwin-pgo-full.tar.zst".to_string(),
                 sha256: "5689f114ec3df9905576dbe18cb3ae5c488339637270e6b71f9690be1d36554c".to_string(),
-            },
-            target_triple: "x86_64-apple-darwin".to_string(),
-            supports_prebuilt_extension_modules: true,
-        },
-        PythonDistributionRecord {
-            python_major_minor_version: "3.13".to_string(),
-            location: PythonDistributionLocation::Url {
-                url: "https://github.com/astral-sh/python-build-standalone/releases/download/20241206/cpython-3.13.1%2B20241206-x86_64-apple-darwin-pgo-full.tar.zst".to_string(),
-                sha256: "a2cf9ae6300f1a0f11e504c40e36ccfa2c3469d9a321307c2b72a0e9bb81569b".to_string(),
             },
             target_triple: "x86_64-apple-darwin".to_string(),
             supports_prebuilt_extension_modules: true,
