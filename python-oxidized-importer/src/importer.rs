@@ -48,12 +48,9 @@ type py_init_fn = extern "C" fn() -> *mut pyffi::PyObject;
 /// The equivalent CPython code for importing extension modules is to call
 /// `imp.create_dynamic()`. This will:
 ///
-/// 1. Call `_PyImport_FindExtensionObject()`.
-/// 2. Call `_PyImport_LoadDynamicModuleWithSpec()` if #1 didn't return anything.
-///
-/// While `_PyImport_FindExtensionObject()` accepts a `filename` argument, this
-/// argument is only used as a key inside an internal dictionary indexing found
-/// extension modules. So we can call that function verbatim.
+/// 1. Call `PyImport_GetModuleDict()` to get the global module dictionary.
+/// 2. Look up the module by name and return it if found.
+/// 3. Call `_PyImport_LoadDynamicModuleWithSpec()` if #1 didn't return anything.
 ///
 /// `_PyImport_LoadDynamicModuleWithSpec()` is more interesting. It takes a
 /// `FILE*` for the extension location, so we can't call it. So we need to
@@ -68,19 +65,17 @@ fn extension_module_shared_library_create_module(
     name: &str,
     library_data: &[u8],
 ) -> PyResult<Py<PyAny>> {
-    let origin = PyString::new(py, "memory");
-
-    let existing_module =
-        unsafe { pyffi::_PyImport_FindExtensionObject(name_py.as_ptr(), origin.as_ptr()) };
-
-    // We found an existing module object. Return it.
-    if !existing_module.is_null() {
-        return Ok(unsafe { PyObject::from_owned_ptr(py, existing_module) });
+    let module_dict = unsafe { pyffi::PyImport_GetModuleDict() };
+    if module_dict.is_null() {
+        panic!("unable to obtain per-interpreter module dict");
     }
 
-    // An error occurred calling _PyImport_FindExtensionObjectEx(). Raise it.
-    if !unsafe { pyffi::PyErr_Occurred() }.is_null() {
-        return Err(PyErr::fetch(py));
+    let module_dict = unsafe { PyObject::from_borrowed_ptr(py, module_dict) };
+    let existing_module: Option<Bound<PyAny>> = module_dict.bind(py).get_item(name_py).ok();
+
+    // We found an existing module object. Return it.
+    if existing_module.is_some() {
+        return Ok(existing_module.unwrap().unbind());
     }
 
     // New module load request. Proceed to _PyImport_LoadDynamicModuleWithSpec()
