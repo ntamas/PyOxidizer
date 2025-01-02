@@ -1530,6 +1530,15 @@ pub mod tests {
                     (vec![], vec![])
                 };
 
+            // python-build-standalone stopped shipping GPL licensed extensions
+            // completely so remove those from linux_dropped and linux_added
+            // that are not in all_extensions
+            let linux_dropped = linux_dropped
+                .into_iter()
+                .filter(|(name, _)| all_extensions.iter().any(|item| item.0 == *name) )
+                .collect::<Vec<_>>();
+            let linux_added = if linux_dropped.is_empty() { vec![] } else { linux_added };
+
             let (wanted_dropped, wanted_added) = match (
                 dist.python_major_minor_version().as_str(),
                 dist.target_triple(),
