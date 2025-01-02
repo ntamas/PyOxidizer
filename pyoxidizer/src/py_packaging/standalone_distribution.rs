@@ -76,6 +76,8 @@ pub static BROKEN_EXTENSIONS_LINUX: Lazy<Vec<String>> = Lazy::new(|| {
 /// These will never be packaged.
 pub static BROKEN_EXTENSIONS_MACOS: Lazy<Vec<String>> = Lazy::new(|| {
     vec![
+        // Linking issues.
+        "_crypt".to_string(),
         // curses and readline have linking issues.
         "curses".to_string(),
         "_curses_panel".to_string(),
