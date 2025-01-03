@@ -2766,7 +2766,7 @@ pub mod tests {
             let resources = builder.pip_install(
                 &env,
                 false,
-                &["pyyaml==5.3.1".to_string()],
+                &["pyyaml==6.0.2".to_string()],
                 &HashMap::new(),
             )?;
 
