@@ -1433,10 +1433,9 @@ pub mod tests {
         super::*,
         crate::testutil::*,
         python_packaging::{
-            bytecode::CompileMode, policy::ExtensionModuleFilter,
+            bytecode::CompileMode,
             resource::BytecodeOptimizationLevel,
         },
-        std::collections::BTreeSet,
     };
 
     #[test]

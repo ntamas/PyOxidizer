@@ -94,6 +94,7 @@ jobs:
       CIBW_ARCHS: universal2
       CIBW_BUILD: ${{ matrix.py.build }}
       CIBW_BUILD_VERBOSITY: '1'
+      MACOSX_DEPLOYMENT_TARGET: '11.0'
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
