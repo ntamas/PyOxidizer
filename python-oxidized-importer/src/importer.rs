@@ -55,7 +55,7 @@ type py_init_fn = extern "C" fn() -> *mut pyffi::PyObject;
 /// `_PyImport_LoadDynamicModuleWithSpec()` is more interesting. It takes a
 /// `FILE*` for the extension location, so we can't call it. So we need to
 /// reimplement it. Documentation of that is inline.
-#[cfg(windows)]
+#[cfg(all(windows, not(Py_3_13)))]
 fn extension_module_shared_library_create_module(
     resources_state: &PythonResourcesState<u8>,
     py: Python,
@@ -101,19 +101,6 @@ fn extension_module_shared_library_create_module(
     })
 }
 
-#[cfg(unix)]
-fn extension_module_shared_library_create_module(
-    _resources_state: &PythonResourcesState<u8>,
-    _py: Python,
-    _sys_modules: &Bound<PyAny>,
-    _spec: &Bound<PyAny>,
-    _name_py: &Bound<PyAny>,
-    _name: &str,
-    _library_data: &[u8],
-) -> PyResult<Py<PyAny>> {
-    panic!("should only be called on Windows");
-}
-
 #[cfg(all(windows, Py_3_13))]
 fn extension_module_shared_library_create_module(
     _resources_state: &PythonResourcesState<u8>,
@@ -125,6 +112,19 @@ fn extension_module_shared_library_create_module(
     _library_data: &[u8],
 ) -> PyResult<Py<PyAny>> {
     panic!("extension modules cannot be loaded from in-memory resources on Windows with Python 3.13 or later");
+}
+
+#[cfg(unix)]
+fn extension_module_shared_library_create_module(
+    _resources_state: &PythonResourcesState<u8>,
+    _py: Python,
+    _sys_modules: &Bound<PyAny>,
+    _spec: &Bound<PyAny>,
+    _name_py: &Bound<PyAny>,
+    _name: &str,
+    _library_data: &[u8],
+) -> PyResult<Py<PyAny>> {
+    panic!("should only be called on Windows");
 }
 
 /// Reimplementation of `_PyImport_LoadDynamicModuleWithSpec()`.
