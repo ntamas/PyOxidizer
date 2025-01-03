@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools", "setuptools-rust"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "oxidized_importer"
+version = "0.9.0.dev1"
+description = "Python importer implemented in Rust"
+authors = [
+    { name = "Gregory Szorc", email = "gregory.szorc@gmail.com" }
+]
+urls = { homepage = "https://github.com/indygreg/PyOxidizer" }
+readme = "README.md"
+requires-python = ">=3.9"
+classifiers = [
+    "Intended Audience :: Developers",
+    "Programming Language :: Rust",
+    "License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)"
+]
+
+[tool.setuptools]
+package-dir = {"oxidized_importer" = "python-oxidized-importer/python"}
+
+[[tool.setuptools-rust.ext-modules]]
+target = "oxidized_importer._lib"
+path = "python-oxidized-importer/Cargo.toml"

@@ -109,7 +109,7 @@ pub(crate) fn get_module_state<'p>(m: &Bound<'p, PyModule>) -> Result<&'p mut Mo
 /// PyEval_InitThreads(), which is undesired. We want total control.
 #[allow(non_snake_case)]
 #[no_mangle]
-pub extern "C" fn PyInit_oxidized_importer() -> *mut pyffi::PyObject {
+pub extern "C" fn PyInit__lib() -> *mut pyffi::PyObject {
     let py = unsafe { Python::assume_gil_acquired() };
 
     let module = unsafe { pyffi::PyModule_Create(addr_of_mut!(MODULE_DEF)) } as *mut pyffi::PyObject;

@@ -1,0 +1,33 @@
+from ._lib import (
+    decode_source,
+    register_pkg_resources,
+    OxidizedDistribution,
+    OxidizedFinder,
+    OxidizedResource,
+    OxidizedResourceCollector,
+    OxidizedResourceReader,
+    OxidizedPathEntryFinder,
+    OxidizedPkgResourcesProvider,
+    PythonModuleSource,
+    PythonModuleBytecode,
+    PythonPackageResource,
+    PythonPackageDistributionResource,
+    PythonExtensionModule,
+)
+
+__all__ = (
+    "decode_source",
+    "register_pkg_resources",
+    "OxidizedDistribution",
+    "OxidizedFinder",
+    "OxidizedResource",
+    "OxidizedResourceCollector",
+    "OxidizedResourceReader",
+    "OxidizedPathEntryFinder",
+    "OxidizedPkgResourcesProvider",
+    "PythonModuleSource",
+    "PythonModuleBytecode",
+    "PythonPackageResource",
+    "PythonPackageDistributionResource",
+    "PythonExtensionModule",
+)

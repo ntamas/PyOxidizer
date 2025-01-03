@@ -1,0 +1,7 @@
+include python-oxidized-importer/Cargo.toml
+recursive-include python-oxidized-importer/python *.py
+recursive-include python-oxidized-importer *.rs
+
+graft python-packaging
+graft python-packed-resources
+
