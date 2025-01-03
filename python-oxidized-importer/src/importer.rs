@@ -114,8 +114,7 @@ fn extension_module_shared_library_create_module(
     panic!("should only be called on Windows");
 }
 
-#[cfg(windows)]
-#[cfg(Py_3_13)]
+#[cfg(all(windows, Py_3_13))]
 fn extension_module_shared_library_create_module(
     _resources_state: &PythonResourcesState<u8>,
     _py: Python,
@@ -134,8 +133,7 @@ fn extension_module_shared_library_create_module(
 /// `_PyImport_GetModInitFunc()` and `_PyImport_RunModInitFunc()`. Since only
 /// the former needs a FILE* when called, it will be enough to re-implement
 /// that function and we can just call `_PyImport_RunModInitFunc()` as-is.
-#[cfg(windows)]
-#[cfg(not(Py_3_13))]
+#[cfg(all(windows, not(Py_3_13)))]
 fn load_dynamic_library(
     py: Python,
     sys_modules: &Bound<PyAny>,
