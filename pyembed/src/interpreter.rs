@@ -15,7 +15,7 @@ use {
     once_cell::sync::Lazy,
     oxidized_importer::{
         install_path_hook, remove_external_importers, replace_meta_path_importers, ImporterState,
-        OxidizedFinder, PyInit_oxidized_importer, PythonResourcesState, OXIDIZED_IMPORTER_NAME,
+        OxidizedFinder, PyInit__lib as PyInit_oxidized_importer, PythonResourcesState, OXIDIZED_IMPORTER_NAME,
         OXIDIZED_IMPORTER_NAME_STR,
     },
     pyo3::{
