@@ -114,8 +114,28 @@ fn extension_module_shared_library_create_module(
     panic!("should only be called on Windows");
 }
 
-/// Reimplementation of `_PyImport_LoadDynamicModuleWithSpec()`.
 #[cfg(windows)]
+#[cfg(Py_3_13)]
+fn extension_module_shared_library_create_module(
+    _resources_state: &PythonResourcesState<u8>,
+    _py: Python,
+    _sys_modules: &Bound<PyAny>,
+    _spec: &Bound<PyAny>,
+    _name_py: &Bound<PyAny>,
+    _name: &str,
+    _library_data: &[u8],
+) -> PyResult<Py<PyAny>> {
+    panic!("extension modules cannot be loaded from in-memory resources on Windows with Python 3.13 or later");
+}
+
+/// Reimplementation of `_PyImport_LoadDynamicModuleWithSpec()`.
+/// Works up to Python 3.12. Another implementation is needed for Python 3.13
+/// because Python 3.13 split up `_PyImport_LoadDynamicModuleWithSpec()` into
+/// `_PyImport_GetModInitFunc()` and `_PyImport_RunModInitFunc()`. Since only
+/// the former needs a FILE* when called, it will be enough to re-implement
+/// that function and we can just call `_PyImport_RunModInitFunc()` as-is.
+#[cfg(windows)]
+#[cfg(not(Py_3_13))]
 fn load_dynamic_library(
     py: Python,
     sys_modules: &Bound<PyAny>,
@@ -148,7 +168,9 @@ fn load_dynamic_library(
     let init_fn: py_init_fn = unsafe { std::mem::transmute(address) };
 
     // Package context is needed for single-phase init.
-    // Disabled since PyO3-0.22.4 removed access to _Py_PackageContext
+    // Disabled since PyO3-0.22.3 removed access to _Py_PackageContext.
+    // Let's hope it does not cause problems; if it does, _PyImport_SwapPackageContext()
+    // should be exposed and then we can call that.
     // let py_module = unsafe {
         // let old_context = pyffi::_Py_PackageContext;
         // pyffi::_Py_PackageContext = name_cstring.as_ptr();
@@ -223,6 +245,31 @@ fn load_dynamic_library(
 
     // If we wanted to assign __file__ we would do it here.
 
+    /*
+    Code from Python 3.13 is:
+
+        struct singlephase_global_update singlephase = {0};
+        // gh-88216: Extensions and def->m_base.m_copy can be updated
+        // when the extension module doesn't support sub-interpreters.
+        if (def->m_size == -1) {
+            singlephase.m_dict = PyModule_GetDict(mod);
+            assert(singlephase.m_dict != NULL);
+        }
+        if (update_global_state_for_extension(
+                tstate, info.filename, info.name, def, &singlephase) < 0)
+        {
+            Py_CLEAR(mod);
+            goto finally;
+        }
+
+        PyObject *modules = get_modules_dict(tstate, true);
+        if (finish_singlephase_extension(
+                tstate, mod, def, info.name, modules) < 0)
+        {
+            Py_CLEAR(mod);
+            goto finally;
+        }
+     */
     let fixup_result = unsafe {
         pyffi::_PyImport_FixupExtensionObject(
             py_module.as_ptr(),
