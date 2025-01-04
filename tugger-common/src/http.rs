@@ -115,7 +115,7 @@ pub fn download_to_path<P: AsRef<Path>>(entry: &RemoteContent, dest_path: P) -> 
         let file_hash = sha256_path(dest_path)?;
 
         if file_hash == expected_hash {
-            lock.unlock().context("unlocking")?;
+            FileExt::unlock(&lock).context("unlocking")?;
             return Ok(());
         }
 
@@ -140,7 +140,7 @@ pub fn download_to_path<P: AsRef<Path>>(entry: &RemoteContent, dest_path: P) -> 
             dest_path.display()
         )
     })?;
-    lock.unlock().context("unlocking")?;
+    FileExt::unlock(&lock).context("unlocking")?;
 
     Ok(())
 }

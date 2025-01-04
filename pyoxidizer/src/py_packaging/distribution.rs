@@ -271,7 +271,7 @@ impl DistributionExtractLock {
 
 impl Drop for DistributionExtractLock {
     fn drop(&mut self) {
-        self.file.unlock().unwrap();
+        FileExt::unlock(&self.file).unwrap();
     }
 }
 
