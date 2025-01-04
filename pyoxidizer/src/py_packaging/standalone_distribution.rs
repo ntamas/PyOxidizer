@@ -282,8 +282,10 @@ fn parse_python_json(path: &Path) -> Result<PythonJsonMain> {
                 for link in entry.links.iter_mut() {
                     if link.name.starts_with("libcrypto-1_1") {
                         link.name = link.name.replace("-1_1", "-3");
+                        link.path_dynamic = link.path_dynamic.as_mut().map(|p| p.replace("-1_1", "-3"));
                     } else if link.name.starts_with("libssl-1_1") {
                         link.name = link.name.replace("-1_1", "-3");
+                        link.path_dynamic = link.path_dynamic.as_mut().map(|p| p.replace("-1_1", "-3"));
                     }
                 }
             }
