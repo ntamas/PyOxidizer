@@ -653,6 +653,19 @@ impl StandaloneDistribution {
                 }
 
                 for (source, dest) in symlinks {
+                    let source_str = source.to_str().unwrap_or("").to_lowercase();
+                    let dest_str = dest.to_str().unwrap_or("").to_lowercase();
+
+                    if source_str.is_empty() || dest_str.is_empty() {
+                        return Err(anyhow!("empty or non-Unicode path in symlink"));
+                    }
+
+                    if cfg!(target_family = "windows") && source_str == dest_str {
+                        // This is a self-referential symlink when the filesystem
+                        // is case-insensitive (which it is on Windows). We can't copy it.
+                        continue;
+                    }
+
                     let dest_prefix = dest.parent().unwrap();
                     std::fs::create_dir_all(dest_prefix).with_context(|| {
                         format!(
