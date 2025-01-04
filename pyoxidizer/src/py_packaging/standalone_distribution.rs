@@ -272,7 +272,23 @@ fn parse_python_json(path: &Path) -> Result<PythonJsonMain> {
         None => return Err(anyhow!("version key not present in PYTHON.json")),
     }
 
-    let v: PythonJsonMain = serde_json::from_slice(&buf)?;
+    let mut v: PythonJsonMain = serde_json::from_slice(&buf)?;
+
+    // Fix up references to libcrypto-1_1 and libssl-1_1 in Windows builds if
+    // needed. This is a temporary hack until python-build-standalone fixes this.
+    if v.python_major_minor_version == "3.11" || v.python_major_minor_version == "3.12" || v.python_major_minor_version == "3.13" {
+        for entries in v.build_info.extensions.values_mut() {
+            for entry in entries.iter_mut() {
+                for link in entry.links.iter_mut() {
+                    if link.name.starts_with("libcrypto-1_1") {
+                        link.name = link.name.replace("-1_1", "-3");
+                    } else if link.name.starts_with("libssl-1_1") {
+                        link.name = link.name.replace("-1_1", "-3");
+                    }
+                }
+            }
+        }
+    }
 
     Ok(v)
 }
