@@ -2744,9 +2744,14 @@ pub mod tests {
     fn test_linux_extension_build_with_library() -> Result<()> {
         let env = get_env()?;
 
-        // The build of 6.0 switched to Cython, which we don't intercept.
-        // And 5.3 isn't marked as compatible with 3.10. So we pin to older
-        // Python and a package version.
+        // We are going to test this with pyyaml 5.4.1 because:
+        //
+        // - it works with Python 3.9 (and the build is pinned down to this
+        //   Python version)
+        // - newer versions are not suitable until we fix the resource
+        //   classifier to start recognizing "*.libs"-style directories
+        // - older versions are not suitable because they do not have wheels
+        //   for Python 3.9 and the build process fails in CI
 
         for libpython_link_mode in vec![
             BinaryLibpythonLinkMode::Static,
@@ -2766,7 +2771,7 @@ pub mod tests {
             let resources = builder.pip_install(
                 &env,
                 false,
-                &["pyyaml==6.0.2".to_string()],
+                &["pyyaml==5.4.1".to_string()],
                 &HashMap::new(),
             )?;
 
