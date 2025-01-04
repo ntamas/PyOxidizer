@@ -1392,13 +1392,8 @@ impl PythonDistribution for StandaloneDistribution {
         // Loading from memory is only supported on Windows where symbols are
         // declspec(dllexport) and the distribution is capable of loading
         // shared library extensions.
-        //
-        // It is also only supported up to Python 3.12. Python 3.13 re-designed
-        // the internals of the import system and we cannot access those private
-        // members that we need to make this work.
         self.target_triple.contains("pc-windows")
             && self.python_symbol_visibility == "dllexport"
-            && self.python_major_minor_version().as_str() < "3.13"
             && self
                 .extension_module_loading
                 .contains(&"shared-library".to_string())
