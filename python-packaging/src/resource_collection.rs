@@ -665,7 +665,9 @@ impl<'a> CompiledResourcesCollection<'a> {
         for (path, location, executable) in &self.extra_files {
             m.add_file_entry(
                 path,
-                FileEntry::new_from_data(location.resolve_content()?, *executable),
+                FileEntry::new_from_data(location.resolve_content().with_context(|| {
+                    format!("resolving content for {} from {:?}", path.display(), location)
+                })?, *executable),
             )?;
         }
 
