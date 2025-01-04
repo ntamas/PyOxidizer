@@ -696,9 +696,6 @@ mod tests {
         python_packaging::interpreter::MemoryAllocatorBackend,
     };
 
-    #[cfg(target_env = "msvc")]
-    use crate::py_packaging::distribution::DistributionFlavor;
-
     #[test]
     fn test_empty_project() -> Result<()> {
         let env = get_env()?;
