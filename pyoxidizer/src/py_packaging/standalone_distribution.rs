@@ -653,6 +653,13 @@ impl StandaloneDistribution {
                 }
 
                 for (source, dest) in symlinks {
+                    let dest_prefix = dest.parent().unwrap();
+                    std::fs::create_dir_all(dest_prefix).with_context(|| {
+                        format!(
+                            "creating parent directory for symlinked file {}",
+                            dest.display()
+                        )
+                    })?;
                     std::fs::copy(&source, &dest).with_context(|| {
                         format!(
                             "copying symlinked file {} -> {}",
