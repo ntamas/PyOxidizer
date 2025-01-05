@@ -2744,14 +2744,51 @@ pub mod tests {
     fn test_linux_extension_build_with_library() -> Result<()> {
         let env = get_env()?;
 
-        // We are going to test this with pyyaml 5.4.1 because:
+        // We are going to test this with pyyaml 5.3.1 because:
         //
         // - it works with Python 3.9 (and the build is pinned down to this
         //   Python version)
-        // - newer versions are not suitable until we fix the resource
+        // - we need a Python extension that has a shared library dependency
+        //   and that builds the extension in a way that it needs to link to
+        //   an external shared library (libyaml in this case); this rules out
+        //   pyyaml 5.4 and later because they link statically to libyaml when
+        //   it is found
+        // - pyyaml 6.x and later are not suitable until we fix the resource
         //   classifier to start recognizing "*.libs"-style directories
-        // - older versions are not suitable because they do not have wheels
-        //   for Python 3.9 and the build process fails in CI
+        //
+        // However, this means that:
+        // - libyaml needs to be present in the testing environment
+        // - the compiler used to compile the Python standalone distribution
+        //   also needs to be present in the testing environment.
+        //   python-build-standalone builds on Linux now use clang, so we need
+        //   to make sure that Clang is available in the testing environment.
+        // - we need to make sure that newer versions of Clang do not break
+        //   the build because of warnings that are converted to errors (and
+        //   that were not a problem at the time pyyaml 5.3.1 was released)
+        //
+        // To ensure all these, make sure that:
+        // - libyaml is installed in the testing environment (with the dev
+        //   package if needed)
+        // - Clang is installed in the testing environment
+        // - -Wincompatible-function-pointer-types warnings are not converted
+        //   to errors
+        //
+        // On top of all of this, pip 23.1 introduced a change that means that
+        // the build process does not work as intended (it will not use our
+        // patched distutils implementation) if the "wheel" package is not
+        // installed. See https://github.com/pypa/pip/issues/8559
+        //
+        // All of this shows that what we are doing with patching distutils
+        // on-the-fly to provide additional build metadata is extremely fragile
+        // and it will break with Python 3.12 anyway when distutils is removed
+        // from the standard library. In the long run the possibility of
+        // collecting additional metadata while an extension is being built
+        // with "pip install" has to be removed from PyOxidizer.
+        //
+        // Right now we only modify the test to deal with the case of pip<23.1
+        // or pip>=23.1 with wheel installed (when the build metadata is provided),
+        // and pip>=23.1 without wheel (when it is not because we are not
+        // hitting our patched distutils).
 
         for libpython_link_mode in vec![
             BinaryLibpythonLinkMode::Static,
@@ -2771,7 +2808,7 @@ pub mod tests {
             let resources = builder.pip_install(
                 &env,
                 true,
-                &["pyyaml==5.4.1".to_string()],
+                &["pyyaml==5.3.1".to_string()],
                 &HashMap::new(),
             )?;
 
@@ -2788,10 +2825,10 @@ pub mod tests {
             let mut orig = extensions[0].clone();
             assert!(orig.shared_library.is_some());
 
-            let (objects_len, link_libraries) = match libpython_link_mode {
-                BinaryLibpythonLinkMode::Dynamic => (0, vec![]),
+            let (objects_len_min, objects_len_max, link_libraries) = match libpython_link_mode {
+                BinaryLibpythonLinkMode::Dynamic => (0, 0, vec![]),
                 BinaryLibpythonLinkMode::Static => (
-                    1,
+                    0, 1,
                     vec![LibraryDependency {
                         name: "yaml".to_string(),
                         static_library: None,
@@ -2807,7 +2844,8 @@ pub mod tests {
                 }
             };
 
-            assert_eq!(orig.object_file_data.len(), objects_len);
+            assert!(orig.object_file_data.len() >= objects_len_min);
+            assert!(orig.object_file_data.len() <= objects_len_max);
 
             // Makes compare easier.
             let mut e = orig.to_mut();
@@ -2823,7 +2861,7 @@ pub mod tests {
                     shared_library: None,
                     object_file_data: vec![],
                     is_package: false,
-                    link_libraries,
+                    link_libraries: if orig.object_file_data.len() > 0 { link_libraries } else { vec![] },
                     is_stdlib: false,
                     builtin_default: false,
                     required: false,
