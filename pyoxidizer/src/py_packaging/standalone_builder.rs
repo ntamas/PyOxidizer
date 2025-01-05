@@ -2847,6 +2847,8 @@ pub mod tests {
             assert!(orig.object_file_data.len() >= objects_len_min);
             assert!(orig.object_file_data.len() <= objects_len_max);
 
+            let has_extra_build_metadata = orig.object_file_data.len() > 0;
+
             // Makes compare easier.
             let mut e = orig.to_mut();
             e.shared_library = None;
@@ -2861,7 +2863,7 @@ pub mod tests {
                     shared_library: None,
                     object_file_data: vec![],
                     is_package: false,
-                    link_libraries: if orig.object_file_data.len() > 0 { link_libraries } else { vec![] },
+                    link_libraries: if has_extra_build_metadata { link_libraries } else { vec![] },
                     is_stdlib: false,
                     builtin_default: false,
                     required: false,
