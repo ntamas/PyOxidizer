@@ -438,6 +438,26 @@ impl<'a> EmbeddedPythonContext<'a> {
         self.write_licensing(dest_dir)
             .context("write_licensing()")?;
 
+        if self.target_triple.ends_with("linux-musl") {
+            // When linking to musl libc, pyo3-build-config-file.txt contains
+            // references to C libraries that are supposed to exist on POSIX
+            // systems but are not present in musl libc. The stock musl libc
+            // distribution provides empty placeholders for these libraries,
+            // but the Rust musl target does not include them (as of version
+            // 1.82). We need to remove the references to these libraries from
+            // pyo3-build-config-file.txt to avoid linker errors.
+            let pyo3_config_path = self.pyo3_config_path(dest_dir);
+            let pyo3_config = std::fs::read_to_string(&pyo3_config_path)?
+                .lines()
+                .filter(|line| {
+                    !line.contains("rustc-link-lib") ||
+                    line.contains("rustc-link-lib=static=")
+                })
+                .collect::<Vec<_>>()
+                .join("\n");
+            std::fs::write(&pyo3_config_path, pyo3_config)?;
+        }
+
         Ok(())
     }
 
