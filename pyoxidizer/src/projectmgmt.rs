@@ -192,16 +192,13 @@ pub fn find_resources(
     let distribution_location =
         default_distribution_location(&DistributionFlavor::Standalone, target_triple, None)?;
 
-    let mut temp_dir = None;
-
     let extract_path = if let Some(path) = distributions_dir {
-        path
+        path.to_owned()
     } else {
-        temp_dir.replace(env.temporary_directory("python-distribution")?);
-        temp_dir.as_ref().unwrap().path()
+        env.python_distributions_dir()
     };
 
-    let dist = resolve_distribution(&distribution_location, extract_path)?;
+    let dist = resolve_distribution(&distribution_location, &extract_path)?;
 
     if scan_distribution {
         println!("scanning distribution");
