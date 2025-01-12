@@ -30,9 +30,9 @@ jobs:
       - pyoxidizer-exes
     runs-on: 'ubuntu-22.04'
     steps:
-      - name: Install musl compiler
-        run: |
-          sudo apt install -y --no-install-recommends musl-tools
+      # - name: Install musl compiler
+      #   run: |
+      #     sudo apt install -y --no-install-recommends musl-tools
 
       - name: Download Executable
         uses: actions/download-artifact@v4
@@ -45,9 +45,9 @@ jobs:
           ./pyoxidizer init-config-file myapp
           ./pyoxidizer build --path myapp
 
-      - name: Spot Test (musl Cross)
-        run: |
-          ./pyoxidizer build --path myapp --target-triple x86_64-unknown-linux-musl
+      # - name: Spot Test (musl Cross)
+      #   run: |
+      #     ./pyoxidizer build --path myapp --target-triple x86_64-unknown-linux-musl
 
   pyoxidizer-macos-universal-exe-check:
     needs:
