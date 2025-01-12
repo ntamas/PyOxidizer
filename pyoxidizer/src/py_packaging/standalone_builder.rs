@@ -909,7 +909,7 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
 
         let mut pending_resources = vec![];
 
-        let mut extra_files = compiled_resources.extra_files_manifest().context("assembling extra files manifeest")?;
+        let mut extra_files = compiled_resources.extra_files_manifest()?;
 
         let mut config = self.config.clone();
 
@@ -2807,7 +2807,7 @@ pub mod tests {
 
             let resources = builder.pip_install(
                 &env,
-                true,
+                false,
                 &["pyyaml==5.3.1".to_string()],
                 &HashMap::new(),
             )?;
