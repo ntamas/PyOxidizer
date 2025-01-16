@@ -8,7 +8,7 @@ use {
     oxidized_importer::ZipIndex,
     pyembed::MainPythonInterpreter,
     pyembed_bench::*,
-    pyo3::IntoPy,
+    pyo3::{types::PyAnyMethods, IntoPyObject},
     std::io::{BufReader, Cursor, Read, Seek},
     zip::read::ZipArchive,
 };
@@ -164,7 +164,13 @@ pub fn bench_zip(c: &mut Criterion) {
                 || {
                     let interp =
                         get_interpreter_with_oxidized().expect("unable to obtain interpreter");
-                    let zip_data_bytes = interp.with_gil(|py| zip_data.as_slice().into_py(py));
+                    let zip_data_bytes = interp.with_gil(|py| {
+                        zip_data
+                            .as_slice()
+                            .into_pyobject(py)
+                            .expect("unable to convert zip data to Python object")
+                            .unbind()
+                    });
 
                     (interp, zip_data_bytes)
                 },

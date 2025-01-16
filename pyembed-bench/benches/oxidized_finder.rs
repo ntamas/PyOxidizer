@@ -3,11 +3,7 @@
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
 use {
-    anyhow::{anyhow, Result},
-    criterion::{criterion_group, criterion_main, Criterion},
-    pyembed::{MainPythonInterpreter, PythonResourcesState},
-    pyembed_bench::*,
-    python_packaging::resource::BytecodeOptimizationLevel,
+    anyhow::{anyhow, Result}, criterion::{criterion_group, criterion_main, Criterion}, pyembed::{MainPythonInterpreter, PythonResourcesState}, pyembed_bench::*, pyo3::types::PyAnyMethods, python_packaging::resource::BytecodeOptimizationLevel
 };
 
 fn parse_packed_resources(data: &[u8]) -> Result<()> {
@@ -110,7 +106,7 @@ pub fn bench_oxidized_finder(c: &mut Criterion) {
                 },
                 |(interp, finder)| {
                     interp.with_gil(|py| {
-                        let finder = finder.as_ref(py);
+                        let finder = finder.bind(py);
 
                         for name in &names {
                             finder
@@ -134,7 +130,7 @@ pub fn bench_oxidized_finder(c: &mut Criterion) {
                 },
                 |(interp, finder)| {
                     interp.with_gil(|py| {
-                        let finder = finder.as_ref(py);
+                        let finder = finder.bind(py);
 
                         for name in &names {
                             finder
@@ -158,7 +154,7 @@ pub fn bench_oxidized_finder(c: &mut Criterion) {
                 },
                 |(interp, finder)| {
                     interp.with_gil(|py| {
-                        let finder = finder.as_ref(py);
+                        let finder = finder.bind(py);
 
                         for name in &names {
                             finder
