@@ -368,6 +368,7 @@ impl<'a> EmbeddedPythonContext<'a> {
                 .iter()
                 .map(|la| la.to_cargo_annotation())
                 .collect::<Vec<_>>(),
+            python_framework_prefix: None,
         })
     }
 

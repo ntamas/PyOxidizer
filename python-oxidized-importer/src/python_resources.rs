@@ -323,7 +323,7 @@ impl<'a> ImportablePythonModule<'a, u8> {
     /// The value gets turned into `__file__`
     pub fn resolve_origin<'p>(&self, py: Python<'p>) -> PyResult<Option<Bound<'p, PyString>>> {
         Ok(if let Some(path) = self.origin_path() {
-            Some(path.into_pyobject(py)?)
+            Some(path.into_pyobject(py)?.str()?)
         } else {
             None
         })
@@ -343,7 +343,7 @@ impl<'a> ImportablePythonModule<'a, u8> {
         };
 
         Ok(if let Some(path) = path {
-            Some(path.into_pyobject(py)?)
+            Some(path.into_pyobject(py)?.str()?)
         } else {
             None
         })

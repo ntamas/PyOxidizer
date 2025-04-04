@@ -995,6 +995,8 @@ impl OxidizedFinder {
             .origin()
             .into_pyobject(py)
             .unwrap()
+            .str()
+            .unwrap()
     }
 
     #[getter]
@@ -1003,6 +1005,8 @@ impl OxidizedFinder {
             .get_resources_state()
             .current_exe()
             .into_pyobject(py)
+            .unwrap()
+            .str()
             .unwrap()
     }
 
