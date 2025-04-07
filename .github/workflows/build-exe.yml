@@ -89,6 +89,9 @@ jobs:
           crate: cross
           version: latest
 
+      - uses: ilammy/setup-nasm@v1
+        if: matrix.target.triple == "i686-pc-windows-msvc"
+
       - name: Build
         shell: bash
         run: |
