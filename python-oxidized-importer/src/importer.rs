@@ -993,9 +993,8 @@ impl OxidizedFinder {
         self.state
             .get_resources_state()
             .origin()
+            .as_os_str()
             .into_pyobject(py)
-            .unwrap()
-            .str()
             .unwrap()
     }
 
@@ -1004,9 +1003,8 @@ impl OxidizedFinder {
         self.state
             .get_resources_state()
             .current_exe()
+            .as_os_str()
             .into_pyobject(py)
-            .unwrap()
-            .str()
             .unwrap()
     }
 
