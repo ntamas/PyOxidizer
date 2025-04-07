@@ -90,7 +90,8 @@ jobs:
           version: latest
 
       - uses: ilammy/setup-nasm@v1
-        if: matrix.target.triple == "i686-pc-windows-msvc"
+        if: matrix.target.triple == 'i686-pc-windows-msvc'
+        # needed for compiling aws-lc-sys@0.28.0 on i686-pc-windows-msvc
 
       - name: Build
         shell: bash
