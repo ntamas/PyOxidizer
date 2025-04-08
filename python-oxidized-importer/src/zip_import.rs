@@ -392,7 +392,7 @@ impl OxidizedZipFinder {
             origin = origin.join(path);
         }
 
-        kwargs.set_item("origin", (&origin).into_pyobject(py)?)?;
+        kwargs.set_item("origin", (&origin).as_os_str().into_pyobject(py)?)?;
 
         let spec = module_spec_type
             .call(py, (&fullname, slf), Some(&kwargs))?
