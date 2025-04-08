@@ -410,7 +410,7 @@ impl OxidizedZipFinder {
                 )
             })?;
 
-            let locations = vec![parent.into_pyobject(py)?];
+            let locations = vec![parent.as_os_str().into_pyobject(py)?];
             spec.setattr("submodule_search_locations", locations)?;
         }
 
