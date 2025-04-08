@@ -297,7 +297,7 @@ impl<'a> ImportablePythonModule<'a, u8> {
             // `/path/to/myapp.zip/mypackage/subpackage`.
             let mut locations = if let Some(origin_path) = self.origin_path() {
                 if let Some(parent_path) = origin_path.parent() {
-                    vec![parent_path.into_pyobject(py)?]
+                    vec![parent_path.as_os_str().into_pyobject(py)?]
                 } else {
                     vec![]
                 }
@@ -309,7 +309,7 @@ impl<'a> ImportablePythonModule<'a, u8> {
                 let mut path = self.current_exe.to_path_buf();
                 path.extend(self.resource.name.split('.'));
 
-                locations.push(path.into_pyobject(py)?);
+                locations.push(path.as_os_str().into_pyobject(py)?);
             }
 
             spec.setattr("submodule_search_locations", locations)?;
@@ -323,7 +323,7 @@ impl<'a> ImportablePythonModule<'a, u8> {
     /// The value gets turned into `__file__`
     pub fn resolve_origin<'p>(&self, py: Python<'p>) -> PyResult<Option<Bound<'p, PyString>>> {
         Ok(if let Some(path) = self.origin_path() {
-            Some(path.into_pyobject(py)?.str()?)
+            Some(path.as_os_str().into_pyobject(py)?)
         } else {
             None
         })
@@ -343,7 +343,7 @@ impl<'a> ImportablePythonModule<'a, u8> {
         };
 
         Ok(if let Some(path) = path {
-            Some(path.into_pyobject(py)?.str()?)
+            Some(path.as_os_str().into_pyobject(py)?)
         } else {
             None
         })
