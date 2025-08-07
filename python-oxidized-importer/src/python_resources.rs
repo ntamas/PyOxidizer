@@ -568,6 +568,22 @@ impl<'a> PythonResourcesState<'a, u8> {
         Ok(())
     }
 
+    /// Loads a frozen module by name
+    fn index_frozen_module_by_name(&mut self, name: &'a str) -> Result<(), &'static str> {
+        self.resources
+            .entry(name.into())
+            .and_modify(|r| {
+                r.is_python_frozen_module = true;
+            })
+            .or_insert_with(|| Resource {
+                is_python_frozen_module: true,
+                name: Cow::Owned(name.to_string()),
+                ..Resource::default()
+            });
+
+        Ok(())
+    }
+
     /// Load `frozen` modules from the Python interpreter using the given raw C array of frozen module definitions.
     fn index_interpreter_frozen_modules_from_ptr(&mut self, ptr: *const pyffi::_frozen) -> Result<(), &'static str> {
         if ptr.is_null() {
@@ -589,16 +605,7 @@ impl<'a> PythonResourcesState<'a, u8> {
                 }
             };
 
-            self.resources
-                .entry(name_str.into())
-                .and_modify(|r| {
-                    r.is_python_frozen_module = true;
-                })
-                .or_insert_with(|| Resource {
-                    is_python_frozen_module: true,
-                    name: Cow::Owned(name_str.to_string()),
-                    ..Resource::default()
-                });
+            self.index_frozen_module_by_name(name_str)?;
         }
 
         Ok(())
@@ -606,11 +613,61 @@ impl<'a> PythonResourcesState<'a, u8> {
 
     /// Load `frozen` modules from the Python interpreter.
     pub fn index_interpreter_frozen_modules(&mut self) -> Result<(), &'static str> {
-        #[cfg(Py_3_11)] {
-            self.index_interpreter_frozen_modules_from_ptr(unsafe { pyffi::_PyImport_FrozenBootstrap })?;
-            self.index_interpreter_frozen_modules_from_ptr(unsafe { pyffi::_PyImport_FrozenStdlib })?;
-            self.index_interpreter_frozen_modules_from_ptr(unsafe { pyffi::_PyImport_FrozenTest })?;
+        // pyo3-ffi does not allow us to reach the private members of
+        // import.c in Python that would allow us to list the frozen modules
+        // before booting the interpreter, so we just hardcode the names here.
+        //
+        // Official source of frozen modules for Python 3.13:
+        //
+        // https://github.com/python/cpython/blob/3.13/Python/frozen.c
+
+        let frozen_bootstrap_modules: Vec<&str> = vec!["_frozen_importlib", "_frozen_importlib_external", "zipimport"];
+
+        for name in &frozen_bootstrap_modules {
+            self.index_frozen_module_by_name(name)?;
         }
+
+        let mut frozen_stdlib_modules: Vec<&str> = vec![];
+        #[cfg(Py_3_11)]
+        {
+            frozen_stdlib_modules.push("abc");
+            frozen_stdlib_modules.push("codecs");
+            frozen_stdlib_modules.push("io");
+            frozen_stdlib_modules.push("_collections_abc");
+            frozen_stdlib_modules.push("_sitebuiltins");
+            frozen_stdlib_modules.push("genericpath");
+            frozen_stdlib_modules.push("ntpath");
+            frozen_stdlib_modules.push("posixpath");
+            frozen_stdlib_modules.push("os");
+            frozen_stdlib_modules.push("site");
+            frozen_stdlib_modules.push("stat");
+            frozen_stdlib_modules.push("importlib.util");
+            frozen_stdlib_modules.push("importlib.machinery");
+            frozen_stdlib_modules.push("runpy");
+
+            // TODO: exclude this from Python 3.14 onwards
+            frozen_stdlib_modules.push("os.path");
+        }
+        for name in &frozen_stdlib_modules {
+            self.index_frozen_module_by_name(name)?;
+        }
+
+        let mut frozen_test_modules: Vec<&str> = vec!["__hello__", "__phello__", "__phello__.spam"];
+        #[cfg(Py_3_11)]
+        {
+            frozen_test_modules.push("__hello_alias__");
+            frozen_test_modules.push("__phello_alias__");
+            frozen_test_modules.push("__phello_alias__.spam");
+            frozen_test_modules.push("__phello__.__init__");
+            frozen_test_modules.push("__phello__.ham");
+            frozen_test_modules.push("__phello__.ham.__init__");
+            frozen_test_modules.push("__phello__.ham.eggs");
+            frozen_test_modules.push("__hello_only__");
+        }
+        for name in &frozen_test_modules {
+            self.index_frozen_module_by_name(name)?;
+        }
+        
         self.index_interpreter_frozen_modules_from_ptr(unsafe { pyffi::PyImport_FrozenModules })?;
 
         Ok(())

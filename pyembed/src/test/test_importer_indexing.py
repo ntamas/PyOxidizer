@@ -2,6 +2,8 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
+import _imp
+
 import os
 import pathlib
 import sys
@@ -54,6 +56,18 @@ class TestImporterConstruction(unittest.TestCase):
     def test_index_interpreter_frozen_modules(self):
         f = OxidizedFinder()
         f.index_interpreter_frozen_modules()
+
+        # Compare the list of indexed modules with _imp.frozen_modules
+        indexed_frozen = set(r.name for r in f.indexed_resources() if r.is_frozen_module)
+        real_frozen =  set(_imp._frozen_module_names())  # type: ignore
+
+        diff = sorted(indexed_frozen - real_frozen)
+        if diff:
+            self.fail(f"Modules indexed as frozen but are not frozen: {diff!r}")
+
+        diff = sorted(real_frozen - indexed_frozen)
+        if diff:
+            self.fail(f"Frozen modules not indexed: {diff!r}")
 
     def test_index_bytes_bad(self):
         f = OxidizedFinder()
