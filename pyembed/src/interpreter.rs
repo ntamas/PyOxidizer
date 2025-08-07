@@ -638,6 +638,7 @@ fn set_pyimport_inittab(config: &OxidizedPythonInterpreterConfig) {
     // If this is our first time, copy the canonical source to our shadow
     // copy.
     unsafe {
+        #[allow(static_mut_refs)]
         if ORIGINAL_BUILTIN_EXTENSIONS.is_none() {
             let mut entries: Vec<pyffi::_inittab> = Vec::new();
 
@@ -656,6 +657,7 @@ fn set_pyimport_inittab(config: &OxidizedPythonInterpreterConfig) {
     }
 
     // Now make a copy and add in new extensions.
+    #[allow(static_mut_refs)]
     let mut extensions = unsafe { ORIGINAL_BUILTIN_EXTENSIONS.as_ref().unwrap().clone() };
 
     if config.oxidized_importer {
@@ -688,6 +690,7 @@ fn set_pyimport_inittab(config: &OxidizedPythonInterpreterConfig) {
     });
 
     // And finally replace the static in Python's code with our instance.
+    #[allow(static_mut_refs)]
     unsafe {
         REPLACED_BUILTIN_EXTENSIONS = Some(extensions);
         pyffi::PyImport_Inittab = REPLACED_BUILTIN_EXTENSIONS.as_mut().unwrap().as_mut_ptr();

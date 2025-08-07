@@ -321,11 +321,15 @@ pub fn python_exe_path(dist_dir: &Path) -> Result<PathBuf> {
 
 #[derive(Debug)]
 pub struct PythonPaths {
+    #[allow(dead_code)]
     pub prefix: PathBuf,
+
     pub bin_dir: PathBuf,
     pub python_exe: PathBuf,
     pub stdlib: PathBuf,
     pub site_packages: PathBuf,
+
+    #[allow(dead_code)]
     pub pyoxidizer_state_dir: PathBuf,
 }
 
