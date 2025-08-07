@@ -1261,17 +1261,17 @@ pub(crate) struct PyOxidizerTraversable {
 #[pymethods]
 impl PyOxidizerTraversable {
     /// Yield Traversable objects in self.
-    fn iterdir(&self) -> PyResult<Bound<PyAny>> {
+    fn iterdir(&self) -> PyResult<Bound<'_, PyAny>> {
         unimplemented!()
     }
 
     /// Read contents of self as bytes.
-    fn read_bytes(&self) -> PyResult<Bound<PyAny>> {
+    fn read_bytes(&self) -> PyResult<Bound<'_, PyAny>> {
         unimplemented!()
     }
 
     /// Read contents of self as text.
-    fn read_text(&self) -> PyResult<Bound<PyAny>> {
+    fn read_text(&self) -> PyResult<Bound<'_, PyAny>> {
         unimplemented!()
     }
 
@@ -1295,19 +1295,19 @@ impl PyOxidizerTraversable {
     }
 
     /// Return True if self is a file.
-    fn is_file(&self) -> PyResult<Bound<PyAny>> {
+    fn is_file(&self) -> PyResult<Bound<'_, PyAny>> {
         unimplemented!()
     }
 
     /// Return Traversable child in self.
     #[allow(unused)]
-    fn joinpath(&self, child: &Bound<PyAny>) -> PyResult<Bound<PyAny>> {
+    fn joinpath(&self, child: &Bound<PyAny>) -> PyResult<Bound<'_, PyAny>> {
         unimplemented!()
     }
 
     /// Return Traversable child in self.
     #[allow(unused)]
-    fn __truediv__(&self, child: &Bound<PyAny>) -> PyResult<Bound<PyAny>> {
+    fn __truediv__(&self, child: &Bound<PyAny>) -> PyResult<Bound<'_, PyAny>> {
         unimplemented!()
     }
 
@@ -1318,7 +1318,7 @@ impl PyOxidizerTraversable {
     /// accepted by io.TextIOWrapper.
     #[allow(unused)]
     #[pyo3(signature=(*py_args, **py_kwargs))]
-    fn open(&self, py_args: &Bound<PyTuple>, py_kwargs: Option<&Bound<PyDict>>) -> PyResult<Bound<PyAny>> {
+    fn open(&self, py_args: &Bound<PyTuple>, py_kwargs: Option<&Bound<PyDict>>) -> PyResult<Bound<'_, PyAny>> {
         unimplemented!()
     }
 }

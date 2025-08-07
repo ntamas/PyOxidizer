@@ -545,7 +545,7 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
         env: &Environment,
         verbose: bool,
         args: &[String],
-    ) -> Result<Vec<PythonResource>> {
+    ) -> Result<Vec<PythonResource<'_>>> {
         let resources = pip_download(
             env,
             &*self.host_distribution,
@@ -568,7 +568,7 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
         verbose: bool,
         install_args: &[String],
         extra_envs: &HashMap<String, String>,
-    ) -> Result<Vec<PythonResource>> {
+    ) -> Result<Vec<PythonResource<'_>>> {
         let resources = pip_install(
             env,
             &*self.target_distribution,
@@ -590,7 +590,7 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
         &mut self,
         path: &Path,
         packages: &[String],
-    ) -> Result<Vec<PythonResource>> {
+    ) -> Result<Vec<PythonResource<'_>>> {
         let resources = find_resources(
             &*self.target_distribution,
             self.python_packaging_policy(),
@@ -614,7 +614,7 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
         Ok(resources)
     }
 
-    fn read_virtualenv(&mut self, path: &Path) -> Result<Vec<PythonResource>> {
+    fn read_virtualenv(&mut self, path: &Path) -> Result<Vec<PythonResource<'_>>> {
         let resources = read_virtualenv(
             &*self.target_distribution,
             self.python_packaging_policy(),
@@ -635,7 +635,7 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
         verbose: bool,
         extra_envs: &HashMap<String, String>,
         extra_global_arguments: &[String],
-    ) -> Result<Vec<PythonResource>> {
+    ) -> Result<Vec<PythonResource<'_>>> {
         let resources = setup_py_install(
             env,
             &*self.target_distribution,
@@ -884,7 +884,7 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
         &self,
         env: &Environment,
         opt_level: &str,
-    ) -> Result<EmbeddedPythonContext> {
+    ) -> Result<EmbeddedPythonContext<'_>> {
         let mut file_seen = false;
         for module in self.resources_collector.find_dunder_file()? {
             file_seen = true;

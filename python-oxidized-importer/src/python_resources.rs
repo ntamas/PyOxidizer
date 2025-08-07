@@ -651,7 +651,7 @@ impl<'a> PythonResourcesState<'a, u8> {
         &self,
         name: &str,
         optimize_level: BytecodeOptimizationLevel,
-    ) -> Option<ImportablePythonModule<u8>> {
+    ) -> Option<ImportablePythonModule<'_, u8>> {
         // Python's filesystem based importer accepts `foo.__init__` as a valid
         // module name. When these names are encountered, it fails to recognize
         // that `__init__` is special and happily searches for and uses/imports a

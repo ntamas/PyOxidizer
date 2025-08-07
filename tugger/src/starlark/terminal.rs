@@ -5,8 +5,7 @@
 use {
     crate::starlark::{get_context_value, TuggerContextValue},
     anyhow::anyhow,
-    console::Term,
-    dialoguer::{Confirm, Input, Password},
+    dialoguer::{Confirm, Input, Password, console::Term},
     starlark::{
         environment::TypeValues,
         values::{

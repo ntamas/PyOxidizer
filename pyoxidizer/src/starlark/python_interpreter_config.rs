@@ -123,7 +123,7 @@ impl PythonInterpreterConfigValue {
     pub fn inner(
         &self,
         label: &str,
-    ) -> Result<MutexGuard<PyembedPythonInterpreterConfig>, ValueError> {
+    ) -> Result<MutexGuard<'_, PyembedPythonInterpreterConfig>, ValueError> {
         self.inner.try_lock().map_err(|e| {
             ValueError::Runtime(RuntimeError {
                 code: "PYTHON_INTERPRETER_CONFIG",

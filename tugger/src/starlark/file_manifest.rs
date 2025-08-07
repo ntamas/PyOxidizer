@@ -106,7 +106,7 @@ impl FileManifestValue {
         }))
     }
 
-    pub fn inner(&self, label: &str) -> Result<MutexGuard<FileManifest>, ValueError> {
+    pub fn inner(&self, label: &str) -> Result<MutexGuard<'_, FileManifest>, ValueError> {
         self.inner.try_lock().map_err(|e| {
             ValueError::Runtime(RuntimeError {
                 code: "SIMPLE_FILE_MANIFEST",

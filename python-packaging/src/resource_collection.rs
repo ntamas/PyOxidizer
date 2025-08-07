@@ -1845,7 +1845,7 @@ impl PythonResourceCollector {
     pub fn compile_resources(
         &self,
         compiler: &mut dyn PythonBytecodeCompiler,
-    ) -> Result<CompiledResourcesCollection> {
+    ) -> Result<CompiledResourcesCollection<'_>> {
         let mut input_resources = self.resources.clone();
         populate_parent_packages(&mut input_resources).context("populating parent packages")?;
 

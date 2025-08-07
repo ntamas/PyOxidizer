@@ -143,7 +143,7 @@ impl PythonExecutableValue {
     pub fn inner(
         &self,
         label: &str,
-    ) -> Result<MutexGuard<Box<dyn PythonBinaryBuilder>>, ValueError> {
+    ) -> Result<MutexGuard<'_, Box<dyn PythonBinaryBuilder>>, ValueError> {
         self.exe.try_lock().map_err(|e| {
             ValueError::Runtime(RuntimeError {
                 code: "PYTHON_EXECUTABLE",

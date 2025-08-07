@@ -41,7 +41,7 @@ impl PythonModuleSourceValue {
         }
     }
 
-    pub fn inner(&self, label: &str) -> Result<MutexGuard<PythonModuleSourceWrapper>, ValueError> {
+    pub fn inner(&self, label: &str) -> Result<MutexGuard<'_, PythonModuleSourceWrapper>, ValueError> {
         self.inner.try_lock().map_err(|e| {
             ValueError::Runtime(RuntimeError {
                 code: "PYTHON_MODULE_SOURCE",

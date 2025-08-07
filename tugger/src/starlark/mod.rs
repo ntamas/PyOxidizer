@@ -24,7 +24,7 @@ pub mod wix_installer;
 pub mod wix_msi_builder;
 
 use {
-    console::Term,
+    dialoguer::console::Term,
     starlark::{
         environment::{Environment, EnvironmentError, TypeValues},
         values::{

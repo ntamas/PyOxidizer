@@ -41,7 +41,7 @@ impl FileValue {
         }
     }
 
-    pub fn inner(&self, label: &str) -> Result<MutexGuard<FileWrapper>, ValueError> {
+    pub fn inner(&self, label: &str) -> Result<MutexGuard<'_, FileWrapper>, ValueError> {
         self.inner.try_lock().map_err(|e| {
             ValueError::Runtime(RuntimeError {
                 code: "FILE",

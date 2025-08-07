@@ -37,7 +37,7 @@ impl PythonModuleSource {
         )
     }
 
-    pub fn get_resource(&self) -> RwLockReadGuard<RawPythonModuleSource> {
+    pub fn get_resource(&self) -> RwLockReadGuard<'_, RawPythonModuleSource> {
         self.resource.read().unwrap()
     }
 }
@@ -123,7 +123,7 @@ impl PythonModuleBytecode {
         )
     }
 
-    pub fn get_resource(&self) -> RwLockReadGuard<RawPythonModuleBytecode> {
+    pub fn get_resource(&self) -> RwLockReadGuard<'_, RawPythonModuleBytecode> {
         self.resource.read().unwrap()
     }
 }
@@ -228,7 +228,7 @@ impl PythonPackageResource {
         )
     }
 
-    pub fn get_resource(&self) -> RwLockReadGuard<RawPythonPackageResource> {
+    pub fn get_resource(&self) -> RwLockReadGuard<'_, RawPythonPackageResource> {
         self.resource.read().unwrap()
     }
 }
@@ -317,7 +317,7 @@ impl PythonPackageDistributionResource {
         )
     }
 
-    pub fn get_resource(&self) -> RwLockReadGuard<RawPythonPackageDistributionResource> {
+    pub fn get_resource(&self) -> RwLockReadGuard<'_, RawPythonPackageDistributionResource> {
         self.resource.read().unwrap()
     }
 }
@@ -419,7 +419,7 @@ impl PythonExtensionModule {
         )
     }
 
-    pub fn get_resource(&self) -> RwLockReadGuard<RawPythonExtensionModule> {
+    pub fn get_resource(&self) -> RwLockReadGuard<'_, RawPythonExtensionModule> {
         self.resource.read().unwrap()
     }
 }

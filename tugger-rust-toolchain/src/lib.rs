@@ -16,24 +16,16 @@ use {
     crate::{
         manifest::Manifest,
         tar::{read_installs_manifest, PackageArchive},
-    },
-    anyhow::{anyhow, Context, Result},
-    fs2::FileExt,
-    log::warn,
-    once_cell::sync::Lazy,
-    pgp::{Deserializable, SignedPublicKey, StandaloneSignature},
-    sha2::Digest,
-    std::{
+    }, anyhow::{anyhow, Context, Result}, fs2::FileExt, log::warn, once_cell::sync::Lazy, pgp::composed::{Deserializable, SignedPublicKey, StandaloneSignature}, sha2::Digest, std::{
         io::{Cursor, Read},
         path::{Path, PathBuf},
-    },
-    tugger_common::http::{download_and_verify, download_to_path, get_http_client},
+    }, tugger_common::http::{download_and_verify, download_to_path, get_http_client}
 };
 
 const URL_PREFIX: &str = "https://static.rust-lang.org/dist/";
 
 static GPG_SIGNING_KEY: Lazy<SignedPublicKey> = Lazy::new(|| {
-    pgp::SignedPublicKey::from_armor_single(Cursor::new(&include_bytes!("signing-key.asc")[..]))
+    SignedPublicKey::from_armor_single(Cursor::new(&include_bytes!("signing-key.asc")[..]))
         .unwrap()
         .0
 });

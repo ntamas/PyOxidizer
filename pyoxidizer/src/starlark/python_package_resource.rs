@@ -47,7 +47,7 @@ impl PythonPackageResourceValue {
     pub fn inner(
         &self,
         label: &str,
-    ) -> Result<MutexGuard<PythonPackageResourceWrapper>, ValueError> {
+    ) -> Result<MutexGuard<'_, PythonPackageResourceWrapper>, ValueError> {
         self.inner.try_lock().map_err(|e| {
             ValueError::Runtime(RuntimeError {
                 code: "PYTHON_PACKAGE_RESOURCE",

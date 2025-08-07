@@ -39,15 +39,15 @@ fn resolve_type_name(typ: &Type) -> Result<String> {
                     }
 
                     if type_names.is_empty() {
-                        Ok(path.name.clone())
+                        Ok(path.path.clone())
                     } else {
-                        Ok(format!("{}<{}>", path.name, type_names.join(", ")))
+                        Ok(format!("{}<{}>", path.path, type_names.join(", ")))
                     }
                 } else {
                     Err(anyhow!("do not know how to handle args"))
                 }
             } else {
-                Ok(path.name.clone())
+                Ok(path.path.clone())
             }
         }
         Type::Primitive(value) => Ok(value.to_string()),

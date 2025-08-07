@@ -44,7 +44,7 @@ impl PythonExtensionModuleValue {
     pub fn inner(
         &self,
         label: &str,
-    ) -> Result<MutexGuard<PythonExtensionModuleWrapper>, ValueError> {
+    ) -> Result<MutexGuard<'_, PythonExtensionModuleWrapper>, ValueError> {
         self.inner.try_lock().map_err(|e| {
             ValueError::Runtime(RuntimeError {
                 code: "PYTHON_EXTENSION_MODULE",

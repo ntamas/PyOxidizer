@@ -113,7 +113,7 @@ pub trait ResourceCollectionContext {
     ) -> Result<Option<PythonResourceAddCollectionContext>, ValueError>;
 
     /// Cast this instance to a `PythonResource`.
-    fn as_python_resource(&self) -> Result<PythonResource, ValueError>;
+    fn as_python_resource(&self) -> Result<PythonResource<'_>, ValueError>;
 
     /// Obtains the Starlark object attributes that are defined by the add collection context.
     fn add_collection_context_attrs(&self) -> Vec<&'static str> {

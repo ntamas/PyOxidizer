@@ -30,8 +30,7 @@ impl OxidizedPkgResourcesProvider {
         let loader = module.getattr("__loader__")?;
         let package = module.getattr("__package__")?;
 
-        let loader_type = loader.get_type();
-        if !loader_type.is(py.get_type::<OxidizedFinder>().as_ref()) {
+        if !loader.is_instance(&py.get_type::<OxidizedFinder>())? {
             return Err(PyTypeError::new_err("__loader__ is not an OxidizedFinder"));
         }
 
@@ -95,7 +94,7 @@ impl OxidizedPkgResourcesProvider {
     }
 
     #[allow(unused)]
-    fn run_script(&self, script_name: &Bound<PyAny>, namespace: &Bound<PyAny>) -> PyResult<Bound<PyAny>> {
+    fn run_script(&self, script_name: &Bound<PyAny>, namespace: &Bound<PyAny>) -> PyResult<Bound<'_, PyAny>> {
         Err(PyNotImplementedError::new_err(()))
     }
 
@@ -104,7 +103,7 @@ impl OxidizedPkgResourcesProvider {
     // Begin IResourceProvider interface.
 
     #[allow(unused)]
-    fn get_resource_filename(&self, manager: &Bound<PyAny>, resource_name: &Bound<PyAny>) -> PyResult<Bound<PyAny>> {
+    fn get_resource_filename(&self, manager: &Bound<PyAny>, resource_name: &Bound<PyAny>) -> PyResult<Bound<'_, PyAny>> {
         // Raising NotImplementedError seems allowed per the implementation of
         // pkg_resources.ZipProvider, which also raises this error when resources
         // aren't backed by the filesystem.
@@ -211,11 +210,9 @@ pub(crate) fn pkg_resources_find_distributions<'p>(
     path_item: &Bound<'p, PyString>,
     only: bool,
 ) -> PyResult<Bound<'p, PyAny>> {
-    let importer_type = importer.get_type();
-
     // This shouldn't happen since that path hook type is mapped to this function.
     // But you never know.
-    if !importer_type.is(py.get_type::<OxidizedPathEntryFinder>().as_ref()) {
+    if !importer.is_instance(&py.get_type::<OxidizedPathEntryFinder>())? {
         return Ok(PyList::empty(py).into_any());
     }
 

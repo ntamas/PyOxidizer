@@ -664,7 +664,7 @@ impl<'a> SnapValue<'a> {
         }
     }
 
-    pub fn inner(&self, label: &str) -> Result<MutexGuard<Snapcraft<'a>>, ValueError> {
+    pub fn inner(&self, label: &str) -> Result<MutexGuard<'_, Snapcraft<'a>>, ValueError> {
         self.inner.try_lock().map_err(|e| {
             ValueError::Runtime(RuntimeError {
                 code: "TUGGER_SNAPCRAFT",

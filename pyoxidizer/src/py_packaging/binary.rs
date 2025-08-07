@@ -262,7 +262,7 @@ pub trait PythonBinaryBuilder {
         env: &Environment,
         verbose: bool,
         args: &[String],
-    ) -> Result<Vec<PythonResource>>;
+    ) -> Result<Vec<PythonResource<'_>>>;
 
     /// Runs `pip install` using the binary builder's settings.
     ///
@@ -273,17 +273,17 @@ pub trait PythonBinaryBuilder {
         verbose: bool,
         install_args: &[String],
         extra_envs: &HashMap<String, String>,
-    ) -> Result<Vec<PythonResource>>;
+    ) -> Result<Vec<PythonResource<'_>>>;
 
     /// Reads Python resources from the filesystem.
     fn read_package_root(
         &mut self,
         path: &Path,
         packages: &[String],
-    ) -> Result<Vec<PythonResource>>;
+    ) -> Result<Vec<PythonResource<'_>>>;
 
     /// Read Python resources from a populated virtualenv directory.
-    fn read_virtualenv(&mut self, path: &Path) -> Result<Vec<PythonResource>>;
+    fn read_virtualenv(&mut self, path: &Path) -> Result<Vec<PythonResource<'_>>>;
 
     /// Runs `python setup.py install` using the binary builder's settings.
     ///
@@ -295,7 +295,7 @@ pub trait PythonBinaryBuilder {
         verbose: bool,
         extra_envs: &HashMap<String, String>,
         extra_global_arguments: &[String],
-    ) -> Result<Vec<PythonResource>>;
+    ) -> Result<Vec<PythonResource<'_>>>;
 
     /// Add resources from the Python distribution to the builder.
     ///
@@ -408,7 +408,7 @@ pub trait PythonBinaryBuilder {
         &self,
         env: &Environment,
         opt_level: &str,
-    ) -> Result<EmbeddedPythonContext>;
+    ) -> Result<EmbeddedPythonContext<'_>>;
 }
 
 #[cfg(test)]
