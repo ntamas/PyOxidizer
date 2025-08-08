@@ -1,9 +1,9 @@
 on:
   push:
     branches-ignore:
-      - 'ci-test'
+      - "ci-test"
     tags-ignore:
-      - '**'
+      - "**"
   pull_request:
   # schedule:
   #   - cron: '13 15 * * *'
@@ -14,47 +14,47 @@ jobs:
       fail-fast: false
       matrix:
         py:
-          - arch: 'aarch64'
-            build: 'cp39-manylinux_aarch64'
-          - arch: 'i686'
-            build: 'cp39-manylinux_i686'
-          - arch: 'x86_64'
-            build: 'cp39-manylinux_x86_64'
+          - arch: "aarch64"
+            build: "cp39-manylinux_aarch64"
+          - arch: "i686"
+            build: "cp39-manylinux_i686"
+          - arch: "x86_64"
+            build: "cp39-manylinux_x86_64"
 
-          - arch: 'aarch64'
-            build: 'cp310-manylinux_aarch64'
-          - arch: 'i686'
-            build: 'cp310-manylinux_i686'
-          - arch: 'x86_64'
-            build: 'cp310-manylinux_x86_64'
+          - arch: "aarch64"
+            build: "cp310-manylinux_aarch64"
+          - arch: "i686"
+            build: "cp310-manylinux_i686"
+          - arch: "x86_64"
+            build: "cp310-manylinux_x86_64"
 
-          - arch: 'aarch64'
-            build: 'cp311-manylinux_aarch64'
-          - arch: 'i686'
-            build: 'cp311-manylinux_i686'
-          - arch: 'x86_64'
-            build: 'cp311-manylinux_x86_64'
+          - arch: "aarch64"
+            build: "cp311-manylinux_aarch64"
+          - arch: "i686"
+            build: "cp311-manylinux_i686"
+          - arch: "x86_64"
+            build: "cp311-manylinux_x86_64"
 
-          - arch: 'aarch64'
-            build: 'cp312-manylinux_aarch64'
-          - arch: 'i686'
-            build: 'cp312-manylinux_i686'
-          - arch: 'x86_64'
-            build: 'cp312-manylinux_x86_64'
+          - arch: "aarch64"
+            build: "cp312-manylinux_aarch64"
+          - arch: "i686"
+            build: "cp312-manylinux_i686"
+          - arch: "x86_64"
+            build: "cp312-manylinux_x86_64"
 
-          - arch: 'aarch64'
-            build: 'cp313-manylinux_aarch64'
-          - arch: 'i686'
-            build: 'cp313-manylinux_i686'
-          - arch: 'x86_64'
-            build: 'cp313-manylinux_x86_64'
+          - arch: "aarch64"
+            build: "cp313-manylinux_aarch64"
+          - arch: "i686"
+            build: "cp313-manylinux_i686"
+          - arch: "x86_64"
+            build: "cp313-manylinux_x86_64"
     runs-on: ubuntu-22.04
     env:
       CIBW_ENVIRONMENT: 'PATH="$PATH:$HOME/.cargo/bin"'
-      CIBW_BEFORE_BUILD: 'ci/install-rust-linux.sh'
+      CIBW_BEFORE_BUILD: "ci/install-rust-linux.sh"
       CIBW_ARCHS: ${{ matrix.py.arch }}
       CIBW_BUILD: ${{ matrix.py.build }}
-      CIBW_BUILD_VERBOSITY: '1'
+      CIBW_BUILD_VERBOSITY: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -69,7 +69,7 @@ jobs:
           fi
 
           python3 -m pip install --upgrade pip==24.3.1
-          python3 -m pip install cibuildwheel==2.22.0
+          python3 -m pip install cibuildwheel==3.1.3
           python3 -m cibuildwheel --output-dir wheelhouse .
 
       - name: Upload wheels
@@ -84,18 +84,18 @@ jobs:
       fail-fast: false
       matrix:
         py:
-          - build: 'cp39-macosx_universal2'
-          - build: 'cp310-macosx_universal2'
-          - build: 'cp311-macosx_universal2'
-          - build: 'cp312-macosx_universal2'
-          - build: 'cp313-macosx_universal2'
+          - build: "cp39-macosx_universal2"
+          - build: "cp310-macosx_universal2"
+          - build: "cp311-macosx_universal2"
+          - build: "cp312-macosx_universal2"
+          - build: "cp313-macosx_universal2"
     runs-on: macos-14
     env:
       CIBW_ARCHS: universal2
-      CIBW_BEFORE_BUILD: 'ci/install-rust-macos.sh'
+      CIBW_BEFORE_BUILD: "ci/install-rust-macos.sh"
       CIBW_BUILD: ${{ matrix.py.build }}
-      CIBW_BUILD_VERBOSITY: '1'
-      MACOSX_DEPLOYMENT_TARGET: '11.0'
+      CIBW_BUILD_VERBOSITY: "1"
+      MACOSX_DEPLOYMENT_TARGET: "11.0"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
@@ -105,7 +105,7 @@ jobs:
       - name: Run cibuildwheel
         run: |
           python3 -m pip install --upgrade pip==24.3.1
-          python3 -m pip install cibuildwheel==2.22.0
+          python3 -m pip install cibuildwheel==3.1.3
           python3 -m cibuildwheel --output-dir wheelhouse .
 
       - name: Upload wheels
@@ -120,14 +120,14 @@ jobs:
       fail-fast: false
       matrix:
         py:
-          - build: 'cp39-win_amd64'
-          - build: 'cp310-win_amd64'
-          - build: 'cp311-win_amd64'
-          - build: 'cp312-win_amd64'
-          - build: 'cp313-win_amd64'
+          - build: "cp39-win_amd64"
+          - build: "cp310-win_amd64"
+          - build: "cp311-win_amd64"
+          - build: "cp312-win_amd64"
+          - build: "cp313-win_amd64"
     runs-on: windows-2022
     env:
-      CIBW_BUILD_VERBOSITY: '1'
+      CIBW_BUILD_VERBOSITY: "1"
       CIBW_BUILD: ${{ matrix.py.build }}
     steps:
       - uses: actions/checkout@v4
@@ -138,7 +138,7 @@ jobs:
       - name: Run cibuildwheel
         run: |
           python -m pip install --upgrade pip==24.3.1
-          python -m pip install cibuildwheel==2.22.0
+          python -m pip install cibuildwheel==3.1.3
           python -m cibuildwheel --output-dir wheelhouse .
 
       - name: Upload wheels
@@ -155,6 +155,5 @@ jobs:
       - uses: actions/upload-artifact/merge@v4
         with:
           name: wheels
-          pattern: 'wheel-*'
+          pattern: "wheel-*"
           delete-merged: true
-
