@@ -25,7 +25,7 @@ impl PythonDistributionCollection {
     /// `target_triple` is the Rust machine triple the distribution is built for.
     /// `flavor` is the type of Python distribution.
     /// `python_major_minor_version` is an optional `X.Y` version string being
-    /// requested. If `None`, `3.9` is assumed.
+    /// requested. If `None`, `DEFAULT_PYTHON_VERSION` is assumed.
     pub fn find_distribution(
         &self,
         target_triple: &str,

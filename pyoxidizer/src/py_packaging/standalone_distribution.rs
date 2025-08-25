@@ -15,7 +15,7 @@ use {
         distutils::prepare_hacked_distutils,
         standalone_builder::StandalonePythonExecutableBuilder,
     },
-    crate::environment::{Environment, LINUX_TARGET_TRIPLES, MACOS_TARGET_TRIPLES},
+    crate::{environment::{Environment, LINUX_TARGET_TRIPLES, MACOS_TARGET_TRIPLES}, shell::with_shell},
     anyhow::{anyhow, Context, Result},
     duct::cmd,
     log::{info, warn},
@@ -1392,7 +1392,9 @@ impl PythonDistribution for StandaloneDistribution {
         let pip_path = python_paths.bin_dir.join(PIP_EXE_BASENAME);
 
         if !pip_path.exists() {
-            warn!("{} doesnt exist", pip_path.display().to_string());
+            with_shell(|log| {
+                log.warn(format!("{} does not exist", pip_path.display().to_string()))
+            })?;
             invoke_python(&python_paths, &["-m", "ensurepip"]);
         }
 
@@ -1405,6 +1407,10 @@ impl PythonDistribution for StandaloneDistribution {
         dest_dir: &Path,
         extra_python_paths: &[&Path],
     ) -> Result<HashMap<String, String>> {
+        if !self.supports_compiling_c_extensions() {
+            return Ok(HashMap::new());
+        }
+
         let mut res = match libpython_link_mode {
             // We need to patch distutils if the distribution is statically linked.
             LibpythonLinkMode::Static => prepare_hacked_distutils(
@@ -1444,6 +1450,18 @@ impl PythonDistribution for StandaloneDistribution {
             && self
                 .extension_module_loading
                 .contains(&"shared-library".to_string())
+    }
+
+    /// Determines whether compiling C extensions from source is supported with
+    /// this distribution.
+    /// 
+    /// We need our patched distutils to do this: the patch ensures that all
+    /// object files created during the build are caught and copied to a folder
+    /// where we can access them later. However, distutils was removed from
+    /// the Python standard library in 3.12, so we are not able to support
+    /// building C extensions from source from Python 3.12 onwards.
+    fn supports_compiling_c_extensions(&self) -> bool {
+        self.extension_modules.contains_key("distutils")
     }
 
     fn tcl_files(&self) -> Result<Vec<(PathBuf, FileEntry)>> {

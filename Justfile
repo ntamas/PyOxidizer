@@ -471,6 +471,7 @@ pyoxidizer-release-upload commit tag:
 pyoxidizer-release:
   just _release pyoxidizer 'PyOxidizer'
 
+# Updates Python distributions embedded in PyOxidizer.
 pyoxidizer-update-python-distributions: _python_scripts_venv
   venv/bin/python3 \
     scripts/fetch-python-distributions.py \

@@ -219,6 +219,9 @@ pub trait PythonDistribution {
     /// executable and load it without having to materialize it on a filesystem.
     fn supports_in_memory_shared_library_loading(&self) -> bool;
 
+    /// Whether this distribution supports compiling C extensions from source.
+    fn supports_compiling_c_extensions(&self) -> bool;
+
     /// Determine whether a named module is in a known standard library test package.
     fn is_stdlib_test_package(&self, name: &str) -> bool {
         for package in self.stdlib_test_packages() {

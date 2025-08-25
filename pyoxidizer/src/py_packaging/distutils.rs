@@ -7,17 +7,17 @@ Interacting with distutils.
 */
 
 use {
+    crate::shell::with_verbose_shell,
     anyhow::{Context, Result},
-    log::warn,
     once_cell::sync::Lazy,
     python_packaging::resource::{LibraryDependency, PythonExtensionModule},
     serde::Deserialize,
-    simple_file_manifest::FileData,
+    simple_file_manifest::FileData, 
     std::{
         collections::{BTreeMap, HashMap},
         fs::{create_dir_all, read_dir, read_to_string},
         path::{Path, PathBuf},
-    },
+    }
 };
 
 static MODIFIED_DISTUTILS_FILES: Lazy<BTreeMap<&'static str, &'static [u8]>> = Lazy::new(|| {
@@ -59,10 +59,9 @@ pub fn prepare_hacked_distutils(
 ) -> Result<HashMap<String, String>> {
     let extra_sys_path = dest_dir.join("packages");
 
-    warn!(
-        "installing modified distutils to {}",
-        extra_sys_path.display()
-    );
+    with_verbose_shell(|log| {
+        log.status("Installing", format!("modified distutils to {}", extra_sys_path.display()))
+    })?;
 
     let dest_distutils_path = extra_sys_path.join("distutils");
 
@@ -87,7 +86,9 @@ pub fn prepare_hacked_distutils(
     for (path, data) in MODIFIED_DISTUTILS_FILES.iter() {
         let dest_path = dest_distutils_path.join(path);
 
-        warn!("modifying distutils/{} for oxidation", path);
+        with_verbose_shell(|log| {
+            log.status("Modifying", format!("distutils/{} for oxidation", path))
+        })?;
         std::fs::write(&dest_path, data)
             .with_context(|| format!("writing {}", dest_path.display()))?;
     }

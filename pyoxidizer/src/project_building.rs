@@ -790,6 +790,27 @@ mod tests {
     }
 
     #[test]
+    fn test_empty_project_python_313() -> Result<()> {
+        let env = get_env()?;
+        let options = StandalonePythonExecutableBuilderOptions {
+            distribution_version: Some("3.13".to_string()),
+            ..Default::default()
+        };
+        let pre_built = options.new_builder()?;
+
+        build_python_executable(
+            &env,
+            "myapp",
+            pre_built.as_ref(),
+            default_target_triple(),
+            "0",
+            false,
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
     fn test_empty_project_system_rust() -> Result<()> {
         let mut env = get_env()?;
         env.unmanage_rust()?;

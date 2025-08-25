@@ -89,6 +89,10 @@ def get_latest_tag(repo):
     return max(cal_ver_tags)
 
 
+def bool_to_str(value):
+    return "true" if value else "false"
+
+
 def main():
     socket.setdefaulttimeout(60)
 
@@ -116,6 +120,8 @@ def main():
             name = asset.name
             url = asset.browser_download_url
 
+            # We are only interested in CPython, and we always want full builds,
+            # not the install-only variants
             if not name.startswith("cpython-") or not name.endswith("-full.tar.zst"):
                 continue
 
@@ -148,9 +154,7 @@ def main():
                 "url": url,
                 "major_minor": major_minor,
                 "target_triple": target_triple,
-                "supports_prebuilt_extension_modules": "true"
-                if supports_prebuilt_extension_modules
-                else "false",
+                "supports_prebuilt_extension_modules": bool_to_str(supports_prebuilt_extension_modules),
             }
 
     print("// This Source Code Form is subject to the terms of the Mozilla Public")
@@ -191,6 +195,10 @@ def main():
         format_record(records["3.12-x86_64-unknown-linux-gnu-pgo"]),
         format_record(records["3.12-x86_64_v2-unknown-linux-gnu-pgo"]),
         format_record(records["3.12-x86_64_v3-unknown-linux-gnu-pgo"]),
+        format_record(records["3.13-aarch64-unknown-linux-gnu-noopt"]),
+        format_record(records["3.13-x86_64-unknown-linux-gnu-pgo"]),
+        format_record(records["3.13-x86_64_v2-unknown-linux-gnu-pgo"]),
+        format_record(records["3.13-x86_64_v3-unknown-linux-gnu-pgo"]),
         "",
         "// Linux musl.",
         format_record(records["3.9-x86_64-unknown-linux-musl-noopt"]),
@@ -205,6 +213,9 @@ def main():
         format_record(records["3.12-x86_64-unknown-linux-musl-noopt"]),
         format_record(records["3.12-x86_64_v2-unknown-linux-musl-noopt"]),
         format_record(records["3.12-x86_64_v3-unknown-linux-musl-noopt"]),
+        format_record(records["3.13-x86_64-unknown-linux-musl-noopt"]),
+        format_record(records["3.13-x86_64_v2-unknown-linux-musl-noopt"]),
+        format_record(records["3.13-x86_64_v3-unknown-linux-musl-noopt"]),
         "",
         "// The order here is important because we will choose the",
         "// first one. We prefer shared distributions on Windows because",
@@ -218,21 +229,25 @@ def main():
         format_record(records["3.10-i686-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.11-i686-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.12-i686-pc-windows-msvc-shared-pgo"]),
+        format_record(records["3.13-i686-pc-windows-msvc-shared-pgo"]),
         "",
         format_record(records["3.9-x86_64-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.10-x86_64-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.11-x86_64-pc-windows-msvc-shared-pgo"]),
         format_record(records["3.12-x86_64-pc-windows-msvc-shared-pgo"]),
+        format_record(records["3.13-x86_64-pc-windows-msvc-shared-pgo"]),
         "",
         "// macOS.",
         format_record(records["3.9-aarch64-apple-darwin-pgo"]),
         format_record(records["3.10-aarch64-apple-darwin-pgo"]),
         format_record(records["3.11-aarch64-apple-darwin-pgo"]),
         format_record(records["3.12-aarch64-apple-darwin-pgo"]),
+        format_record(records["3.13-aarch64-apple-darwin-pgo"]),
         format_record(records["3.9-x86_64-apple-darwin-pgo"]),
         format_record(records["3.10-x86_64-apple-darwin-pgo"]),
         format_record(records["3.11-x86_64-apple-darwin-pgo"]),
         format_record(records["3.12-x86_64-apple-darwin-pgo"]),
+        format_record(records["3.13-x86_64-apple-darwin-pgo"]),
     ]
 
     for line in "\n".join(lines).splitlines(False):
