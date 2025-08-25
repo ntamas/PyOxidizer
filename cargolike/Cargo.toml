@@ -1,0 +1,26 @@
+[package]
+name = "cargolike"
+authors = ["Tamas Nepusz <ntamas@protonmail.ch>"]
+version = "0.1.0"
+edition = "2021"
+license = "Python-2.0 OR MPL-2.0"
+description = "Provides functions to produce output similar to Cargo"
+homepage = "https://github.com/indygreg/PyOxidizer"
+repository = "https://github.com/indygreg/PyOxidizer.git"
+
+[dependencies]
+annotate-snippets = { version = "0.11.5", optional = true }
+anstream = "0.6.18"
+anstyle = "1.0.10"
+anyhow = "1.0.95"
+hostname = { version = "0.4.0", optional = true }
+libc = "0.2.169"
+serde_json = { version = "1.0.135", optional = true }
+supports-hyperlinks = "3.1.0"
+supports-unicode = "3.0.0"
+url = { version = "2.5.4", optional = true }
+
+[features]
+json = ["dep:serde_json"]
+snippets = ["dep:annotate-snippets"]
+url = ["dep:hostname", "dep:url"]
