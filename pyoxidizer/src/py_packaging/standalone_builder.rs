@@ -20,13 +20,7 @@ use {
             find_resources, pip_download, pip_install, read_virtualenv, setup_py_install,
         },
         standalone_distribution::StandaloneDistribution,
-    },
-    crate::environment::Environment,
-    anyhow::{anyhow, Context, Result},
-    log::warn,
-    once_cell::sync::Lazy,
-    pyo3_build_config::{BuildFlag, BuildFlags, PythonImplementation, PythonVersion},
-    python_packaging::{
+    }, crate::{environment::Environment, shell::with_shell}, anyhow::{anyhow, Context, Result}, log::warn, once_cell::sync::Lazy, pyo3_build_config::{BuildFlag, BuildFlags, PythonImplementation, PythonVersion}, python_packaging::{
         bytecode::BytecodeCompiler,
         interpreter::MemoryAllocatorBackend,
         libpython::LibPythonBuildContext,
@@ -43,15 +37,9 @@ use {
             AddResourceAction, PrePackagedResource, PythonResourceAddCollectionContext,
             PythonResourceCollector,
         },
-    },
-    simple_file_manifest::{File, FileData, FileEntry, FileManifest},
-    std::{
-        collections::{BTreeMap, BTreeSet, HashMap},
-        path::{Path, PathBuf},
-        str::FromStr,
-        sync::Arc,
-    },
-    tugger_windows::{find_visual_cpp_redistributable, VcRedistributablePlatform},
+    }, simple_file_manifest::{File, FileData, FileEntry, FileManifest}, std::{
+        collections::{BTreeMap, BTreeSet, HashMap}, path::{Path, PathBuf}, str::FromStr, sync::Arc
+    }, tugger_windows::{find_visual_cpp_redistributable, VcRedistributablePlatform}
 };
 
 /// Libraries that we should not link against on Linux.
@@ -311,7 +299,9 @@ impl StandalonePythonExecutableBuilder {
     ) -> Result<LibpythonLinkSettings> {
         match self.link_mode {
             LibpythonLinkMode::Static => {
-                warn!("generating custom link library containing Python...");
+                with_shell(|log| {
+                    log.status("Linking", "custom library containing Python")
+                })?;
 
                 let mut link_contexts = vec![&self.core_build_context];
                 for c in self.extension_build_contexts.values() {
@@ -885,16 +875,34 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
         env: &Environment,
         opt_level: &str,
     ) -> Result<EmbeddedPythonContext<'_>> {
-        let mut file_seen = false;
-        for module in self.resources_collector.find_dunder_file()? {
-            file_seen = true;
-            warn!("warning: {} contains __file__", module);
-        }
+        let modules_with_dunder_file = self.resources_collector.find_dunder_file()?;
+        let num_modules = modules_with_dunder_file.len();
 
-        if file_seen {
-            warn!("__file__ was encountered in some embedded modules");
-            warn!("PyOxidizer does not set __file__ and this may create problems at run-time");
-            warn!("See https://github.com/indygreg/PyOxidizer/issues/69 for more");
+        if num_modules > 0 {
+            with_shell(|log| -> Result<()> {
+                if num_modules == 1 {
+                    log.warn("__file__ was encountered in 1 embedded module")?;
+                } else {
+                    log.warn(format!(
+                        "__file__ was encountered in {} embedded modules",
+                        num_modules
+                    ))?;
+                }
+
+                log.verbose(|log| {
+                    let mut examples = modules_with_dunder_file.iter().take(5).cloned().collect::<Vec<String>>();
+                    
+                    if modules_with_dunder_file.len() > 5 {
+                        examples.push("...".to_string());
+                    }
+                    
+                    log.warn(examples.join(", "))?;
+                    log.note("PyOxidizer does not set __file__ and this may create problems at run-time")?;
+                    log.note("See https://github.com/indygreg/PyOxidizer/issues/69 for more")?;
+    
+                    Ok(())
+                })
+            })?;
         }
 
         let compiled_resources = {

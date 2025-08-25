@@ -821,7 +821,7 @@ fn starlark_resolve_target(
             return Ok(v);
         }
 
-        warn!("resolving target {}", target);
+        // warn!("resolving target {}", target);
 
         match context.get_target(&target) {
             Some(v) => Ok((*v).clone()),
@@ -892,7 +892,7 @@ fn starlark_resolve_targets(type_values: &TypeValues, call_stack: &mut CallStack
             .ok_or(ValueError::IncorrectParameterType)?;
 
         let targets = context.targets_to_resolve();
-        warn!("resolving {} targets", targets.len());
+        // warn!("resolving {} targets", targets.len());
 
         targets
     };

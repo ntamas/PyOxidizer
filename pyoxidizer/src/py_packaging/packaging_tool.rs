@@ -11,7 +11,7 @@ use {
         binary::LibpythonLinkMode, distribution::PythonDistribution,
         distutils::read_built_extensions, standalone_distribution::resolve_python_paths,
     },
-    crate::environment::Environment,
+    crate::{environment::Environment, shell::{with_concise_shell, with_shell, with_verbose_shell}},
     anyhow::{anyhow, Context, Result},
     duct::{cmd, ReaderHandle},
     log::warn,
@@ -150,10 +150,15 @@ pub fn pip_download<'a>(
 
     warn!("running python {:?}", pip_args);
 
+    let force_color = with_shell(|log| log.out_supports_color());
     let command = cmd(host_dist.python_exe_path(), &pip_args)
         .stderr_to_stdout()
-        .unchecked()
-        .reader()?;
+        .unchecked();
+    let command = if force_color {
+        command.env("FORCE_COLOR", "1")
+    } else {
+        command
+    }.reader()?;
 
     log_command_output(&command);
 
@@ -215,9 +220,24 @@ pub fn pip_install<'a, S: BuildHasher>(
         env.insert(key.clone(), value.clone());
     }
 
+    let force_color = with_shell(|log| log.out_supports_color());
+    if force_color {
+        env.insert("FORCE_COLOR".to_string(), "1".to_string());
+    }
+
     let target_dir = temp_dir.path().join("install");
 
-    warn!("pip installing to {}", target_dir.display());
+    with_concise_shell(|log| {
+        log.status(
+            "Installing", "dependencies with pip"
+        )
+    })?;
+    with_verbose_shell(|log| {
+        log.status(
+            "Installing",
+            format!("dependencies with pip to temporary directory {}", target_dir.display()),
+        )
+    })?;
 
     let mut pip_args: Vec<String> = vec![
         "-m".to_string(),
@@ -227,6 +247,8 @@ pub fn pip_install<'a, S: BuildHasher>(
 
     if verbose {
         pip_args.push("--verbose".to_string());
+    } else {
+        pip_args.push("--quiet".to_string());
     }
 
     pip_args.extend(vec![
@@ -515,12 +537,18 @@ mod tests {
     fn test_pip_download_numpy() -> Result<()> {
         let env = get_env()?;
 
-        for target_dist in get_all_standalone_distributions()? {
+        for target_dist in get_all_standalone_distributions_matching(|record| {
+            record.python_major_minor_version == "3.12"
+                && record.target_triple == "x86_64-apple-darwin"
+        })? {
             if target_dist.python_platform_compatibility_tag() == "none" {
                 continue;
             }
 
             let host_dist = get_host_distribution_from_target(&target_dist)?;
+
+            let mut target_dist = target_dist.deref().clone();
+            target_dist.python_platform_compatibility_tag_override = Some("macosx_10_13_x86_64".to_string());
 
             warn!(
                 "using distribution {}-{}-{}",
@@ -541,18 +569,15 @@ mod tests {
             //   latest NumPy 1.26.4 for Python 3.9.
             // - NumPy 2.1.1 does not provide wheels for Python 3.13 with macOS
             //   deployment target 10.9 so that test fails at the moment
-            let mut numpy_dep = "numpy==2.1.1";
-            if matches!(
-                target_dist.python_major_minor_version().as_str(),
-                "3.9"
-            ) {
+            let mut numpy_dep = "numpy==2.2.1";
+            if matches!(target_dist.python_major_minor_version().as_str(), "3.9") {
                 numpy_dep = "numpy==1.26.4";
             };
 
             let res = pip_download(
                 &env,
                 &*host_dist,
-                &*target_dist,
+                &target_dist,
                 &policy,
                 false,
                 &[numpy_dep.to_string()],

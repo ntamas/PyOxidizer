@@ -5,7 +5,7 @@
 //! Resolve details about the PyOxidizer execution environment.
 
 use {
-    crate::{project_layout::PyembedLocation, py_packaging::distribution::AppleSdkInfo},
+    crate::{project_layout::PyembedLocation, py_packaging::distribution::AppleSdkInfo, shell::{with_shell, with_verbose_shell}},
     anyhow::{anyhow, Context, Result},
     apple_sdk::{AppleSdk, ParsedSdk, SdkSearch, SdkSearchLocation, SdkSorting},
     log::{info, warn},
@@ -324,10 +324,9 @@ impl Environment {
             .map_err(|e| anyhow!("failed to acquire rust environment lock: {}", e))?;
 
         if cached.is_none() {
-            warn!(
-                "ensuring Rust toolchain {} is available",
-                RUST_TOOLCHAIN_VERSION,
-            );
+            with_shell(|log| {
+                log.status("Ensuring", format!("Rust toolchain {} is available", RUST_TOOLCHAIN_VERSION))
+            })?;
 
             let rust_env = if self.managed_rust {
                 // Compiler complains about lifetimes without the closure.
@@ -433,10 +432,15 @@ impl Environment {
         let minimum_version = &sdk_info.version;
         let deployment_target = &sdk_info.deployment_target;
 
-        warn!(
-            "locating Apple SDK {}{}+ supporting {}{}",
-            platform, minimum_version, platform, deployment_target
-        );
+        with_verbose_shell(|log| {
+            log.status(
+                "Locating",
+                format!(
+                    "Apple SDK {}{}+ supporting {}{}",
+                    platform, minimum_version, platform, deployment_target
+                ),
+            )
+        })?;
 
         let sdks = SdkSearch::default()
             .progress_callback(|event| {
@@ -473,12 +477,17 @@ impl Environment {
                 );
         }
 
-        warn!(
-            "using {} targeting {}{}",
-            sdk.sdk_path(),
-            platform,
-            deployment_target
-        );
+        with_verbose_shell(|log| {
+            log.status(
+                "Found",
+                format!(
+                    "{} targeting {}{}",
+                    sdk.sdk_path(),
+                    platform,
+                    deployment_target
+                ),
+            )
+        })?;
 
         Ok(sdk)
     }

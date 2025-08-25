@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use crate::py_packaging::distribution::PythonDistribution;
+use crate::py_packaging::distribution::{PythonDistribution, PythonDistributionRecord};
 use {
     crate::{
         environment::{default_target_triple, Environment},
@@ -113,5 +113,15 @@ pub fn get_all_standalone_distributions_chunk(
         .enumerate()
         .filter(|(i, _)| i % total_chunks == current_chunk)
         .map(|(_, record)| get_distribution(&record.location))
+        .collect::<Result<Vec<_>>>()
+}
+
+/// Obtain all `StandaloneDistribution` which are defined and match a given filter.
+pub fn get_all_standalone_distributions_matching<P>(predicate: P) -> Result<Vec<Arc<StandaloneDistribution>>>
+where P: FnMut(&&PythonDistributionRecord) -> bool {
+    PYTHON_DISTRIBUTIONS
+        .iter()
+        .filter(predicate)
+        .map(|record| get_distribution(&record.location))
         .collect::<Result<Vec<_>>>()
 }

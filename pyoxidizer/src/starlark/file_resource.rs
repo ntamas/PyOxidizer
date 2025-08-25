@@ -12,22 +12,16 @@ use {
     },
     crate::{
         project_building::build_python_executable,
-        py_packaging::{binary::PythonBinaryBuilder, resource::AddToFileManifest},
+        py_packaging::{binary::PythonBinaryBuilder, resource::AddToFileManifest}, shell::with_verbose_shell,
     },
     anyhow::{anyhow, Context, Result},
-    log::warn,
     simple_file_manifest::{FileEntry, FileManifest},
     starlark::{
-        environment::TypeValues,
-        values::{
+        environment::TypeValues, starlark_fun, starlark_module, starlark_parse_param_type, starlark_signature, starlark_signature_extraction, starlark_signatures, values::{
             error::{RuntimeError, ValueError, INCORRECT_PARAMETER_TYPE_ERROR_CODE},
             none::NoneType,
-            {Value, ValueResult},
-        },
-        {
-            starlark_fun, starlark_module, starlark_parse_param_type, starlark_signature,
-            starlark_signature_extraction, starlark_signatures,
-        },
+            Value, ValueResult,
+        }
     },
     std::{ops::DerefMut, path::Path},
     tugger::starlark::file_manifest::FileManifestValue,
@@ -62,7 +56,9 @@ pub fn file_manifest_add_python_executable(
     let mut extra_files = FileManifest::default();
 
     for (path, entry) in build.binary_data.extra_files.iter_entries() {
-        warn!("adding extra file {} to {}", path.display(), prefix);
+        with_verbose_shell(|log| {
+            log.status("Adding", format!("extra file {} to {}", path.display(), prefix))
+        })?;
         extra_files.add_file_entry(&Path::new(use_prefix).join(path), entry.clone())?;
     }
 
@@ -90,7 +86,9 @@ pub fn file_manifest_add_python_resource(
                 Some(m) => Ok(m.inner(LABEL)?.m.clone()),
                 None => Err(ValueError::IncorrectParameterType),
             }?;
-            warn!("adding source module {} to {}", m.name, prefix);
+            with_verbose_shell(|log| {
+                log.status("Adding", format!("source module {} to {}", m.name, prefix))
+            }).unwrap_or_default();
 
             m.add_to_file_manifest(manifest.inner(LABEL)?.deref_mut(), &prefix)
                 .map_err(|e| {
@@ -107,7 +105,10 @@ pub fn file_manifest_add_python_resource(
                 None => Err(ValueError::IncorrectParameterType),
             }?;
 
-            warn!("adding resource file {} to {}", m.symbolic_name(), prefix);
+            with_verbose_shell(|log| {
+                log.status("Adding", format!("resource file {} to {}", m.symbolic_name(), prefix))
+            }).unwrap_or_default();
+
             m.add_to_file_manifest(manifest.inner(LABEL)?.deref_mut(), &prefix)
                 .map_err(|e| {
                     RuntimeError {
@@ -123,10 +124,11 @@ pub fn file_manifest_add_python_resource(
                 Some(m) => Ok(m.inner(LABEL)?.r.clone()),
                 None => Err(ValueError::IncorrectParameterType),
             }?;
-            warn!(
-                "adding package distribution resource file {}:{} to {}",
-                m.package, m.name, prefix
-            );
+
+            with_verbose_shell(|log| {
+                log.status("Adding", format!("package distribution resource file {}:{} to {}", m.package, m.name, prefix))
+            }).unwrap_or_default();
+
             m.add_to_file_manifest(manifest.inner(LABEL)?.deref_mut(), &prefix)
                 .map_err(|e| {
                     ValueError::from(RuntimeError {
@@ -142,7 +144,10 @@ pub fn file_manifest_add_python_resource(
                 None => Err(ValueError::IncorrectParameterType),
             }?;
 
-            warn!("adding extension module {} to {}", extension.name, prefix);
+            with_verbose_shell(|log| {
+                log.status("Adding", format!("extension module {} to {}", extension.name, prefix))
+            }).unwrap_or_default();
+
             extension
                 .add_to_file_manifest(manifest.inner(LABEL)?.deref_mut(), &prefix)
                 .map_err(|e| {
@@ -156,11 +161,11 @@ pub fn file_manifest_add_python_resource(
 
         "PythonExecutable" => match resource.downcast_ref::<PythonExecutableValue>() {
             Some(exe) => {
-                warn!(
-                    "adding Python executable {} to {}",
-                    exe.inner(LABEL)?.name(),
-                    prefix
-                );
+                let label = exe.inner(LABEL)?.name();
+                with_verbose_shell(|log| {
+                    log.status("Adding", format!("Python executable {} to {}", label, prefix))
+                }).unwrap_or_default();
+
                 let exe_manifest_value = exe.to_file_manifest(type_values, prefix)?;
                 let exe_manifest = exe_manifest_value
                     .downcast_ref::<FileManifestValue>()

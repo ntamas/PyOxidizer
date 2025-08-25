@@ -19,6 +19,7 @@ pub mod project_layout;
 pub mod projectmgmt;
 pub mod py_packaging;
 pub mod python_distributions;
+pub mod shell;
 pub mod starlark;
 
 #[cfg(test)]

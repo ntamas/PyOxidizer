@@ -12,6 +12,7 @@ use {
             distribution::AppleSdkInfo,
             embedding::{EmbeddedPythonContext, DEFAULT_PYTHON_CONFIG_FILENAME},
         },
+        shell::{with_shell, with_verbose_shell},
         starlark::eval::{EvaluationContext, EvaluationContextBuilder},
     },
     anyhow::{anyhow, Context, Result},
@@ -297,10 +298,15 @@ pub fn build_executable_with_rust_project<'a>(
     )
     .context("resolving build environment")?;
 
-    warn!(
-        "building with Rust {}",
-        build_env.rust_environment.rust_version.semver
-    );
+    with_verbose_shell(|log| {
+        log.status(
+            "Building",
+            format!(
+                "with Rust {}",
+                build_env.rust_environment.rust_version.semver
+            ),
+        )
+    })?;
 
     let target_base_path = build_path.join("target");
     let target_triple_base_path =
@@ -309,6 +315,12 @@ pub fn build_executable_with_rust_project<'a>(
             .join(if release { "release" } else { "debug" });
 
     let mut args = vec!["build", "--target", target_triple];
+
+    with_shell(|log| {
+        if log.out_supports_color() {
+            args.push("--color=always");
+        }
+    });
 
     let target_dir = target_base_path.display().to_string();
     args.push("--target-dir");
@@ -342,10 +354,10 @@ pub fn build_executable_with_rust_project<'a>(
     log_args.push(build_env.rust_environment.cargo_exe.display().to_string());
     log_args.extend(args.iter().map(|x| x.to_string()));
 
-    warn!(
-        "build command: {}",
-        shlex::try_join(log_args.iter().map(|x| x.as_str()))?
-    );
+    let command = shlex::try_join(log_args.iter().map(|x| x.as_str()))?;
+    with_verbose_shell(|log| {
+        log.note(format!("build command: {}", command))
+    })?;
 
     // TODO force cargo to colorize output under certain circumstances?
     let command = cmd(&build_env.rust_environment.cargo_exe, &args)

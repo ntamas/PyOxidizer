@@ -5,7 +5,7 @@
 //! Licensing functionality.
 
 use {
-    crate::environment::{canonicalize_path, RustEnvironment},
+    crate::{environment::{canonicalize_path, RustEnvironment}, shell::with_shell},
     anyhow::{anyhow, Context, Result},
     cargo_toml::Manifest,
     guppy::{
@@ -60,18 +60,25 @@ pub fn licenses_from_cargo_manifest<'a>(
         .parent()
         .ok_or_else(|| anyhow!("could not determine parent director of manifest"))?;
 
-    if all_features {
-        warn!(
-            "evaluating dependencies for {} using all features",
-            manifest_path.display()
-        );
-    } else {
-        warn!(
-            "evaluating dependencies for {} using features: {}",
-            manifest_path.display(),
-            features.join(", ")
-        );
-    }
+    with_shell(|log| {
+        if all_features {
+            log.status("Evaluating", format!(
+                "dependencies for {} using all features",
+                manifest_path.display()
+            ))
+        } else if !features.is_empty() {
+            log.status("Evaluating", format!(
+                "dependencies for {} using features: {}",
+                manifest_path.display(),
+                features.join(", ")
+            ))
+        } else {
+            log.status("Evaluating", format!(
+                "dependencies for {}",
+                manifest_path.display(),
+            ))
+        }
+    })?;
 
     let manifest = Manifest::from_path(&manifest_path)?;
     let main_package = manifest

@@ -5,14 +5,11 @@
 use {
     crate::{
         environment::{default_target_triple, PYOXIDIZER_VERSION},
-        project_building, projectmgmt,
-    },
-    anyhow::{anyhow, Context, Result},
-    clap::{value_parser, Arg, ArgAction, ArgMatches, Command},
-    std::{
+        project_building, projectmgmt, shell::with_shell,
+    }, anyhow::{anyhow, Context, Result}, cargolike::Verbosity, clap::{value_parser, Arg, ArgAction, ArgMatches, Command}, std::{
         collections::HashMap,
         path::{Path, PathBuf},
-    },
+    }
 };
 
 const BUILD_ABOUT: &str = "\
@@ -218,10 +215,19 @@ pub fn run_cli() -> Result<()> {
         )
         .arg(
             Arg::new("verbose")
+                .short('v')
                 .long("verbose")
                 .global(true)
                 .action(ArgAction::Count)
                 .help("Increase logging verbosity. Can be specified multiple times"),
+        )
+        .arg(
+            Arg::new("quiet")
+                .short('q')
+                .long("quiet")
+                .global(true)
+                .action(ArgAction::SetTrue)
+                .help("Suppress all logging. Takes precedence over --verbose"),
         );
 
     let app = app.subcommand(
@@ -513,13 +519,18 @@ pub fn run_cli() -> Result<()> {
 
     let matches = app.get_matches();
 
-    let verbose = matches.contains_id("verbose");
+    let quiet = matches.get_flag("quiet");
+    let verbose = !quiet && matches.get_count("verbose") > 0;
 
-    let log_level = match matches.get_count("verbose") {
-        0 => log::LevelFilter::Warn,
-        1 => log::LevelFilter::Info,
-        2 => log::LevelFilter::Debug,
-        _ => log::LevelFilter::Trace,
+    let log_level = if quiet {
+        log::LevelFilter::Warn
+    } else {
+        match matches.get_count("verbose") {
+            0 => log::LevelFilter::Warn,
+            1 => log::LevelFilter::Info,
+            2 => log::LevelFilter::Debug,
+            _ => log::LevelFilter::Trace,
+        }
     };
 
     let mut builder = env_logger::Builder::from_env(
@@ -541,6 +552,18 @@ pub fn run_cli() -> Result<()> {
         .subcommand()
         .ok_or_else(|| anyhow!("invalid sub-command"))?;
 
+    with_shell(|log| {
+        log.set_verbosity(
+            if quiet {
+                Verbosity::Quiet
+            } else if !verbose {
+                Verbosity::Normal
+            } else {
+                Verbosity::Verbose
+            }
+        );
+    });
+    
     match command {
         "analyze" => {
             let path = args.get_one::<PathBuf>("path").unwrap();

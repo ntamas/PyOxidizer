@@ -19,8 +19,8 @@ use {
     crate::{
         licensing::licenses_from_cargo_manifest,
         project_building::build_python_executable,
-        py_packaging::binary::PythonBinaryBuilder,
-        py_packaging::binary::{PackedResourcesLoadMode, WindowsRuntimeDllsMode},
+        py_packaging::binary::{PackedResourcesLoadMode, PythonBinaryBuilder, WindowsRuntimeDllsMode},
+        shell::with_shell,
     },
     anyhow::{anyhow, Context, Result},
     linked_hash_map::LinkedHashMap,
@@ -28,19 +28,13 @@ use {
     python_packaging::resource::PythonModuleSource,
     simple_file_manifest::FileData,
     starlark::{
-        environment::TypeValues,
-        eval::call_stack::CallStack,
-        values::{
+        environment::TypeValues, eval::call_stack::CallStack, starlark_fun, starlark_module, starlark_parse_param_type, starlark_signature, starlark_signature_extraction, starlark_signatures, values::{
             error::{
                 RuntimeError, UnsupportedOperation, ValueError, INCORRECT_PARAMETER_TYPE_ERROR_CODE,
             },
             none::NoneType,
-            {Mutable, TypedValue, Value, ValueResult},
-        },
-        {
-            starlark_fun, starlark_module, starlark_parse_param_type, starlark_signature,
-            starlark_signature_extraction, starlark_signatures,
-        },
+            Mutable, TypedValue, Value, ValueResult,
+        }
     },
     starlark_dialect_build_targets::{
         optional_dict_arg, optional_list_arg, optional_str_arg, optional_type_arg,
@@ -804,8 +798,19 @@ impl PythonExecutableValue {
                 true,
             )?;
 
+            let num_components = components.iter_components().count();
+            with_shell(|log| -> Result<()> {
+                if num_components == 1 {
+                    log.status("Adding", "1 licensed component")?;
+                } else {
+                    log.status("Adding", format!("{} licensed components", num_components))?;
+                }
+
+                Ok(())
+            }).unwrap_or(());
+
             for component in components.into_components() {
-                warn!("adding licensed component {}", component.flavor());
+                // warn!("adding licensed component {}", component.flavor());
                 exe.add_licensed_component(component)?;
             }
 

@@ -9,35 +9,16 @@ use {
         python_interpreter_config::PythonInterpreterConfigValue,
         python_packaging_policy::PythonPackagingPolicyValue,
         python_resource::{add_context_for_value, python_resource_to_value},
-    },
-    crate::py_packaging::{
-        distribution::BinaryLibpythonLinkMode,
-        distribution::{
-            default_distribution_location, DistributionFlavor, PythonDistribution,
-            PythonDistributionLocation,
-        },
-    },
-    anyhow::{anyhow, Result},
-    log::{info, warn},
-    python_packaging::{
+    }, crate::{py_packaging::distribution::{default_distribution_location, BinaryLibpythonLinkMode, DistributionFlavor, PythonDistribution, PythonDistributionLocation}, shell::{with_shell, with_verbose_shell}}, anyhow::{anyhow, Result}, cargolike::style::{GOOD, SKIPPED}, python_packaging::{
         policy::PythonPackagingPolicy, resource::PythonResource,
         resource_collection::PythonResourceAddCollectionContext,
-    },
-    starlark::{
-        environment::TypeValues,
-        eval::call_stack::CallStack,
-        values::{
+    }, starlark::{
+        environment::TypeValues, eval::call_stack::CallStack, starlark_fun, starlark_module, starlark_parse_param_type, starlark_signature, starlark_signature_extraction, starlark_signatures, values::{
             error::{RuntimeError, ValueError, INCORRECT_PARAMETER_TYPE_ERROR_CODE},
             none::NoneType,
-            {Mutable, TypedValue, Value, ValueResult},
-        },
-        {
-            starlark_fun, starlark_module, starlark_parse_param_type, starlark_signature,
-            starlark_signature_extraction, starlark_signatures,
-        },
-    },
-    starlark_dialect_build_targets::{optional_str_arg, optional_type_arg},
-    std::{ops::Deref, sync::Arc},
+            Mutable, TypedValue, Value, ValueResult,
+        }
+    }, starlark_dialect_build_targets::{optional_str_arg, optional_type_arg}, std::{ops::Deref, sync::Arc}
 };
 
 /// A Starlark Value wrapper for `PythonDistribution` traits.
@@ -145,10 +126,10 @@ impl PythonDistributionValue {
                 })
             })?;
 
-        warn!(
-            "target Python distribution for {} resolves to: {}",
-            build_target, location
-        );
+        with_verbose_shell(|log| {
+            log.status("Resolved", format!("target Python distribution for {} to: {}",
+            build_target, location))
+        }).unwrap_or(());
 
         Ok(Value::new(PythonDistributionValue::from_location(location)))
     }
@@ -294,13 +275,14 @@ impl PythonDistributionValue {
             .compatible_host_triples()
             .contains(&pyoxidizer_context.build_host_triple)
         {
-            warn!("reusing target Python distribution for host execution");
+            with_shell(|log| {
+                log.status("Reusing", "target Python distribution for host execution")
+            }).unwrap_or(());
             Some(dist.clone())
         } else {
-            info!(
-                "searching for host Python {} distribution",
-                dist.python_major_minor_version()
-            );
+            with_shell(|log| {
+                log.status("Searching", format!("for host Python {} distribution", dist.python_major_minor_version()))
+            }).unwrap_or(());
             let host_dist = pyoxidizer_context
                 .distribution_cache
                 .host_distribution(
@@ -380,7 +362,11 @@ impl PythonDistributionValue {
                 })
             })?
         {
-            info!("{}", action.to_string());
+            with_verbose_shell(|log| {
+                let (status, message) = action.to_status();
+                let color = if action.was_added() { &GOOD } else { &SKIPPED };
+                log.status_with_color(status, message, color)
+            }).unwrap_or(());
         }
 
         Ok(Value::new(PythonExecutableValue::new(builder, policy)))

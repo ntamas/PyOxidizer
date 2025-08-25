@@ -32,6 +32,14 @@ fn format_spdx(id: LicenseId, exception: Option<ExceptionId>, full: bool) -> Str
     }
 }
 
+fn truncate_str(s: &str, max_len: usize) -> String {
+    if s.len() <= max_len {
+        s.to_string()
+    } else {
+        format!("{}...", &s[..max_len])
+    }
+}
+
 /// The type of a license.
 #[derive(Clone, Debug, PartialEq)]
 pub enum LicenseFlavor {
@@ -741,7 +749,7 @@ impl LicensedComponents {
                     lines.push(format!(
                         "* {} has unknown license expression: {}",
                         component.flavor(),
-                        terms.join(", ")
+                        truncate_str(&terms.join(", "), 30)
                     ));
                     have_interesting = true;
                 }

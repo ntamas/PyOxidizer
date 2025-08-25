@@ -612,6 +612,32 @@ pub enum AddResourceAction {
     AddedBuiltinExtensionModule(String),
 }
 
+impl AddResourceAction {
+    pub fn to_status(&self) -> (&'static str, String) {
+        match self {
+            Self::NoInclude(name) => {
+                ("Ignored", format!("adding {} because fails inclusion filter", name))
+            }
+            Self::BytecodeOptimizationLevelMismatch(name) => {
+                ("Ignored", format!("adding Python module bytecode for {} because of optimization level mismatch", name))
+            }
+            Self::Added(name, location) => {
+                ("Added", format!("{} to {}", name, location.to_string()))
+            }
+            Self::AddedBuiltinExtensionModule(name) => {
+                ("Added", format!("builtin Python extension module {}", name))
+            }
+        }
+    }
+
+    pub fn was_added(&self) -> bool {
+        match self {
+            Self::Added(_, _) | Self::AddedBuiltinExtensionModule(_) => true,
+            _ => false
+        }
+    }
+}
+
 impl ToString for AddResourceAction {
     fn to_string(&self) -> String {
         match self {

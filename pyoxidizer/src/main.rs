@@ -36,6 +36,7 @@ mod project_layout;
 mod projectmgmt;
 mod py_packaging;
 mod python_distributions;
+mod shell;
 pub mod starlark;
 #[cfg(test)]
 mod testutil;

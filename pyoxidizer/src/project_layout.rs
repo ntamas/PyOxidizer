@@ -146,7 +146,7 @@ pub fn write_new_cargo_config(project_path: &Path) -> Result<()> {
     let t = HANDLEBARS.render("new-cargo-config.toml", &data)?;
 
     let config_path = cargo_path.join("config.toml");
-    println!("writing {}", config_path.display());
+    // println!("writing {}", config_path.display());
     std::fs::write(&config_path, t)?;
 
     Ok(())
@@ -243,7 +243,7 @@ pub fn write_new_cargo_lock(
         .sort_by(|a, b| a.name.as_str().cmp(b.name.as_str()));
 
     let lock_path = project_path.join("Cargo.lock");
-    println!("writing {}", lock_path.display());
+    // println!("writing {}", lock_path.display());
     std::fs::write(&lock_path, &lock_file.to_string())?;
 
     Ok(())
@@ -254,7 +254,7 @@ pub fn write_new_build_rs(path: &Path, program_name: &str) -> Result<()> {
     data.program_name = Some(program_name.to_string());
     let t = HANDLEBARS.render("new-build.rs", &data)?;
 
-    println!("writing {}", path.display());
+    // println!("writing {}", path.display());
     std::fs::write(path, t)?;
 
     Ok(())
@@ -271,7 +271,7 @@ pub fn write_new_main_rs(path: &Path, windows_subsystem: &str) -> Result<()> {
     );
     let t = HANDLEBARS.render("new-main.rs", &data)?;
 
-    println!("writing {}", path.to_str().unwrap());
+    // println!("writing {}", path.to_str().unwrap());
     let mut fh = std::fs::File::create(path)?;
     fh.write_all(t.as_bytes())?;
 
@@ -302,7 +302,7 @@ pub fn write_new_pyoxidizer_config_file(
 
     let t = HANDLEBARS.render("new-pyoxidizer.bzl", &data)?;
 
-    println!("writing {}", path.to_str().unwrap());
+    // println!("writing {}", path.to_str().unwrap());
     let mut fh = std::fs::File::create(path)?;
     fh.write_all(t.as_bytes())?;
 
@@ -323,13 +323,13 @@ pub fn write_application_manifest(project_dir: &Path, program_name: &str) -> Res
 
     let manifest_path = project_dir.join(format!("{}.exe.manifest", program_name));
     let manifest_data = HANDLEBARS.render("exe.manifest", &data)?;
-    println!("writing {}", manifest_path.display());
+    // println!("writing {}", manifest_path.display());
     let mut fh = std::fs::File::create(&manifest_path)?;
     fh.write_all(manifest_data.as_bytes())?;
 
     let rc_path = project_dir.join(format!("{}-manifest.rc", program_name));
     let rc_data = HANDLEBARS.render("application-manifest.rc", &data)?;
-    println!("writing {}", rc_path.display());
+    // println!("writing {}", rc_path.display());
     let mut fh = std::fs::File::create(&rc_path)?;
     fh.write_all(rc_data.as_bytes())?;
 
