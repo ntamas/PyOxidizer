@@ -458,12 +458,6 @@ pub struct StandaloneDistribution {
     /// PEP 425 Python platform tag.
     pub python_platform_tag: String,
 
-    /// User-defined override of the Python platform compatibility tag.
-    /// None means to derive it from the PEP 425 Python platform tag.
-    /// This can be used by the user to upgrade the platform tag to a later
-    /// macOS deployment version if needed.
-    pub python_platform_compatibility_tag_override: Option<String>,
-
     /// Python version string.
     pub version: String,
 
@@ -1050,7 +1044,6 @@ impl StandaloneDistribution {
             python_tag: pi.python_tag,
             python_abi_tag: pi.python_abi_tag,
             python_platform_tag: pi.python_platform_tag,
-            python_platform_compatibility_tag_override: None,
             version: pi.python_version.clone(),
             python_exe: python_exe_path(dist_dir)?,
             stdlib_path,
@@ -1222,21 +1215,16 @@ impl PythonDistribution for StandaloneDistribution {
             return "none";
         }
 
-        match &self.python_platform_compatibility_tag_override {
-            None => {
-                match self.python_platform_tag.as_str() {
-                    "linux-aarch64" => "manylinux2014_aarch64",
-                    "linux-x86_64" => "manylinux2014_x86_64",
-                    "linux-i686" => "manylinux2014_i686",
-                    "macosx-10.9-x86_64" => "macosx_10_9_x86_64",
-                    "macosx-10.13-x86_64" => "macosx_10_13_x86_64",
-                    "macosx-11.0-arm64" => "macosx_11_0_arm64",
-                    "win-amd64" => "win_amd64",
-                    "win32" => "win32",
-                    p => panic!("unsupported Python platform: {}", p),
-                }
-            },
-            Some(tag) => tag.as_str(),
+        match self.python_platform_tag.as_str() {
+            "linux-aarch64" => "manylinux2014_aarch64",
+            "linux-x86_64" => "manylinux2014_x86_64",
+            "linux-i686" => "manylinux2014_i686",
+            "macosx-10.9-x86_64" => "macosx_10_9_x86_64",
+            "macosx-10.13-x86_64" => "macosx_10_13_x86_64",
+            "macosx-11.0-arm64" => "macosx_11_0_arm64",
+            "win-amd64" => "win_amd64",
+            "win32" => "win32",
+            p => panic!("unsupported Python platform: {}", p),
         }
     }
 

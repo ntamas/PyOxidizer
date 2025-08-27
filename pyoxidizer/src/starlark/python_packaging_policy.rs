@@ -140,6 +140,10 @@ impl TypedValue for PythonPackagingPolicyValue {
             "preferred_extension_module_variants" => {
                 Value::try_from(inner.preferred_extension_module_variants().clone())?
             }
+            "python_platform_compatibility_tag_override" => match inner.python_platform_compatibility_tag_override() {
+                Some(tag_override) => Value::from(tag_override.to_string()),
+                None => Value::from(NoneType::None),
+            },
             "resources_location" => Value::from(inner.resources_location().to_string()),
             "resources_location_fallback" => match inner.resources_location_fallback() {
                 Some(location) => Value::from(location.to_string()),
@@ -175,6 +179,7 @@ impl TypedValue for PythonPackagingPolicyValue {
                 | "include_non_distribution_sources"
                 | "include_test"
                 | "preferred_extension_module_variants"
+                | "python_platform_compatibility_tag_override"
                 | "resources_location"
                 | "resources_location_fallback"
         ))
@@ -234,6 +239,15 @@ impl TypedValue for PythonPackagingPolicyValue {
             }
             "include_test" => {
                 inner.set_include_test(value.to_bool());
+            }
+            "python_platform_compatibility_tag_override" => {
+                if value.get_type() == "NoneType" {
+                    inner.set_python_platform_compatibility_tag_override(None);
+                } else {
+                    inner.set_python_platform_compatibility_tag_override(Some(
+                        value.to_string().as_str().into(),
+                    ));
+                }
             }
             "resources_location" => {
                 inner.set_resources_location(

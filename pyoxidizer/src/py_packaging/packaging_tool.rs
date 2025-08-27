@@ -100,7 +100,7 @@ pub fn find_resources<'a>(
 pub fn pip_download<'a>(
     env: &Environment,
     host_dist: &dyn PythonDistribution,
-    taget_dist: &dyn PythonDistribution,
+    target_dist: &dyn PythonDistribution,
     policy: &PythonPackagingPolicy,
     verbose: bool,
     args: &[String],
@@ -133,16 +133,18 @@ pub fn pip_download<'a>(
         // We download files compatible with the distribution we're targeting.
         format!(
             "--platform={}",
-            taget_dist.python_platform_compatibility_tag()
+            policy.python_platform_compatibility_tag_override().map(|f| f.as_str()).unwrap_or_else(
+                || target_dist.python_platform_compatibility_tag()
+            ),
         ),
-        format!("--python-version={}", taget_dist.python_version()),
+        format!("--python-version={}", target_dist.python_version()),
         format!(
             "--implementation={}",
-            taget_dist.python_implementation_short()
+            target_dist.python_implementation_short()
         ),
     ]);
 
-    if let Some(abi) = taget_dist.python_abi_tag() {
+    if let Some(abi) = target_dist.python_abi_tag() {
         pip_args.push(format!("--abi={}", abi));
     }
 
@@ -185,8 +187,8 @@ pub fn pip_download<'a>(
         let wheel = WheelArchive::from_path(path)?;
 
         res.extend(wheel.python_resources(
-            taget_dist.cache_tag(),
-            &taget_dist.python_module_suffixes()?,
+            target_dist.cache_tag(),
+            &target_dist.python_module_suffixes()?,
             policy.file_scanner_emit_files(),
             policy.file_scanner_classify_files(),
         )?);
@@ -460,17 +462,20 @@ mod tests {
                 target_dist.version
             );
 
-            let policy = target_dist.create_packaging_policy()?;
+            let mut policy = target_dist.create_packaging_policy()?;
+            if target_dist.target_triple().ends_with("-darwin") {
+                // For macOS, allow a deployment target of 10.13 because zstandard
+                // does not publish 10.9 wheels any more
+                policy.set_python_platform_compatibility_tag_override(Some("macosx_10_13_x86_64".to_string()));
+            }
 
-            // - zstandard 0.23.0 does not provide wheels for Python 3.13 with macOS
-            //   deployment target 10.9 so that test fails at the moment
             let resources = pip_download(
                 &env,
                 &*host_dist,
                 &*target_dist,
                 &policy,
                 false,
-                &["zstandard==0.23.0".to_string()],
+                &["zstandard==0.24.0".to_string()],
             )?;
 
             assert!(!resources.is_empty());
@@ -492,7 +497,7 @@ mod tests {
                 "zstandard.backend_c",
                 "zstandard.backend_cffi",
                 "zstandard.py.typed",
-                "zstandard:LICENSE",
+                "zstandard:licenses/LICENSE",
                 "zstandard:METADATA",
                 "zstandard:RECORD",
                 "zstandard:WHEEL",
@@ -547,8 +552,7 @@ mod tests {
 
             let host_dist = get_host_distribution_from_target(&target_dist)?;
 
-            let mut target_dist = target_dist.deref().clone();
-            target_dist.python_platform_compatibility_tag_override = Some("macosx_10_13_x86_64".to_string());
+            let target_dist = target_dist.deref().clone();
 
             warn!(
                 "using distribution {}-{}-{}",
@@ -560,6 +564,7 @@ mod tests {
             let mut policy = target_dist.create_packaging_policy()?;
             policy.set_file_scanner_emit_files(true);
             policy.set_file_scanner_classify_files(true);
+            policy.set_python_platform_compatibility_tag_override(Some("macosx_10_13_x86_64".to_string()));
 
             // Use numpy 2.1.1 as a testbed because this is the latest NumPy
             // that provides wheels for Python 3.12 with macOS deployment
