@@ -22,7 +22,8 @@ Commands:
 
 Options:
       --system-rust  Use a system install of Rust instead of a self-managed Rust installation
-      --verbose...   Increase logging verbosity. Can be specified multiple times
+  -v, --verbose...   Increase logging verbosity. Can be specified multiple times
+  -q, --quiet        Suppress all logging. Takes precedence over --verbose
   -h, --help         Print help (see more with '--help')
   -V, --version      Print version
 
@@ -55,8 +56,11 @@ Options:
       --system-rust
           Use a system install of Rust instead of a self-managed Rust installation
 
-      --verbose...
+  -v, --verbose...
           Increase logging verbosity. Can be specified multiple times
+
+  -q, --quiet
+          Suppress all logging. Takes precedence over --verbose
 
   -h, --help
           Print help (see a summary with '-h')
@@ -77,7 +81,8 @@ Arguments:
 
 Options:
       --system-rust  Use a system install of Rust instead of a self-managed Rust installation
-      --verbose...   Increase logging verbosity. Can be specified multiple times
+  -v, --verbose...   Increase logging verbosity. Can be specified multiple times
+  -q, --quiet        Suppress all logging. Takes precedence over --verbose
   -h, --help         Print help
 
 ```
@@ -109,13 +114,16 @@ Options:
       --release
           Build a release binary
 
-      --verbose...
+  -v, --verbose...
           Increase logging verbosity. Can be specified multiple times
 
       --path <PATH>
           Directory containing project to build
           
           [default: .]
+
+  -q, --quiet
+          Suppress all logging. Takes precedence over --verbose
 
       --var <name> <value>
           Defines a single string key to set in the VARS global dict.
@@ -160,7 +168,8 @@ Usage: pyoxidizer[EXE] cache-clear [OPTIONS]
 
 Options:
       --system-rust  Use a system install of Rust instead of a self-managed Rust installation
-      --verbose...   Increase logging verbosity. Can be specified multiple times
+  -v, --verbose...   Increase logging verbosity. Can be specified multiple times
+  -q, --quiet        Suppress all logging. Takes precedence over --verbose
   -h, --help         Print help
 
 ```
@@ -201,8 +210,11 @@ Options:
       --scan-distribution
           Scan the Python distribution instead of a path
 
-      --verbose...
+  -v, --verbose...
           Increase logging verbosity. Can be specified multiple times
+
+  -q, --quiet
+          Suppress all logging. Takes precedence over --verbose
 
       --target-triple <target_triple>
           Target triple of Python distribution to use
@@ -265,11 +277,14 @@ Options:
           
           [default: standalone]
 
-      --verbose...
+  -v, --verbose...
           Increase logging verbosity. Can be specified multiple times
 
       --python-version <python_version>
           Python version (X.Y) to use
+
+  -q, --quiet
+          Suppress all logging. Takes precedence over --verbose
 
   -h, --help
           Print help (see a summary with '-h')
@@ -289,7 +304,8 @@ Options:
       --python-code <python-code>  Default Python code to execute in built executable
       --system-rust                Use a system install of Rust instead of a self-managed Rust installation
       --pip-install <pip-install>  Python package to install via `pip install`
-      --verbose...                 Increase logging verbosity. Can be specified multiple times
+  -v, --verbose...                 Increase logging verbosity. Can be specified multiple times
+  -q, --quiet                      Suppress all logging. Takes precedence over --verbose
   -h, --help                       Print help
 
 ```
@@ -324,8 +340,11 @@ Options:
       --system-rust
           Use a system install of Rust instead of a self-managed Rust installation
 
-      --verbose...
+  -v, --verbose...
           Increase logging verbosity. Can be specified multiple times
+
+  -q, --quiet
+          Suppress all logging. Takes precedence over --verbose
 
   -h, --help
           Print help (see a summary with '-h')
@@ -343,7 +362,8 @@ Arguments:
 
 Options:
       --system-rust  Use a system install of Rust instead of a self-managed Rust installation
-      --verbose...   Increase logging verbosity. Can be specified multiple times
+  -v, --verbose...   Increase logging verbosity. Can be specified multiple times
+  -q, --quiet        Suppress all logging. Takes precedence over --verbose
   -h, --help         Print help
 
 ```
@@ -364,8 +384,10 @@ Options:
           Use a system install of Rust instead of a self-managed Rust installation
       --archive-path <DISTRIBUTION_PATH>
           Path to a Python distribution archive
-      --verbose...
+  -v, --verbose...
           Increase logging verbosity. Can be specified multiple times
+  -q, --quiet
+          Suppress all logging. Takes precedence over --verbose
   -h, --help
           Print help
 
@@ -382,7 +404,8 @@ Arguments:
 
 Options:
       --system-rust  Use a system install of Rust instead of a self-managed Rust installation
-      --verbose...   Increase logging verbosity. Can be specified multiple times
+  -v, --verbose...   Increase logging verbosity. Can be specified multiple times
+  -q, --quiet        Suppress all logging. Takes precedence over --verbose
   -h, --help         Print help
 
 ```
@@ -398,7 +421,8 @@ Arguments:
 
 Options:
       --system-rust  Use a system install of Rust instead of a self-managed Rust installation
-      --verbose...   Increase logging verbosity. Can be specified multiple times
+  -v, --verbose...   Increase logging verbosity. Can be specified multiple times
+  -q, --quiet        Suppress all logging. Takes precedence over --verbose
   -h, --help         Print help
 
 ```
@@ -423,13 +447,16 @@ Options:
       --release
           Run a release binary
 
-      --verbose...
+  -v, --verbose...
           Increase logging verbosity. Can be specified multiple times
 
       --path <PATH>
           Directory containing project to build
           
           [default: .]
+
+  -q, --quiet
+          Suppress all logging. Takes precedence over --verbose
 
       --target <target>
           Build target to run
@@ -494,6 +521,9 @@ Options:
       --target <target>
           The config file target to resolve
 
+  -v, --verbose...
+          Increase logging verbosity. Can be specified multiple times
+
       --var <name> <value>
           Defines a single string key to set in the VARS global dict.
           
@@ -509,8 +539,8 @@ Options:
           If a Starlark variable is defined multiple times, an error occurs.
           
 
-      --verbose...
-          Increase logging verbosity. Can be specified multiple times
+  -q, --quiet
+          Suppress all logging. Takes precedence over --verbose
 
       --var-env <name> <env>
           Defines a single string key to set in the VARS global dict from an environment variable.
@@ -545,7 +575,8 @@ Options:
       --all-features                   Activate all crate features during evaluation
       --system-rust                    Use a system install of Rust instead of a self-managed Rust installation
       --target-triple <target_triple>  Rust target triple to simulate building for
-      --verbose...                     Increase logging verbosity. Can be specified multiple times
+  -v, --verbose...                     Increase logging verbosity. Can be specified multiple times
+  -q, --quiet                          Suppress all logging. Takes precedence over --verbose
       --unified-license                Print a unified license document
   -h, --help                           Print help
 
