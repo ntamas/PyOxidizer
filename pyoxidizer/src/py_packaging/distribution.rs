@@ -12,10 +12,9 @@ use {
         config::PyembedPythonInterpreterConfig,
         standalone_distribution::StandaloneDistribution,
     },
-    crate::{environment::Environment, python_distributions::PYTHON_DISTRIBUTIONS},
+    crate::{environment::Environment, python_distributions::PYTHON_DISTRIBUTIONS, shell::{with_shell}},
     anyhow::{anyhow, Context, Result},
     fs2::FileExt,
-    log::info,
     python_packaging::{
         bytecode::PythonBytecodeCompiler, module_util::PythonModuleSuffixes,
         policy::PythonPackagingPolicy, resource::PythonResource,
@@ -25,8 +24,7 @@ use {
     std::{
         collections::HashMap,
         fmt::{Display, Formatter},
-        fs,
-        fs::{create_dir_all, File},
+        fs::{self, create_dir_all, File},
         io::Read,
         ops::DerefMut,
         path::{Path, PathBuf},
@@ -422,9 +420,13 @@ pub fn resolve_python_distribution_from_location(
     location: &PythonDistributionLocation,
     distributions_dir: &Path,
 ) -> Result<(PathBuf, PathBuf)> {
-    info!("resolving Python distribution {}", location);
+    with_shell(|log| {
+        log.status("Resolving", format!("Python distribution {}", location))
+    })?;
     let path = resolve_python_distribution_archive(location, distributions_dir)?;
-    info!("Python distribution available at {}", path.display());
+    with_shell(|log| {
+        log.note(format!("Python distribution available at {}", path.display()))
+    })?;
 
     let distribution_hash = match location {
         PythonDistributionLocation::Local { sha256, .. } => sha256,
