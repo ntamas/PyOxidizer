@@ -1469,17 +1469,22 @@ impl PythonDistribution for StandaloneDistribution {
                         .sort_by(|a, b| a.file_name().cmp(b.file_name()))
                         .into_iter()
                     {
-                        let entry = entry?;
+                        if let Ok(entry) = entry {
+                            let path = entry.path();
 
-                        let path = entry.path();
+                            if path.is_dir() {
+                                continue;
+                            }
 
-                        if path.is_dir() {
-                            continue;
+                            let rel_path = path.strip_prefix(root)?;
+
+                            res.push((rel_path.to_path_buf(), FileEntry::try_from(path)?));
+                        } else {
+                            with_shell(|log| {
+                                log.error(format!("failed to read {:?} from Python distribution", root.join(subdir)))
+                            })?;
+                            entry.context(format!("reading {:?}", root.join(subdir)))?;
                         }
-
-                        let rel_path = path.strip_prefix(root)?;
-
-                        res.push((rel_path.to_path_buf(), FileEntry::try_from(path)?));
                     }
                 }
             }
