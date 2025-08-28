@@ -904,11 +904,17 @@ impl StandaloneDistribution {
 
                 if let Some(license_paths) = &entry.license_paths {
                     for path in license_paths {
-                        let path = python_path.join(path);
-                        let text = std::fs::read_to_string(&path)
-                            .with_context(|| format!("reading {}", path.display()))?;
+                        let full_path = python_path.join(path);
+                        let text = std::fs::read_to_string(&full_path)
+                            .with_context(|| format!("reading {}", full_path.display())).ok();
 
-                        license.add_license_text(text);
+                        if let Some(text) = text {
+                            license.add_license_text(text);
+                        } else {
+                            with_shell(|log| {
+                                log.warn(format!("failed to read {} from Python distribution", path)).unwrap_or_default();
+                            });
+                        }
                     }
                 }
 
