@@ -19,7 +19,10 @@ serde_json = { version = "1.0.135", optional = true }
 supports-hyperlinks = "3.1.0"
 supports-unicode = "3.0.0"
 url = { version = "2.5.4", optional = true }
-windows-sys = { version = "0.60.2", features = ["Win32_Storage"] }
+windows-sys = { version = "0.61.1", features = [
+  "Win32_Storage",
+  "Win32_Storage_FileSystem",
+] }
 
 [features]
 json = ["dep:serde_json"]
