@@ -20,7 +20,7 @@ search = "PYOXIDIZER_VERSION = .*"
 replace = "PYOXIDIZER_VERSION = \"{{version}}\""
 exactly = 1
 
-[[package.metadata.release.pre-release-replacmenets]]
+[[package.metadata.release.pre-release-replacements]]
 file = "docs/pyoxidizer_history.rst"
 search = "Next\n----"
 replace = "{{version}}\n------"

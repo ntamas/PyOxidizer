@@ -15,7 +15,7 @@ search = "\\(Not yet released\\)"
 replace = "Released {{date}}"
 exactly = 1
 
-[[package.metadata.release.pre-release-replacmenets]]
+[[package.metadata.release.pre-release-replacements]]
 file = "docs/oxidized_importer_history.rst"
 search = "Next\n----"
 replace = "{{version}}\n------"
@@ -58,7 +58,11 @@ features = ["deflate"]
 
 [target.'cfg(windows)'.dependencies]
 memory-module-sys = "0.3.0"
-winapi = { version = "0.3.9", features = ["libloaderapi", "memoryapi", "minwindef"] }
+winapi = { version = "0.3.9", features = [
+  "libloaderapi",
+  "memoryapi",
+  "minwindef",
+] }
 
 [build-dependencies]
 pyo3-build-config = { version = "0.25.1", features = ["resolve-config"] }
