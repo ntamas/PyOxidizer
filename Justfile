@@ -15,6 +15,18 @@ macosx_deployment_target := if os() == "macos" {
   ""
 }
 
+lipo_command := if os() == "macos" {
+  "lipo"
+} else {
+  "llvm-lipo-14"
+}
+
+tar_command := if os() == "macos" {
+  "gtar"
+} else {
+  "tar"
+}
+
 actions-install-sccache-linux:
   python3 scripts/secure_download.py \
     https://github.com/mozilla/sccache/releases/download/v0.3.3/sccache-v0.3.3-x86_64-unknown-linux-musl.tar.gz \
@@ -55,9 +67,9 @@ actions-macos-universal exe:
   set -eo pipefail
 
   mkdir -p uploads
-  lipo {{exe}}-x86-64/{{exe}} {{exe}}-aarch64/{{exe}} -create -output uploads/{{exe}}
+  {{lipo_command}} {{exe}}-x86-64/{{exe}} {{exe}}-aarch64/{{exe}} -create -output uploads/{{exe}}
   chmod +x uploads/{{exe}}
-  lipo uploads/{{exe}} -info
+  {{lipo_command}} uploads/{{exe}} -info
 
   # There might be a COPYING file with licensing info. If so, preserve it.
   if [ -e "{{exe}}-aarch64/COPYING" ]; then
@@ -202,7 +214,8 @@ notarize path:
     {{path}}
 
 _tar_directory source_directory dir_name dest_dir:
-  tar \
+  # We need GNU tar here so we use tar on Linux and gtar on macOS
+  {{tar_command}} \
     --sort=name \
     --owner=root:0 \
     --group=root:0 \
@@ -222,7 +235,7 @@ _zip_directory source_directory dir_name dest_dir:
 
 _release_universal_binary project tag exe:
   mkdir -p dist/{{project}}-stage/{{project}}-{{tag}}-macos-universal
-  llvm-lipo-14 \
+  {{lipo_command}} \
     -create \
     -output dist/{{project}}-stage/{{project}}-{{tag}}-macos-universal/{{exe}} \
     dist/{{project}}-stage/{{project}}-{{tag}}-aarch64-apple-darwin/{{exe}} \
