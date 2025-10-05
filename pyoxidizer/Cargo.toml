@@ -1,6 +1,6 @@
 [package]
 name = "pyoxidizer"
-version = "0.24.0"
+version = "0.125.0"
 authors = [
   "Gregory Szorc <gregory.szorc@gmail.com>",
   "Tamas Nepusz <ntamas@protonmail.ch>",

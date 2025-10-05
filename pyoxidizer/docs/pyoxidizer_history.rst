@@ -33,6 +33,11 @@ Next
 
 (Not yet released)
 
+0.125.0
+------
+
+Released 2025-10-05
+
 Backwards Compatibility Notes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
