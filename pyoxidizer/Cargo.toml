@@ -96,44 +96,44 @@ which = "8.0.0"
 zstd = "0.13.3"
 
 [dependencies.python-packaging]
-version = "0.16.0-pre"
+version = "0.17.0"
 path = "../python-packaging"
 features = ["spdx-text"]
 
 [dependencies.python-packed-resources]
-version = "0.12.0-pre"
+version = "0.13.0"
 path = "../python-packed-resources"
 
 [dependencies.starlark-dialect-build-targets]
-version = "0.8.0-pre"
+version = "0.9.0"
 path = "../starlark-dialect-build-targets"
 
 [dependencies.tugger-binary-analysis]
-version = "0.7.0-pre"
+version = "0.8.0"
 path = "../tugger-binary-analysis"
 
 [dependencies.tugger-code-signing]
-version = "0.10.0-pre"
+version = "0.11.0"
 path = "../tugger-code-signing"
 
 [dependencies.tugger-common]
-version = "0.10.0-pre"
+version = "0.11.0"
 path = "../tugger-common"
 
 [dependencies.tugger-rust-toolchain]
-version = "0.13.0-pre"
+version = "0.14.0"
 path = "../tugger-rust-toolchain"
 
 [dependencies.tugger-windows]
-version = "0.10.0-pre"
+version = "0.11.0"
 path = "../tugger-windows"
 
 [dependencies.tugger-wix]
-version = "0.16.0-pre"
+version = "0.17.0"
 path = "../tugger-wix"
 
 [dependencies.tugger]
-version = "0.18.0-pre"
+version = "0.19.0"
 path = "../tugger"
 
 [dev-dependencies]

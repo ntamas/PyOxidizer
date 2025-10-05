@@ -1,6 +1,6 @@
 [package]
 name = "tugger-wix"
-version = "0.16.0"
+version = "0.17.0"
 authors = ["Gregory Szorc <gregory.szorc@gmail.com>"]
 edition = "2021"
 license = "MPL-2.0"
@@ -22,15 +22,15 @@ uuid = { version = "1.17.0", features = ["v4", "v5"] }
 xml-rs = "0.8.27"
 
 [dependencies.tugger-common]
-version = "0.10.0-pre"
+version = "0.11.0"
 path = "../tugger-common"
 
 [dependencies.tugger-windows-codesign]
-version = "0.10.0-pre"
+version = "0.11.0"
 path = "../tugger-windows-codesign"
 
 [dependencies.tugger-windows]
-version = "0.10.0-pre"
+version = "0.11.0"
 path = "../tugger-windows"
 
 [dev-dependencies]

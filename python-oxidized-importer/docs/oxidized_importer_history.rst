@@ -16,6 +16,11 @@ Next
 
 (Not yet released)
 
+0.10.0
+------
+
+Released 2025-10-05
+
 * PyO3 upgraded from 0.17 to 0.25.1.
 * Added support for Python versions up to and including 3.12.
 * Disable in-memory extension import for Python 3.13 on Windows until

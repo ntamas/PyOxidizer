@@ -1357,7 +1357,7 @@ dependencies = [
 
 [[package]]
 name = "cargolike"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "annotate-snippets",
  "anstream",
@@ -4884,7 +4884,7 @@ checksum = "007d8adb5ddab6f8e3f491ac63566a7d5002cc7ed73901f72057943fa71ae1ae"
 
 [[package]]
 name = "pyembed"
-version = "0.25.0-pre"
+version = "0.26.0"
 dependencies = [
  "anyhow",
  "dunce",
@@ -5065,7 +5065,7 @@ dependencies = [
 
 [[package]]
 name = "python-oxidized-importer"
-version = "0.9.0-pre"
+version = "0.10.0"
 dependencies = [
  "anyhow",
  "memmap2",
@@ -5082,7 +5082,7 @@ dependencies = [
 
 [[package]]
 name = "python-packaging"
-version = "0.16.0-pre"
+version = "0.17.0"
 dependencies = [
  "anyhow",
  "base64 0.22.1",
@@ -5105,7 +5105,7 @@ dependencies = [
 
 [[package]]
 name = "python-packed-resources"
-version = "0.12.0-pre"
+version = "0.13.0"
 dependencies = [
  "anyhow",
  "byteorder",
@@ -6381,7 +6381,7 @@ dependencies = [
 
 [[package]]
 name = "starlark-dialect-build-targets"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "codemap",
@@ -6911,7 +6911,7 @@ dependencies = [
 
 [[package]]
 name = "tugger"
-version = "0.18.0"
+version = "0.19.0"
 dependencies = [
  "anyhow",
  "apple-bundles",
@@ -6944,7 +6944,7 @@ dependencies = [
 
 [[package]]
 name = "tugger-apple"
-version = "0.8.0"
+version = "0.9.0"
 dependencies = [
  "anyhow",
  "goblin 0.10.1",
@@ -6954,7 +6954,7 @@ dependencies = [
 
 [[package]]
 name = "tugger-binary-analysis"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "anyhow",
  "byteorder",
@@ -6965,7 +6965,7 @@ dependencies = [
 
 [[package]]
 name = "tugger-code-signing"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "anyhow",
  "apple-bundles",
@@ -6986,7 +6986,7 @@ dependencies = [
 
 [[package]]
 name = "tugger-common"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "anyhow",
  "fs2",
@@ -7003,7 +7003,7 @@ dependencies = [
 
 [[package]]
 name = "tugger-rust-toolchain"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "anyhow",
  "dirs 6.0.0",
@@ -7025,7 +7025,7 @@ dependencies = [
 
 [[package]]
 name = "tugger-snapcraft"
-version = "0.15.0"
+version = "0.16.0"
 dependencies = [
  "anyhow",
  "duct",
@@ -7039,7 +7039,7 @@ dependencies = [
 
 [[package]]
 name = "tugger-windows"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "anyhow",
  "duct",
@@ -7053,7 +7053,7 @@ dependencies = [
 
 [[package]]
 name = "tugger-windows-codesign"
-version = "0.10.0"
+version = "0.11.0"
 dependencies = [
  "anyhow",
  "der-parser",
@@ -7070,7 +7070,7 @@ dependencies = [
 
 [[package]]
 name = "tugger-wix"
-version = "0.16.0"
+version = "0.17.0"
 dependencies = [
  "anyhow",
  "duct",

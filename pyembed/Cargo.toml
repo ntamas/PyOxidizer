@@ -3,7 +3,7 @@ name = "pyembed"
 # Remember to keep this version string in sync with the PYEMBED_CRATE_VERSION
 # constant in pyoxidizer's environment.rs. The release automation should do
 # this automatically.
-version = "0.25.0-pre"
+version = "0.26.0"
 authors = ["Gregory Szorc <gregory.szorc@gmail.com>"]
 edition = "2021"
 license = "Python-2.0 OR MPL-2.0"
@@ -46,7 +46,7 @@ features = [
 optional = true
 
 [dependencies.python-oxidized-importer]
-version = "0.9.0-pre"
+version = "0.10.0"
 path = "../python-oxidized-importer"
 default-features = false
 
@@ -56,7 +56,7 @@ default-features = false
 features = ["macros"]
 
 [dependencies.python-packaging]
-version = "0.16.0-pre"
+version = "0.17.0"
 path = "../python-packaging"
 default-features = false
 
@@ -68,7 +68,7 @@ pathdiff = "0.2.3"
 rusty-fork = "0.3.0"
 
 [dev-dependencies.python-packed-resources]
-version = "0.12.0-pre"
+version = "0.13.0"
 path = "../python-packed-resources"
 
 [features]

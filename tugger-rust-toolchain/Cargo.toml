@@ -1,6 +1,6 @@
 [package]
 name = "tugger-rust-toolchain"
-version = "0.13.0"
+version = "0.14.0"
 authors = ["Gregory Szorc <gregory.szorc@gmail.com>"]
 edition = "2021"
 license = "MPL-2.0"
@@ -26,7 +26,7 @@ xz2 = { version = "0.1.7", features = ["static"] }
 zstd = "0.13.3"
 
 [dependencies.tugger-common]
-version = "0.10.0-pre"
+version = "0.11.0"
 path = "../tugger-common"
 
 [dev-dependencies]

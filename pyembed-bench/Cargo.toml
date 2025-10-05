@@ -20,7 +20,7 @@ tempfile = "3.20.0"
 zip = { version = "4.3.0", default-features = false, features = ["deflate"] }
 
 [dependencies.pyembed]
-version = "0.25.0-pre"
+version = "0.26.0"
 path = "../pyembed"
 default-features = false
 features = ["zipimport"]
@@ -30,17 +30,17 @@ version = "0.24.0-pre"
 path = "../pyoxidizer"
 
 [dependencies.python-oxidized-importer]
-version = "0.9.0-pre"
+version = "0.10.0"
 path = "../python-oxidized-importer"
 default-features = false
 features = ["zipimport"]
 
 [dependencies.python-packaging]
-version = "0.16.0-pre"
+version = "0.17.0"
 path = "../python-packaging"
 
 [dependencies.python-packed-resources]
-version = "0.12.0-pre"
+version = "0.13.0"
 path = "../python-packed-resources"
 
 [dev-dependencies]

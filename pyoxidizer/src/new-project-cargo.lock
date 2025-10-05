@@ -258,7 +258,7 @@ dependencies = [
 
 [[package]]
 name = "pyembed"
-version = "0.25.0-pre"
+version = "0.26.0"
 dependencies = [
  "anyhow",
  "dunce",
@@ -337,7 +337,7 @@ dependencies = [
 
 [[package]]
 name = "python-oxidized-importer"
-version = "0.9.0-pre"
+version = "0.10.0"
 dependencies = [
  "anyhow",
  "memmap2",
@@ -353,7 +353,7 @@ dependencies = [
 
 [[package]]
 name = "python-packaging"
-version = "0.16.0-pre"
+version = "0.17.0"
 dependencies = [
  "anyhow",
  "byteorder",
@@ -370,7 +370,7 @@ dependencies = [
 
 [[package]]
 name = "python-packed-resources"
-version = "0.12.0-pre"
+version = "0.13.0"
 dependencies = [
  "anyhow",
  "byteorder",

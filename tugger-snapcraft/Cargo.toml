@@ -1,6 +1,6 @@
 [package]
 name = "tugger-snapcraft"
-version = "0.15.0"
+version = "0.16.0"
 authors = ["Gregory Szorc <gregory.szorc@gmail.com>"]
 edition = "2021"
 license = "MPL-2.0"
@@ -20,5 +20,5 @@ serde = { version = "1.0.219", features = ["derive"] }
 simple-file-manifest = "0.11.0"
 
 [dependencies.tugger-common]
-version = "0.10.0-pre"
+version = "0.11.0"
 path = "../tugger-common"

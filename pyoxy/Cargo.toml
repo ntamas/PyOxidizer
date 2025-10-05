@@ -22,7 +22,7 @@ serde = { version = "1.0.219", features = ["derive"] }
 serde_yaml = "0.9.34"
 
 [dependencies.pyembed]
-version = "0.25.0-pre"
+version = "0.26.0"
 path = "../pyembed"
 default-features = false
 features = ["serialization", "zipimport"]
