@@ -301,7 +301,7 @@ pyoxy-release-prepare commit tag:
 
       case ${triple} in
         *apple* | macos-universal)
-          just _codesign-exe ${dest}/pyoxy
+          # just _codesign-exe ${dest}/pyoxy
           ;;
         *)
           ;;
@@ -466,12 +466,12 @@ pyoxidizer-release-prepare commit tag:
   just _tar_directory dist/pyoxidizer-stage pyoxidizer-{{tag}}-macos-universal dist/pyoxidizer
 
   # The DMG is created using the signed binaries.
-  for triple in aarch64-apple-darwin x86_64-apple-darwin; do
-    ssh macmini mkdir -p /Users/gps/src/PyOxidizer/target/${triple}/release
-    scp dist/pyoxidizer-stage/pyoxidizer-{{tag}}-${triple}/pyoxidizer macmini:~/src/PyOxidizer/target/${triple}/release/
-  done
-  ssh macmini just -d /Users/gps/src/PyOxidizer -f /Users/gps/src/PyOxidizer/Justfile pyoxidizer-create-dmg
-  scp macmini:~/src/PyOxidizer/PyOxidizer.dmg dist/pyoxidizer/PyOxidizer-{{tag}}.dmg
+  # for triple in aarch64-apple-darwin x86_64-apple-darwin; do
+  #   ssh macmini mkdir -p /Users/gps/src/PyOxidizer/target/${triple}/release
+  #   scp dist/pyoxidizer-stage/pyoxidizer-{{tag}}-${triple}/pyoxidizer macmini:~/src/PyOxidizer/target/${triple}/release/
+  # done
+  # ssh macmini just -d /Users/gps/src/PyOxidizer -f /Users/gps/src/PyOxidizer/Justfile pyoxidizer-create-dmg
+  # scp macmini:~/src/PyOxidizer/PyOxidizer.dmg dist/pyoxidizer/PyOxidizer-{{tag}}.dmg
 
   just _create_shasums dist/pyoxidizer
 
