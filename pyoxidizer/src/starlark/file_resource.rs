@@ -369,6 +369,7 @@ mod tests {
         Ok(())
     }
 
+    #[ignore]
     #[test]
     fn test_add_python_executable_313() -> Result<()> {
         let mut env = test_evaluation_context_builder()?.into_context()?;

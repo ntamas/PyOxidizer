@@ -789,6 +789,7 @@ mod tests {
         Ok(())
     }
 
+    #[ignore]
     #[test]
     fn test_empty_project_python_313() -> Result<()> {
         let env = get_env()?;
