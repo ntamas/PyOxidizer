@@ -164,7 +164,7 @@ fn command_generate_new_project_cargo_lock(repo_root: &Path, _args: &ArgMatches)
 }
 
 fn command_synchronize_generated_files(repo_root: &Path) -> Result<()> {
-    let cargo_lock = generate_new_project_cargo_lock(repo_root, false)?;
+    let cargo_lock = generate_new_project_cargo_lock(repo_root, true)?;
     documentation::generate_sphinx_files(repo_root)?;
 
     let pyoxidizer_src_path = repo_root.join("pyoxidizer").join("src");
