@@ -30,17 +30,17 @@ version = "0.125.0"
 path = "../pyoxidizer"
 
 [dependencies.python-oxidized-importer]
-version = "0.10.0"
+version = "0.11.0-pre"
 path = "../python-oxidized-importer"
 default-features = false
 features = ["zipimport"]
 
 [dependencies.python-packaging]
-version = "0.17.0"
+version = "0.18.0-pre"
 path = "../python-packaging"
 
 [dependencies.python-packed-resources]
-version = "0.13.0"
+version = "0.14.0-pre"
 path = "../python-packed-resources"
 
 [dev-dependencies]

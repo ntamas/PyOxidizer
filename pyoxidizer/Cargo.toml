@@ -96,12 +96,12 @@ which = "8.0.0"
 zstd = "0.13.3"
 
 [dependencies.python-packaging]
-version = "0.17.0"
+version = "0.18.0-pre"
 path = "../python-packaging"
 features = ["spdx-text"]
 
 [dependencies.python-packed-resources]
-version = "0.13.0"
+version = "0.14.0-pre"
 path = "../python-packed-resources"
 
 [dependencies.starlark-dialect-build-targets]
