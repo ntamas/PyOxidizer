@@ -426,7 +426,7 @@ pyoxidizer-release-prepare commit tag:
 
     case ${triple} in
       *apple*)
-        sign_command="just _codesign-exe ${dest}/${exe}"
+        # sign_command="just _codesign-exe ${dest}/${exe}"
         ;;
       *windows*)
         exe=pyoxidizer.exe
