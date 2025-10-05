@@ -16,7 +16,7 @@ use {
     crate::{
         manifest::Manifest,
         tar::{read_installs_manifest, PackageArchive},
-    }, anyhow::{anyhow, Context, Result}, fs2::FileExt, log::warn, once_cell::sync::Lazy, pgp::composed::{Deserializable, SignedPublicKey, StandaloneSignature}, sha2::Digest, std::{
+    }, anyhow::{anyhow, Context, Result}, fs2::FileExt, log::warn, once_cell::sync::Lazy, pgp::composed::{Deserializable, DetachedSignature, SignedPublicKey}, sha2::Digest, std::{
         io::{Cursor, Read},
         path::{Path, PathBuf},
     }, tugger_common::http::{download_and_verify, download_to_path, get_http_client}
@@ -78,7 +78,7 @@ pub fn fetch_channel_manifest(channel: &str) -> Result<Manifest> {
 
     warn!("verified SHA-256 digest for {}", manifest_url);
 
-    let (signatures, _) = StandaloneSignature::from_armor_many(Cursor::new(&signature_data))
+    let (signatures, _) = DetachedSignature::from_armor_many(Cursor::new(&signature_data))
         .with_context(|| format!("parsing {} armored signature data", signature_url))?;
 
     for signature in signatures {
