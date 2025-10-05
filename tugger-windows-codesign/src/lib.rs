@@ -11,7 +11,7 @@ pub use signtool::*;
 
 /// Defines a specific Windows certificate system store.
 ///
-/// See https://docs.microsoft.com/en-us/windows/win32/seccrypto/system-store-locations
+/// See <https://docs.microsoft.com/en-us/windows/win32/seccrypto/system-store-locations>
 /// for meanings.
 #[derive(Clone, Copy, Debug)]
 pub enum SystemStore {

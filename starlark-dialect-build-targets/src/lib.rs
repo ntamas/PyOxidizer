@@ -101,7 +101,7 @@ pub struct Target {
 
     /// The `ResolvedTarget` instance this target's build() returned.
     ///
-    /// TODO consider making this an Arc<T> so we don't have to clone it.
+    /// TODO consider making this an `Arc<T>` so we don't have to clone it.
     pub built_target: Option<ResolvedTarget>,
 }
 
