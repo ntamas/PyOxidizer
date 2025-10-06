@@ -432,12 +432,33 @@ impl Environment {
         let minimum_version = &sdk_info.version;
         let deployment_target = &sdk_info.deployment_target;
 
+        // Allow the user to override the deployment target via the standard
+        // MACOSX_DEPLOYMENT_TARGET environment variable if the target is newer
+        // than what the Python distribution was built for
+        let deployment_target = if let Ok(v) = std::env::var("MACOSX_DEPLOYMENT_TARGET") {
+            if version_compare::compare_to(&v, deployment_target, version_compare::Cmp::Gt).unwrap_or(false) {
+                with_shell(|log| {
+                    log.warn(
+                        format!(
+                            "relaxing deployment target {} to MACOSX_DEPLOYMENT_TARGET={}",
+                            deployment_target, v
+                        ),
+                    )
+                })?;
+                v
+            } else {
+                deployment_target.clone()
+            }
+        } else {
+            deployment_target.clone()
+        };
+
         with_verbose_shell(|log| {
             log.status(
                 "Locating",
                 format!(
                     "Apple SDK {}{}+ supporting {}{}",
-                    platform, minimum_version, platform, deployment_target
+                    platform, minimum_version, platform, &deployment_target
                 ),
             )
         })?;
@@ -450,7 +471,7 @@ impl Environment {
             .location(SdkSearchLocation::SystemXcodes)
             .platform(platform.as_str().try_into()?)
             .minimum_version(minimum_version)
-            .deployment_target(platform, deployment_target)
+            .deployment_target(platform, &deployment_target)
             .sorting(SdkSorting::VersionDescending)
             .search::<ParsedSdk>()?;
 
