@@ -12,7 +12,7 @@ use {
         config::PyembedPythonInterpreterConfig,
         standalone_distribution::StandaloneDistribution,
     },
-    crate::{environment::Environment, python_distributions::PYTHON_DISTRIBUTIONS, shell::{with_shell}},
+    crate::{environment::Environment, python_distributions::PYTHON_DISTRIBUTIONS, shell::{with_shell, with_verbose_shell}},
     anyhow::{anyhow, Context, Result},
     fs2::FileExt,
     python_packaging::{
@@ -424,7 +424,7 @@ pub fn resolve_python_distribution_from_location(
         log.status("Resolving", format!("Python distribution {}", location))
     })?;
     let path = resolve_python_distribution_archive(location, distributions_dir)?;
-    with_shell(|log| {
+    with_verbose_shell(|log| {
         log.note(format!("Python distribution available at {}", path.display()))
     })?;
 

@@ -275,7 +275,7 @@ impl PythonDistributionValue {
             .compatible_host_triples()
             .contains(&pyoxidizer_context.build_host_triple)
         {
-            with_shell(|log| {
+            with_verbose_shell(|log| {
                 log.status("Reusing", "target Python distribution for host execution")
             }).unwrap_or(());
             Some(dist.clone())

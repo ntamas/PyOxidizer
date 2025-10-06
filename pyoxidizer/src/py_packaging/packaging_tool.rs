@@ -28,7 +28,7 @@ use {
 };
 
 fn log_command_output(handle: &ReaderHandle) {
-    let reader = BufReader::new(handle);
+    let reader: BufReader<&ReaderHandle> = BufReader::new(handle);
     for line in reader.lines() {
         match line {
             Ok(line) => {
@@ -111,7 +111,17 @@ pub fn pip_download<'a>(
 
     let target_dir = temp_dir.path();
 
-    warn!("pip downloading to {}", target_dir.display());
+    with_concise_shell(|log| {
+        log.status(
+            "Downloading", "dependencies with pip"
+        )
+    })?;
+    with_verbose_shell(|log| {
+        log.status(
+            "Downloading",
+            format!("dependencies with pip to {}", target_dir.display()),
+        )
+    })?;
 
     let mut pip_args = vec![
         "-m".to_string(),
@@ -150,7 +160,9 @@ pub fn pip_download<'a>(
 
     pip_args.extend(args.iter().cloned());
 
-    warn!("running python {:?}", pip_args);
+    with_verbose_shell(|log| {
+        log.status("Running", format!("python {:?}", pip_args))
+    })?;
 
     let force_color = with_shell(|log| log.out_supports_color());
     let command = cmd(host_dist.python_exe_path(), &pip_args)
@@ -338,11 +350,22 @@ pub fn setup_py_install<'a, S: BuildHasher>(
         envs.insert(key.clone(), value.clone());
     }
 
-    warn!(
-        "python setup.py installing {} to {}",
-        package_path.display(),
-        target_dir_s
-    );
+    with_concise_shell(|log| {
+        log.status(
+            "Installing",
+            format!("Python package {} with setup.py", package_path.display()),
+        )
+    })?;
+    with_verbose_shell(|log| {
+        log.status(
+            "Installing",
+            format!(
+                "Python package {} with setup.py to {}",
+                package_path.display(),
+                target_dir_s
+            ),
+        )
+    })?;
 
     let mut args = vec!["setup.py"];
 
@@ -375,10 +398,14 @@ pub fn setup_py_install<'a, S: BuildHasher>(
     let state_dir = envs
         .get("PYOXIDIZER_DISTUTILS_STATE_DIR")
         .map(PathBuf::from);
-    warn!(
-        "scanning {} for resources",
-        python_paths.site_packages.display()
-    );
+
+    with_verbose_shell(|log| {
+        log.status(
+            "Scanning",
+            format!("{} for resources", python_paths.site_packages.display()),
+        )
+    })?;
+
     let resources = find_resources(dist, policy, &python_paths.site_packages, state_dir)
         .context("scanning for resources")?;
 
