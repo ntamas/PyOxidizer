@@ -949,17 +949,17 @@ impl TryInto<LicensedComponent> for PackageLicenseInfo {
                 }
             }
 
-            if non_spdx_licenses.is_empty() {
+            if spdx_license_ids.is_empty() {
+                LicensedComponent::new(
+                    component_flavor,
+                    LicenseFlavor::Unknown(non_spdx_licenses.into_iter().collect::<Vec<_>>()),
+                )
+            } else {
                 let expression = spdx_license_ids
                     .into_iter()
                     .collect::<Vec<_>>()
                     .join(" OR ");
                 LicensedComponent::new_spdx(component_flavor, &expression)?
-            } else {
-                LicensedComponent::new(
-                    component_flavor,
-                    LicenseFlavor::Unknown(non_spdx_licenses.into_iter().collect::<Vec<_>>()),
-                )
             }
         } else {
             LicensedComponent::new(component_flavor, LicenseFlavor::None)
@@ -1048,6 +1048,10 @@ pub fn derive_package_license_infos<'a>(
             }
 
             for value in metadata.find_all_headers("License") {
+                entry.metadata_licenses.push(value.to_string());
+            }
+
+            for value in metadata.find_all_headers("License-Expression") {
                 entry.metadata_licenses.push(value.to_string());
             }
 
