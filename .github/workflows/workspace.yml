@@ -56,7 +56,7 @@ jobs:
           docker-images: false
           swap-storage: false
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           # Needed by build.rs, which needs to walk the Git history to find the
           # root commit. Without this, a shallow clone (depth=1) is performed.
