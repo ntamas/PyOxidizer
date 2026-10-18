@@ -428,6 +428,19 @@ impl Environment {
 
     /// Attempt to resolve an appropriate Apple SDK to use given settings.
     pub fn resolve_apple_sdk(&self, sdk_info: &AppleSdkInfo) -> Result<ParsedSdk> {
+        self.resolve_apple_sdk_filtered(sdk_info, |_| Ok(true))
+    }
+
+    /// Attempt to resolve an appropriate Apple SDK to use given settings,
+    /// only considering SDKs accepted by `filter`.
+    ///
+    /// Candidate SDKs are evaluated from newest to oldest and the first one
+    /// accepted by `filter` is used.
+    pub fn resolve_apple_sdk_filtered(
+        &self,
+        sdk_info: &AppleSdkInfo,
+        filter: impl Fn(&ParsedSdk) -> Result<bool>,
+    ) -> Result<ParsedSdk> {
         let platform = &sdk_info.platform;
         let minimum_version = &sdk_info.version;
         let deployment_target = &sdk_info.deployment_target;
@@ -483,8 +496,24 @@ impl Environment {
             ));
         }
 
+        let mut candidates = sdks.into_iter();
+        let sdk = loop {
+            let sdk = candidates.next().ok_or_else(|| {
+                anyhow!(
+                    "none of the Apple SDKs supporting {}{} or newer is usable; try setting SDKROOT",
+                    platform,
+                    minimum_version
+                )
+            })?;
+
+            if filter(&sdk).with_context(|| format!("evaluating Apple SDK {}", sdk.sdk_path()))? {
+                break sdk;
+            }
+
+            warn!("Apple SDK {} is not usable; trying next one", sdk.sdk_path());
+        };
+
         // SDKROOT may skip filtering. Make noise if that's the case.
-        let sdk = sdks.into_iter().next().unwrap();
 
         if sdk
             .version()

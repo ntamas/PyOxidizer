@@ -44,6 +44,14 @@ Changes
 ^^^^^^^
 
 * Default Rust toolchain to use upgraded from 1.88.0 -> 1.99.1.
+* Python distributions whose libpython consists of LLVM bitcode (the
+  ``pgo+lto`` python-build-standalone distributions) can now be linked.
+  PyOxidizer validates that the Rust toolchain's LLVM can read the bitcode,
+  links the final binary with the Rust toolchain's bundled LLD (via
+  ``-fuse-ld=lld``), and no longer runs the system ``ar`` to index the
+  custom libpython archive, since Apple's ``ar`` silently drops bitcode
+  members. On macOS, Apple SDKs that LLD cannot parse are skipped when
+  resolving the SDK to build against.
 
 0.125.0
 -------

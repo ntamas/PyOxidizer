@@ -8,7 +8,7 @@ use {
         licensing::{licenses_from_cargo_manifest, log_licensing_info},
         project_layout::initialize_project,
         py_packaging::{
-            binary::{LibpythonLinkMode, PythonBinaryBuilder},
+            binary::{LibpythonInfo, LibpythonLinkMode, PythonBinaryBuilder},
             distribution::AppleSdkInfo,
             embedding::{EmbeddedPythonContext, DEFAULT_PYTHON_CONFIG_FILENAME},
         },
@@ -16,7 +16,7 @@ use {
         starlark::eval::{EvaluationContext, EvaluationContextBuilder},
     },
     anyhow::{anyhow, Context, Result},
-    apple_sdk::AppleSdk,
+    apple_sdk::{AppleSdk, ParsedSdk},
     duct::cmd,
     log::warn,
     starlark_dialect_build_targets::ResolvedTarget,
@@ -79,6 +79,122 @@ pub fn find_pyoxidizer_config_file_env(start_dir: &Path) -> Option<PathBuf> {
     find_pyoxidizer_config_file(start_dir)
 }
 
+/// Validate that a Rust toolchain can link an LLVM bitcode libpython and
+/// resolve the directory holding the toolchain's LLD linker wrappers.
+///
+/// `pgo+lto` python-build-standalone distributions ship libpython as LLVM
+/// bitcode. rustc parses that bitcode when bundling libpython into an rlib,
+/// so its LLVM must be at least as new as the LLVM that produced the bitcode.
+/// And the final link needs an LTO-capable linker. The system linkers (GNU ld,
+/// Apple ld) can't consume this bitcode in general, so we use the `rust-lld`
+/// shipped with the Rust toolchain.
+fn resolve_lld_for_llvm_bitcode(
+    rust_environment: &RustEnvironment,
+    bitcode_version: &semver::Version,
+) -> Result<PathBuf> {
+    if let Some(llvm) = &rust_environment.rust_version.llvm_version {
+        if llvm.major < bitcode_version.major {
+            return Err(anyhow!(
+                "the Python distribution's libpython consists of LLVM bitcode produced by LLVM {}, \
+                 but the Rust toolchain ({}) uses LLVM {}.{}, which cannot read it; \
+                 use a Rust toolchain built against LLVM {} or newer",
+                bitcode_version,
+                rust_environment.rustc_exe.display(),
+                llvm.major,
+                llvm.minor,
+                bitcode_version.major
+            ));
+        }
+    } else {
+        warn!(
+            "unable to determine the LLVM version of the Rust toolchain; linking LLVM bitcode may fail"
+        );
+    }
+
+    let sysroot = cmd(&rust_environment.rustc_exe, ["--print", "sysroot"])
+        .read()
+        .context("resolving Rust sysroot")?;
+
+    let lld_dir = PathBuf::from(sysroot.trim())
+        .join("lib")
+        .join("rustlib")
+        .join(&rust_environment.rust_version.host)
+        .join("bin")
+        .join("gcc-ld");
+
+    if !lld_dir.is_dir() {
+        return Err(anyhow!(
+            "LLD not found at {}; the Rust toolchain must provide rust-lld to link an LLVM bitcode libpython",
+            lld_dir.display()
+        ));
+    }
+
+    Ok(lld_dir)
+}
+
+/// Whether LLD (`ld64.lld`) can link against the given Apple SDK.
+///
+/// LLD's parser for the SDK's `.tbd` library stubs can lag behind Apple's
+/// SDKs. For example, LLD 23 can't parse the stubs in the macOS 27 SDK. We
+/// detect this by performing a trivial link against the SDK.
+fn apple_sdk_usable_by_lld(
+    lld_dir: &Path,
+    sdk: &ParsedSdk,
+    sdk_info: &AppleSdkInfo,
+    target_triple: &str,
+) -> Result<bool> {
+    let arch = if target_triple.starts_with("aarch64-") {
+        "arm64"
+    } else if target_triple.starts_with("x86_64-") {
+        "x86_64"
+    } else {
+        return Ok(true);
+    };
+
+    let platform = match sdk_info.platform.as_str() {
+        "macosx" => "macos",
+        _ => return Ok(true),
+    };
+
+    let sdk_version = sdk
+        .version()
+        .map(|v| v.to_string())
+        .unwrap_or_else(|| sdk_info.version.clone());
+
+    let temp_dir = tempfile::Builder::new()
+        .prefix("pyoxidizer-lld-probe")
+        .tempdir()
+        .context("creating temporary directory")?;
+    let output_path = temp_dir.path().join("probe.dylib");
+
+    let output = std::process::Command::new(lld_dir.join("ld64.lld"))
+        .arg("-dylib")
+        .arg("-arch")
+        .arg(arch)
+        .arg("-platform_version")
+        .arg(platform)
+        .arg(&sdk_info.deployment_target)
+        .arg(&sdk_version)
+        .arg("-syslibroot")
+        .arg(sdk.path())
+        .arg("-lSystem")
+        .arg("-o")
+        .arg(&output_path)
+        .output()
+        .context("invoking ld64.lld to probe Apple SDK compatibility")?;
+
+    if output.status.success() {
+        Ok(true)
+    } else {
+        warn!(
+            "LLD cannot link against Apple SDK {}:\n{}",
+            sdk.path().display(),
+            String::from_utf8_lossy(&output.stderr).trim_end()
+        );
+        Ok(false)
+    }
+}
+
 /// Describes an environment and settings used to build a project.
 pub struct BuildEnvironment {
     /// Describes the Rust toolchain we're using.
@@ -96,12 +212,28 @@ impl BuildEnvironment {
         target_triple: &str,
         artifacts_path: &Path,
         pyo3_config_path: impl AsRef<Path>,
-        libpython_link_mode: LibpythonLinkMode,
+        libpython_info: &LibpythonInfo,
         apple_sdk_info: Option<&AppleSdkInfo>,
     ) -> Result<Self> {
         let rust_environment = env
             .ensure_rust_toolchain(Some(target_triple))
             .context("ensuring Rust toolchain available")?;
+
+        // If libpython consists of LLVM bitcode, we need to link with LLD.
+        let lld_dir = if let Some(version) = &libpython_info.llvm_bitcode_version {
+            if target_triple.contains("-windows-") {
+                return Err(anyhow!(
+                    "linking an LLVM bitcode libpython is not supported on Windows"
+                ));
+            }
+
+            Some(
+                resolve_lld_for_llvm_bitcode(&rust_environment, version)
+                    .context("resolving linker for LLVM bitcode libpython")?,
+            )
+        } else {
+            None
+        };
 
         let mut envs = BTreeMap::default();
 
@@ -141,9 +273,14 @@ impl BuildEnvironment {
                 anyhow!("targeting Apple platform but Apple SDK info not available")
             })?;
 
-            let sdk = env
-                .resolve_apple_sdk(sdk_info)
-                .context("resolving Apple SDK")?;
+            let sdk = if let Some(lld_dir) = &lld_dir {
+                env.resolve_apple_sdk_filtered(sdk_info, |sdk| {
+                    apple_sdk_usable_by_lld(lld_dir, sdk, sdk_info, target_triple)
+                })
+            } else {
+                env.resolve_apple_sdk(sdk_info)
+            }
+            .context("resolving Apple SDK")?;
 
             let deployment_target_name = sdk.supported_targets.get(&sdk_info.platform).ok_or_else(|| {
                 anyhow!("could not find settings for target {} (this shouldn't happen)", &sdk_info.platform)
@@ -175,7 +312,9 @@ impl BuildEnvironment {
         // This workaround is not ideal.
         // TODO remove /FORCE:MULTIPLE once the distributions eliminate duplicate
         // symbols.
-        if target_triple.contains("-windows-") && libpython_link_mode == LibpythonLinkMode::Static {
+        if target_triple.contains("-windows-")
+            && libpython_info.link_mode == LibpythonLinkMode::Static
+        {
             rust_flags.extend(
                 [
                     "-C".to_string(),
@@ -188,12 +327,31 @@ impl BuildEnvironment {
             );
         }
 
+        // Link with the Rust toolchain's LLD so it can perform LTO on the
+        // bitcode objects in libpython. This mirrors what rustc does on
+        // targets where rust-lld is the default linker.
+        if let Some(lld_dir) = &lld_dir {
+            rust_flags.extend([
+                "-C".to_string(),
+                "link-arg=-fuse-ld=lld".to_string(),
+                "-C".to_string(),
+                format!("link-arg=-B{}", lld_dir.display()),
+            ]);
+        }
+
         if !rust_flags.is_empty() {
             let extra_flags = rust_flags.join(" ");
 
+            // Preserve flags the caller may have set in the process environment.
+            let existing = envs
+                .get("RUSTFLAGS")
+                .cloned()
+                .or_else(|| std::env::var("RUSTFLAGS").ok())
+                .filter(|v| !v.is_empty());
+
             envs.insert(
                 "RUSTFLAGS".to_string(),
-                if let Some(value) = envs.get("RUSTFLAGS") {
+                if let Some(value) = existing {
                     format!("{} {}", extra_flags, value)
                 } else {
                     extra_flags
@@ -293,7 +451,7 @@ pub fn build_executable_with_rust_project<'a>(
         exe.target_triple(),
         artifacts_path,
         embedded_data.pyo3_config_path(artifacts_path),
-        exe.libpython_link_mode(),
+        exe.libpython_info(),
         exe.apple_sdk_info(),
     )
     .context("resolving build environment")?;

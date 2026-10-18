@@ -9,7 +9,9 @@ Build a custom libraries containing Python.
 use {
     crate::{
         environment::Environment,
-        py_packaging::{distribution::AppleSdkInfo, embedding::LinkingAnnotation},
+        py_packaging::{
+            binary::LibpythonInfo, distribution::AppleSdkInfo, embedding::LinkingAnnotation,
+        },
         shell::{with_shell, with_verbose_shell},
     },
     anyhow::{anyhow, Context, Result},
@@ -120,7 +122,11 @@ fn ar_header(path: &Path) -> Result<ar::Header> {
     Ok(header)
 }
 
-fn assemble_archive_gnu(objects: &[PathBuf], temp_dir: &Path) -> Result<Vec<u8>> {
+fn assemble_archive_gnu(
+    objects: &[PathBuf],
+    temp_dir: &Path,
+    build_symbols_index: bool,
+) -> Result<Vec<u8>> {
     let buffer = Cursor::new(vec![]);
 
     let identifiers = objects
@@ -146,10 +152,18 @@ fn assemble_archive_gnu(objects: &[PathBuf], temp_dir: &Path) -> Result<Vec<u8>>
 
     let data = builder.into_inner()?.into_inner();
 
-    create_ar_symbols_index(temp_dir, &data)
+    if build_symbols_index {
+        create_ar_symbols_index(temp_dir, &data)
+    } else {
+        Ok(data)
+    }
 }
 
-fn assemble_archive_bsd(objects: &[PathBuf], temp_dir: &Path) -> Result<Vec<u8>> {
+fn assemble_archive_bsd(
+    objects: &[PathBuf],
+    temp_dir: &Path,
+    build_symbols_index: bool,
+) -> Result<Vec<u8>> {
     let buffer = Cursor::new(vec![]);
 
     let mut builder = ar::Builder::new(buffer);
@@ -164,12 +178,16 @@ fn assemble_archive_bsd(objects: &[PathBuf], temp_dir: &Path) -> Result<Vec<u8>>
 
     let data = builder.into_inner()?.into_inner();
 
-    create_ar_symbols_index(temp_dir, &data)
+    if build_symbols_index {
+        create_ar_symbols_index(temp_dir, &data)
+    } else {
+        Ok(data)
+    }
 }
 
 /// Represents a built libpython.
 #[derive(Debug)]
-pub struct LibpythonInfo {
+pub struct BuiltLibpython {
     /// Raw data constituting static libpython library.
     pub libpython_data: Vec<u8>,
 
@@ -178,6 +196,11 @@ pub struct LibpythonInfo {
 }
 
 /// Create a static libpython from a Python distribution.
+///
+/// `libpython_info` describes the libpython being built. Notably, its
+/// `llvm_bitcode_version` indicates whether the distribution's object files
+/// are LLVM bitcode rather than native object files (as is the case for
+/// `pgo+lto` python-build-standalone distributions).
 ///
 /// Returns a struct describing the generated libpython.
 #[allow(clippy::too_many_arguments)]
@@ -188,7 +211,8 @@ pub fn link_libpython(
     target_triple: &str,
     opt_level: &str,
     apple_sdk_info: Option<&AppleSdkInfo>,
-) -> Result<LibpythonInfo> {
+    libpython_info: &LibpythonInfo,
+) -> Result<BuiltLibpython> {
     let temp_dir = env.temporary_directory("pyoxidizer-libpython")?;
 
     let config_c_dir = temp_dir.path().join("config_c");
@@ -360,10 +384,17 @@ pub fn link_libpython(
 
     let objects = objects.into_iter().collect::<Vec<_>>();
 
+    // The system `ar` can't produce a symbols index for LLVM bitcode members:
+    // GNU ar emits a useless index (unless an LLVM plugin is available) and
+    // Apple's ar/ranlib silently *drops* bitcode members from the archive.
+    // So don't attempt to create one. rustc rewrites the symbols index when
+    // bundling the archive into an rlib and LLD doesn't require one.
+    let build_symbols_index = libpython_info.llvm_bitcode_version.is_none();
+
     let libpython_data = if target_triple.contains("-linux-") {
-        assemble_archive_gnu(&objects, &libpython_dir)?
+        assemble_archive_gnu(&objects, &libpython_dir, build_symbols_index)?
     } else if target_triple.contains("-apple-") {
-        assemble_archive_bsd(&objects, &libpython_dir)?
+        assemble_archive_bsd(&objects, &libpython_dir, build_symbols_index)?
     } else {
         let mut build = cc::Build::new();
         build.out_dir(&libpython_dir);
@@ -396,7 +427,7 @@ pub fn link_libpython(
 
     temp_dir.close().context("closing temporary directory")?;
 
-    Ok(LibpythonInfo {
+    Ok(BuiltLibpython {
         libpython_data,
         linking_annotations,
     })

@@ -194,6 +194,33 @@ struct PythonBuildCoreInfo {
     static_lib: Option<String>,
 }
 
+/// Parse the `object_file_format` value of a distribution into an LLVM version.
+///
+/// Returns `None` if the object files are not LLVM bitcode.
+///
+/// The value looks like `llvm-bitcode:22.1.3` or `llvm-bitcode:22.1.3+20260410`.
+pub fn parse_llvm_bitcode_version(object_file_format: &str) -> Option<semver::Version> {
+    let version = object_file_format.strip_prefix("llvm-bitcode:")?;
+
+    if let Ok(v) = semver::Version::parse(version) {
+        return Some(v);
+    }
+
+    // Be lenient and accept `<major>` or `<major>.<minor>`.
+    let mut parts = version
+        .split('+')
+        .next()
+        .unwrap_or("")
+        .split('.')
+        .map(|p| p.parse::<u64>().ok());
+
+    Some(semver::Version::new(
+        parts.next()??,
+        parts.next().flatten().unwrap_or(0),
+        parts.next().flatten().unwrap_or(0),
+    ))
+}
+
 #[allow(unused)]
 #[derive(Debug, Deserialize)]
 struct PythonBuildInfo {
@@ -481,6 +508,13 @@ pub struct StandaloneDistribution {
 
     /// Apple SDK build/targeting settings.
     apple_sdk_info: Option<AppleSdkInfo>,
+
+    /// Format of the object files constituting libpython.
+    ///
+    /// Values are e.g. `elf`, `mach-o`, `coff` or `llvm-bitcode:<version>`.
+    /// Distributions built with LTO ship LLVM bitcode instead of native
+    /// object files. See [Self::llvm_bitcode_version()].
+    pub object_file_format: String,
 
     /// Holds license information for the core distribution.
     pub core_license: Option<LicensedComponent>,
@@ -1058,6 +1092,7 @@ impl StandaloneDistribution {
             python_symbol_visibility: pi.python_symbol_visibility,
             extension_module_loading: pi.python_extension_module_loading,
             apple_sdk_info,
+            object_file_format: pi.build_info.object_file_format,
             core_license,
             licenses: pi.licenses.clone(),
             license_path: pi.license_path.as_ref().map(PathBuf::from),
@@ -1083,6 +1118,17 @@ impl StandaloneDistribution {
             crt_features: pi.crt_features,
             config_vars: pi.python_config_vars,
         })
+    }
+
+    /// Obtain the version of LLVM that produced libpython's object files, if
+    /// they are LLVM bitcode rather than native object files.
+    ///
+    /// `pgo+lto` python-build-standalone distributions ship libpython as LLVM
+    /// bitcode. Linking such a libpython requires a Rust toolchain whose LLVM
+    /// can read that bitcode (LLVM major version >= the returned version) and
+    /// a linker capable of performing LTO.
+    pub fn llvm_bitcode_version(&self) -> Option<semver::Version> {
+        parse_llvm_bitcode_version(&self.object_file_format)
     }
 
     /// Determines support for building a libpython from this distribution.
@@ -1501,6 +1547,32 @@ impl PythonDistribution for StandaloneDistribution {
 
 #[cfg(test)]
 pub mod tests {
+    #[test]
+    fn test_parse_llvm_bitcode_version() {
+        assert_eq!(parse_llvm_bitcode_version("elf"), None);
+        assert_eq!(parse_llvm_bitcode_version("mach-o"), None);
+        assert_eq!(parse_llvm_bitcode_version("coff"), None);
+        assert_eq!(
+            parse_llvm_bitcode_version("llvm-bitcode:22.1.3"),
+            Some(semver::Version::new(22, 1, 3))
+        );
+        assert_eq!(
+            parse_llvm_bitcode_version("llvm-bitcode:22.1.3+20260410")
+                .map(|v| (v.major, v.minor, v.patch)),
+            Some((22, 1, 3))
+        );
+        assert_eq!(
+            parse_llvm_bitcode_version("llvm-bitcode:22"),
+            Some(semver::Version::new(22, 0, 0))
+        );
+        assert_eq!(
+            parse_llvm_bitcode_version("llvm-bitcode:22.1"),
+            Some(semver::Version::new(22, 1, 0))
+        );
+        assert_eq!(parse_llvm_bitcode_version("llvm-bitcode:"), None);
+        assert_eq!(parse_llvm_bitcode_version("llvm-bitcode:abc"), None);
+    }
+
     use {
         super::*,
         crate::testutil::*,

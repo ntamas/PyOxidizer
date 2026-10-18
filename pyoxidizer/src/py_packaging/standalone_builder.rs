@@ -5,7 +5,7 @@
 use {
     super::{
         binary::{
-            LibpythonLinkMode, PackedResourcesLoadMode, PythonBinaryBuilder,
+            LibpythonInfo, LibpythonLinkMode, PackedResourcesLoadMode, PythonBinaryBuilder,
             ResourceAddCollectionContextCallback, WindowsRuntimeDllsMode,
         },
         config::{PyembedPackedResourcesSource, PyembedPythonInterpreterConfig},
@@ -77,8 +77,8 @@ pub struct StandalonePythonExecutableBuilder {
     /// The Python distribution this executable is targeting.
     target_distribution: Arc<StandaloneDistribution>,
 
-    /// How libpython should be linked.
-    link_mode: LibpythonLinkMode,
+    /// Describes the libpython the executable links against.
+    libpython: LibpythonInfo,
 
     /// Whether the built binary is capable of loading dynamically linked
     /// extension modules from memory.
@@ -193,13 +193,21 @@ impl StandalonePythonExecutableBuilder {
 
         let allow_new_builtin_extension_modules = link_mode == LibpythonLinkMode::Static;
 
+        let libpython = LibpythonInfo {
+            link_mode,
+            llvm_bitcode_version: match link_mode {
+                LibpythonLinkMode::Static => target_distribution.llvm_bitcode_version(),
+                LibpythonLinkMode::Dynamic => None,
+            },
+        };
+
         let mut builder = Box::new(Self {
             host_triple,
             target_triple,
             exe_name,
             host_distribution,
             target_distribution,
-            link_mode,
+            libpython,
             supports_in_memory_dynamically_linked_extension_loading,
             packaging_policy: packaging_policy.clone(),
             resources_collector: PythonResourceCollector::new(
@@ -297,7 +305,7 @@ impl StandalonePythonExecutableBuilder {
         env: &Environment,
         opt_level: &str,
     ) -> Result<LibpythonLinkSettings> {
-        match self.link_mode {
+        match self.libpython.link_mode {
             LibpythonLinkMode::Static => {
                 with_shell(|log| {
                     log.status("Linking", "custom library containing Python")
@@ -315,6 +323,7 @@ impl StandalonePythonExecutableBuilder {
                     &self.target_triple,
                     opt_level,
                     self.apple_sdk_info(),
+                    &self.libpython,
                 )?;
 
                 Ok(LinkStaticLibraryData {
@@ -412,8 +421,8 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
         self.exe_name.clone()
     }
 
-    fn libpython_link_mode(&self) -> LibpythonLinkMode {
-        self.link_mode
+    fn libpython_info(&self) -> &LibpythonInfo {
+        &self.libpython
     }
 
     fn target_triple(&self) -> &str {
@@ -563,7 +572,7 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
             env,
             &*self.target_distribution,
             self.python_packaging_policy(),
-            self.link_mode,
+            self.libpython.link_mode,
             verbose,
             install_args,
             extra_envs,
@@ -630,7 +639,7 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
             env,
             &*self.target_distribution,
             self.python_packaging_policy(),
-            self.link_mode,
+            self.libpython.link_mode,
             package_path,
             verbose,
             extra_envs,
@@ -949,7 +958,7 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
 
         let link_settings = self.resolve_python_link_settings(env, opt_level)?;
 
-        if self.link_mode == LibpythonLinkMode::Dynamic {
+        if self.libpython.link_mode == LibpythonLinkMode::Dynamic {
             if let Some(p) = &self.target_distribution.libpython_shared_library {
                 let manifest_path = Path::new(p.file_name().unwrap());
                 let content = std::fs::read(p)?;

@@ -37,6 +37,22 @@ pub enum LibpythonLinkMode {
     Dynamic,
 }
 
+/// Describes the libpython a binary links against.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct LibpythonInfo {
+    /// How the binary links against libpython.
+    pub link_mode: LibpythonLinkMode,
+
+    /// Version of LLVM that produced libpython's object files, if the
+    /// static libpython being linked consists of LLVM bitcode.
+    ///
+    /// `None` if libpython is linked dynamically or consists of native
+    /// object files. If `Some`, the Rust toolchain used to link the binary
+    /// must use an LLVM of at least this major version and the final link
+    /// must be performed by a linker capable of LTO (e.g. LLD).
+    pub llvm_bitcode_version: Option<semver::Version>,
+}
+
 /// Determines how packed resources are loaded by the generated binary.
 ///
 /// This effectively controls how resources file are written to disk
@@ -168,8 +184,8 @@ pub trait PythonBinaryBuilder {
     /// The name of the binary.
     fn name(&self) -> String;
 
-    /// How the binary will link against libpython.
-    fn libpython_link_mode(&self) -> LibpythonLinkMode;
+    /// Describes the libpython the binary will link against.
+    fn libpython_info(&self) -> &LibpythonInfo;
 
     /// Rust target triple the binary will run on.
     fn target_triple(&self) -> &str;
