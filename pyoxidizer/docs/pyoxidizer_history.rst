@@ -33,6 +33,18 @@ Next
 
 (Not yet released)
 
+Backwards Compatibility Notes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* The minimum Rust version has been changed from 1.88 to 1.95. Rust 1.95 is
+  the first release whose bundled LLVM (22) can read the LLVM bitcode objects
+  shipped in ``pgo+lto`` python-build-standalone distributions.
+
+Changes
+^^^^^^^
+
+* Default Rust toolchain to use upgraded from 1.88.0 -> 1.99.1.
+
 0.125.0
 -------
 
