@@ -19,10 +19,3 @@ allow = [
 # We want to keep the dependency tree as slim as possible. Let's
 # warn when we're shipping multiple versions of the same crate.
 multiple-versions = "warn"
-
-[advisories]
-# Ignore some advisories that would require a MSRV update
-ignore = [
-    "RUSTSEC-2026-0176",
-    "RUSTSEC-2026-0177",
-]

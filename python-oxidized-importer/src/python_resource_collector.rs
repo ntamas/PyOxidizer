@@ -55,7 +55,7 @@ impl PyTempDir {
 
 impl Drop for PyTempDir {
     fn drop(&mut self) {
-        Python::with_gil(|py| {
+        Python::attach(|py| {
             if self.cleanup.call0(py).is_err() {
                 let cleanup = self.cleanup.as_ptr();
                 unsafe { pyffi::PyErr_WriteUnraisable(cleanup) }
@@ -112,7 +112,7 @@ impl OxidizedResourceCollector {
 
         match typ.name()?.to_str()? {
             "PythonExtensionModule" => {
-                let module_cell = resource.downcast::<PythonExtensionModule>()?;
+                let module_cell = resource.cast::<PythonExtensionModule>()?;
                 let module = module_cell.borrow();
                 let resource = module.get_resource();
 
@@ -130,7 +130,7 @@ impl OxidizedResourceCollector {
                 }
             }
             "PythonModuleBytecode" => {
-                let module = resource.downcast::<PythonModuleBytecode>()?;
+                let module = resource.cast::<PythonModuleBytecode>()?;
                 collector
                     .add_python_module_bytecode(
                         &module.borrow().get_resource(),
@@ -142,7 +142,7 @@ impl OxidizedResourceCollector {
                 Ok(())
             }
             "PythonModuleSource" => {
-                let module = resource.downcast::<PythonModuleSource>()?;
+                let module = resource.cast::<PythonModuleSource>()?;
                 collector
                     .add_python_module_source(
                         &module.borrow().get_resource(),
@@ -154,7 +154,7 @@ impl OxidizedResourceCollector {
                 Ok(())
             }
             "PythonPackageResource" => {
-                let resource = resource.downcast::<PythonPackageResource>()?;
+                let resource = resource.cast::<PythonPackageResource>()?;
                 collector
                     .add_python_package_resource(
                         &resource.borrow().get_resource(),
@@ -166,7 +166,7 @@ impl OxidizedResourceCollector {
                 Ok(())
             }
             "PythonPackageDistributionResource" => {
-                let resource = resource.downcast::<PythonPackageDistributionResource>()?;
+                let resource = resource.cast::<PythonPackageDistributionResource>()?;
                 collector
                     .add_python_package_distribution_resource(
                         &resource.borrow().get_resource(),
@@ -191,7 +191,7 @@ impl OxidizedResourceCollector {
 
         match resource.get_type().qualname()?.to_str()? {
             "PythonExtensionModule" => {
-                let module_cell = resource.downcast::<PythonExtensionModule>()?;
+                let module_cell = resource.cast::<PythonExtensionModule>()?;
                 let module = module_cell.borrow();
                 let resource = module.get_resource();
 
@@ -206,7 +206,7 @@ impl OxidizedResourceCollector {
                 Ok(())
             }
             "PythonModuleBytecode" => {
-                let module = resource.downcast::<PythonModuleBytecode>()?;
+                let module = resource.cast::<PythonModuleBytecode>()?;
 
                 collector
                     .add_python_module_bytecode(
@@ -219,7 +219,7 @@ impl OxidizedResourceCollector {
                 Ok(())
             }
             "PythonModuleSource" => {
-                let module = resource.downcast::<PythonModuleSource>()?;
+                let module = resource.cast::<PythonModuleSource>()?;
 
                 collector
                     .add_python_module_source(
@@ -232,7 +232,7 @@ impl OxidizedResourceCollector {
                 Ok(())
             }
             "PythonPackageResource" => {
-                let resource = resource.downcast::<PythonPackageResource>()?;
+                let resource = resource.cast::<PythonPackageResource>()?;
 
                 collector
                     .add_python_package_resource(
@@ -245,7 +245,7 @@ impl OxidizedResourceCollector {
                 Ok(())
             }
             "PythonPackageDistributionResource" => {
-                let resource = resource.downcast::<PythonPackageDistributionResource>()?;
+                let resource = resource.cast::<PythonPackageDistributionResource>()?;
 
                 collector
                     .add_python_package_distribution_resource(

@@ -19,7 +19,7 @@ fn new_interpreter<'interpreter, 'resources>(
     Ok(interp)
 }
 
-fn get_importer(interp: &MainPythonInterpreter) -> Result<PyObject> {
+fn get_importer(interp: &MainPythonInterpreter) -> Result<Py<PyAny>> {
     interp.with_gil(|py| {
         let sys = py.import("sys").unwrap();
         let meta_path = sys.getattr("meta_path").unwrap();

@@ -34,7 +34,7 @@ impl OxidizedPkgResourcesProvider {
             return Err(PyTypeError::new_err("__loader__ is not an OxidizedFinder"));
         }
 
-        let finder = loader.downcast::<OxidizedFinder>()?;
+        let finder = loader.cast::<OxidizedFinder>()?;
         let state = finder.borrow().get_state();
 
         Ok(Self {
@@ -216,7 +216,7 @@ pub(crate) fn pkg_resources_find_distributions<'p>(
         return Ok(PyList::empty(py).into_any());
     }
 
-    let finder = importer.downcast::<OxidizedPathEntryFinder>()?.borrow();
+    let finder = importer.cast::<OxidizedPathEntryFinder>()?.borrow();
 
     // The path_item we're handling should match what was registered to this path
     // entry finder. Reject if that's not the case.

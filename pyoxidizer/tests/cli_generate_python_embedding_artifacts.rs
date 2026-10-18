@@ -5,7 +5,7 @@
 use {
     anyhow::Result,
     assert_cmd::Command,
-    assert_fs::{prelude::*, TempDir},
+    assert_fs::{TempDir, prelude::*},
     libtest_mimic::{Arguments, Trial},
     predicates::prelude::*,
 };

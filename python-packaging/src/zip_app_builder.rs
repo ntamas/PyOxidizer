@@ -335,7 +335,7 @@ mod test {
         let mut zf = z.by_index(0)?;
         let mut b = Vec::<u8>::new();
         zf.read_to_end(&mut b)?;
-        assert_eq!(zf.name(), "foo.py");
+        assert_eq!(zf.name()?, "foo.py");
         assert_eq!(zf.compression(), CompressionMethod::Stored);
         assert!(zf.is_file());
         assert_eq!(b, b"foo");
@@ -390,7 +390,7 @@ mod test {
             let mut zf = z.by_index(0)?;
             let mut b = Vec::<u8>::new();
             zf.read_to_end(&mut b)?;
-            assert_eq!(zf.name(), "lib/foo.py");
+            assert_eq!(zf.name()?, "lib/foo.py");
             assert_eq!(zf.compression(), CompressionMethod::Stored);
             assert!(zf.is_file());
             assert_eq!(b, m.source.resolve_content()?);
@@ -400,7 +400,7 @@ mod test {
             let mut zf = z.by_index(1)?;
             let mut b = Vec::<u8>::new();
             zf.read_to_end(&mut b)?;
-            assert_eq!(zf.name(), "lib/foo.pyc");
+            assert_eq!(zf.name()?, "lib/foo.pyc");
             assert_eq!(zf.compression(), CompressionMethod::Stored);
             assert!(zf.is_file());
             assert_eq!(b, b"bc0foo");
@@ -423,7 +423,7 @@ mod test {
         let mut zf = z.by_index(0)?;
         let mut b = Vec::<u8>::new();
         zf.read_to_end(&mut b)?;
-        assert_eq!(zf.name(), "lib/__main__.py");
+        assert_eq!(zf.name()?, "lib/__main__.py");
         assert_eq!(zf.compression(), CompressionMethod::Stored);
         assert!(zf.is_file());
 

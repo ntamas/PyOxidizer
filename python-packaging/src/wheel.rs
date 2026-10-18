@@ -71,7 +71,7 @@ impl WheelArchive {
             file.read_to_end(&mut buffer)?;
 
             files.add_file_entry(
-                Path::new(file.name()),
+                Path::new(file.name()?.as_ref()),
                 FileEntry::new_from_data(buffer, file.unix_mode().unwrap_or(0) & S_IXUSR != 0),
             )?;
         }

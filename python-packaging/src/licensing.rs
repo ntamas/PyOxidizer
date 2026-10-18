@@ -949,6 +949,13 @@ impl TryInto<LicensedComponent> for PackageLicenseInfo {
                 }
             }
 
+            /*
+            if self.package == "numpy" {
+                println!("SPDX: {:?}", spdx_license_ids);
+                println!("Non-SPDX: {:?}", non_spdx_licenses);
+            }
+            */
+
             if spdx_license_ids.is_empty() {
                 LicensedComponent::new(
                     component_flavor,

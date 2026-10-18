@@ -110,7 +110,7 @@ pub(crate) fn get_module_state<'p>(m: &Bound<'p, PyModule>) -> Result<&'p mut Mo
 #[allow(non_snake_case)]
 #[no_mangle]
 pub extern "C" fn PyInit__lib() -> *mut pyffi::PyObject {
-    let py = unsafe { Python::assume_gil_acquired() };
+    let py = unsafe { Python::assume_attached() };
 
     let module = unsafe { pyffi::PyModule_Create(addr_of_mut!(MODULE_DEF)) } as *mut pyffi::PyObject;
 
@@ -118,7 +118,7 @@ pub extern "C" fn PyInit__lib() -> *mut pyffi::PyObject {
         return module;
     }
 
-    let module_as_any = match unsafe { Py::from_owned_ptr_or_err(py, module) } {
+    let module_as_any = match unsafe { Bound::from_owned_ptr_or_err(py, module).map(Bound::unbind) } {
         Ok(m) => m,
         Err(e) => {
             e.restore(py);
@@ -126,7 +126,7 @@ pub extern "C" fn PyInit__lib() -> *mut pyffi::PyObject {
         }
     };
 
-    let module = module_as_any.bind(py).downcast::<PyModule>().unwrap();
+    let module = module_as_any.bind(py).cast::<PyModule>().unwrap();
 
     match module_init(py, module) {
         Ok(()) => module.clone().into_ptr(),

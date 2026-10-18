@@ -8,7 +8,7 @@ use {
     pyo3::{
         ffi as pyffi,
         prelude::*,
-        types::{PyBytes, PyList, PyString, PyStringData},
+        types::{string::PyStringData, PyBytes, PyList, PyString},
     },
     python_packaging::{
         interpreter::{BytesWarning, MemoryAllocatorBackend, PythonInterpreterProfile},
@@ -431,11 +431,11 @@ rusty_fork_test! {
             let sys = py.import("sys").unwrap();
 
             let argvb_raw = sys.getattr("argvb").unwrap();
-            let argvb = argvb_raw.downcast::<PyList>().unwrap();
+            let argvb = argvb_raw.cast::<PyList>().unwrap();
             assert_eq!(argvb.len(), 2);
 
             let value_raw = argvb.get_item(1).unwrap();
-            let value_bytes = value_raw.downcast::<PyBytes>().unwrap();
+            let value_bytes = value_raw.cast::<PyBytes>().unwrap();
             assert_eq!(
                 value_bytes.as_bytes().to_vec(),
                 if cfg!(windows) {
@@ -460,11 +460,11 @@ rusty_fork_test! {
             let sys = py.import("sys").unwrap();
 
             let argv_raw = sys.getattr("argv").unwrap();
-            let argv = argv_raw.downcast::<PyList>().unwrap();
+            let argv = argv_raw.cast::<PyList>().unwrap();
             assert_eq!(argv.len(), 2);
 
             let value_raw = argv.get_item(1).unwrap();
-            let value_string = value_raw.downcast::<PyString>().unwrap();
+            let value_string = value_raw.cast::<PyString>().unwrap();
 
             match unsafe { value_string.data().unwrap() } {
                 PyStringData::Ucs2(&[20013, 25991]) => {},
@@ -486,11 +486,11 @@ rusty_fork_test! {
             let sys = py.import("sys").unwrap();
 
             let argv_raw = sys.getattr("argv").unwrap();
-            let argv = argv_raw.downcast::<PyList>().unwrap();
+            let argv = argv_raw.cast::<PyList>().unwrap();
             assert_eq!(argv.len(), 2);
 
             let value_raw = argv.get_item(1).unwrap();
-            let value_string = value_raw.downcast::<PyString>().unwrap();
+            let value_string = value_raw.cast::<PyString>().unwrap();
 
             // The result in isolated mode without configure_locale is kinda wonky.
             match unsafe { value_string.data().unwrap() } {
@@ -525,11 +525,11 @@ rusty_fork_test! {
             let sys = py.import("sys").unwrap();
 
             let argv_raw = sys.getattr("argv").unwrap();
-            let argv = argv_raw.downcast::<PyList>().unwrap();
+            let argv = argv_raw.cast::<PyList>().unwrap();
             assert_eq!(argv.len(), 2);
 
             let value_raw = argv.get_item(1).unwrap();
-            let value_string = value_raw.downcast::<PyString>().unwrap();
+            let value_string = value_raw.cast::<PyString>().unwrap();
 
             match unsafe { value_string.data().unwrap() } {
                 PyStringData::Ucs2(&[20013, 25991]) => {},

@@ -43,6 +43,17 @@ use {
 #[allow(non_camel_case_types)]
 type py_init_fn = extern "C" fn() -> *mut pyffi::PyObject;
 
+// PyO3 no longer exposes this private CPython function.
+#[cfg(windows)]
+extern "C" {
+    fn _PyImport_FixupExtensionObject(
+        module: *mut pyffi::PyObject,
+        name: *mut pyffi::PyObject,
+        filename: *mut pyffi::PyObject,
+        modules: *mut pyffi::PyObject,
+    ) -> std::os::raw::c_int;
+}
+
 /// Implementation of `Loader.create_module()` for in-memory extension modules.
 ///
 /// The equivalent CPython code for importing extension modules is to call
@@ -70,7 +81,7 @@ fn extension_module_shared_library_create_module(
         panic!("unable to obtain per-interpreter module dict");
     }
 
-    let module_dict = unsafe { PyObject::from_borrowed_ptr(py, module_dict) };
+    let module_dict = unsafe { Bound::from_borrowed_ptr(py, module_dict).unbind() };
     let existing_module: Option<Bound<PyAny>> = module_dict.bind(py).get_item(name_py).ok();
 
     // We found an existing module object. Return it.
@@ -220,14 +231,14 @@ fn load_dynamic_library(
         return if py_module.is_null() {
             Err(PyErr::fetch(py))
         } else {
-            Ok(unsafe { PyObject::from_owned_ptr(py, py_module) })
+            Ok(unsafe { Bound::from_owned_ptr(py, py_module).unbind() })
         };
     }
 
     // This is the single-phase initialization mechanism. Construct a module by calling
     // PyModule_GetDef(). py_module is a new reference. So we capture it to make sure we don't
     // leak it.
-    let py_module = unsafe { PyObject::from_owned_ptr(py, py_module) };
+    let py_module = unsafe { Bound::from_owned_ptr(py, py_module).unbind() };
 
     let module_def = unsafe { pyffi::PyModule_GetDef(py_module.as_ptr()) };
     if module_def.is_null() {
@@ -269,7 +280,7 @@ fn load_dynamic_library(
         }
      */
     let fixup_result = unsafe {
-        pyffi::_PyImport_FixupExtensionObject(
+        _PyImport_FixupExtensionObject(
             py_module.as_ptr(),
             name_py.as_ptr(),
             name_py.as_ptr(),
@@ -344,9 +355,9 @@ impl ImporterState {
         let marshal_module = py.import("marshal")?;
 
         let imp_module = bootstrap_module.getattr("_imp")?;
-        let imp_module = imp_module.downcast::<PyModule>()?;
+        let imp_module = imp_module.cast::<PyModule>()?;
         let sys_module = bootstrap_module.getattr("sys")?;
-        let sys_module = sys_module.downcast::<PyModule>()?;
+        let sys_module = sys_module.cast::<PyModule>()?;
         let meta_path_object = sys_module.getattr("meta_path")?;
 
         // We should be executing as part of
@@ -355,7 +366,7 @@ impl ImporterState {
         // sys.meta_path with [BuiltinImporter, FrozenImporter]. Those should be the
         // only meta path importers present.
 
-        let meta_path = meta_path_object.downcast::<PyList>()?;
+        let meta_path = meta_path_object.cast::<PyList>()?;
         if meta_path.len() < 2 {
             return Err(PyValueError::new_err(
                 "sys.meta_path does not contain 2 values",
@@ -371,8 +382,8 @@ impl ImporterState {
             .unbind();
         let module_spec_type = bootstrap_module.getattr("ModuleSpec")?.unbind();
 
-        let builtins_module = unsafe { Py::from_borrowed_ptr_or_err(py, pyffi::PyEval_GetBuiltins()) }?;
-        let builtins_module_dict = builtins_module.downcast_bound::<PyDict>(py)?;
+        let builtins_module = unsafe { Bound::from_borrowed_ptr_or_err(py, pyffi::PyEval_GetBuiltins()) }?;
+        let builtins_module_dict = builtins_module.cast::<PyDict>()?;
         let exec_fn = match builtins_module_dict.get_item("exec").unwrap_or(None) {
             Some(v) => v,
             None => {
@@ -407,7 +418,7 @@ impl ImporterState {
                 ));
             }
 
-            PyObject::from_owned_ptr(py, ptr)
+            Bound::from_owned_ptr(py, ptr).unbind()
         };
 
         // We store a pointer to the heap memory and take care of destroying
@@ -1097,7 +1108,7 @@ impl OxidizedFinder {
 
         for resource in resources.try_iter()? {
             let resource_raw = resource?;
-            let resource = resource_raw.downcast::<OxidizedResource>()?;
+            let resource = resource_raw.cast::<OxidizedResource>()?;
 
             resources_state
                 .add_resource(pyobject_to_resource(&resource.borrow()))
@@ -1149,10 +1160,10 @@ impl OxidizedFinder {
         // can coerce to a Rust String easily, as Python str are Unicode.
 
         // Only accept str.
-        let path = path_original.downcast::<PyString>()?;
+        let path = path_original.cast::<PyString>()?;
 
         let path_hook_base = finder.path_hook_base_str(py);
-        let path_hook_base = path_hook_base.downcast::<PyString>()?;
+        let path_hook_base = path_hook_base.cast::<PyString>()?;
 
         let target_package = if path.compare(path_hook_base)? == std::cmp::Ordering::Equal {
             None
@@ -1370,7 +1381,7 @@ pub fn replace_meta_path_importers<'a, 'p>(
 /// `sys.meta_path` and `sys.path_hooks`.
 pub fn remove_external_importers(sys_module: &Bound<PyModule>) -> PyResult<()> {
     let meta_path = sys_module.getattr("meta_path")?;
-    let meta_path = meta_path.downcast::<PyList>()?;
+    let meta_path = meta_path.cast::<PyList>()?;
 
     // We need to mutate the lists in place so any updates are reflected
     // in references to the lists.
@@ -1393,7 +1404,7 @@ pub fn remove_external_importers(sys_module: &Bound<PyModule>) -> PyResult<()> {
             index += 1;
         } else if entry
             .getattr("__module__")?
-            .downcast::<PyString>()?
+            .cast::<PyString>()?
             .to_string_lossy()
             == "_frozen_importlib"
         {
@@ -1404,7 +1415,7 @@ pub fn remove_external_importers(sys_module: &Bound<PyModule>) -> PyResult<()> {
     }
 
     let path_hooks = sys_module.getattr("path_hooks")?;
-    let path_hooks = path_hooks.downcast::<PyList>()?;
+    let path_hooks = path_hooks.cast::<PyList>()?;
 
     let mut index = 0;
     while index < path_hooks.len() {

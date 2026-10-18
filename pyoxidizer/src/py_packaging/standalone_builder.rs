@@ -1028,7 +1028,10 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
             .get("Py_TRACE_REFS")
             == Some(&"1".to_string())
         {
-            python_build_flags.0.insert(BuildFlag::Py_TRACE_REFS);
+            // PyO3 no longer has a dedicated variant for this flag.
+            python_build_flags
+                .0
+                .insert(BuildFlag::Other("Py_TRACE_REFS".to_string()));
         }
         if self
             .target_distribution

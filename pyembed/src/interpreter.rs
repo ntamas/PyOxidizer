@@ -31,6 +31,12 @@ use {
     },
 };
 
+// PyO3 no longer exposes this private (but PEP 587 sanctioned) function, which we need
+// for multi-phase initialization.
+extern "C" {
+    fn _Py_InitializeMain() -> pyffi::PyStatus;
+}
+
 static GLOBAL_INTERPRETER_GUARD: Lazy<std::sync::Mutex<()>> =
     Lazy::new(|| std::sync::Mutex::new(()));
 
@@ -67,7 +73,7 @@ static GLOBAL_INTERPRETER_GUARD: Lazy<std::sync::Mutex<()>> =
 /// with the GIL held, call [MainPythonInterpreter::with_gil()]. The provided
 /// function will be provided a [pyo3::Python], which represents a handle on
 /// the Python interpreter. This function is just a wrapper around
-/// [pyo3::Python::with_gil()]. But since the function holds a reference to
+/// [pyo3::Python::attach()]. But since the function holds a reference to
 /// self, it prevents [MainPythonInterpreter] from being dropped prematurely.
 ///
 /// # Safety
@@ -79,7 +85,7 @@ static GLOBAL_INTERPRETER_GUARD: Lazy<std::sync::Mutex<()>> =
 /// If a Python C API is called after interpreter finalization, a segfault can
 /// occur.
 ///
-/// If you use pyo3 APIs like [Python::with_gil()] directly, you may
+/// If you use pyo3 APIs like [Python::attach()] directly, you may
 /// inadvertently attempt to operate on a finalized interpreter. Therefore
 /// it is recommended to always go through a method on an [MainPythonInterpreter]
 /// instance in order to interact with the Python interpreter.
@@ -220,7 +226,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         // inject our custom importer.
 
         let oxidized_finder_loaded =
-            unsafe { Python::with_gil_unchecked(|py| self.inject_oxidized_importer(py))? };
+            unsafe { Python::attach_unchecked(|py| self.inject_oxidized_importer(py))? };
 
         // The GIL is still held after calling into PyO3.
         debug_assert_eq!(unsafe { pyffi::PyGILState_Check() }, 1);
@@ -228,7 +234,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         // Now proceed with the Python main initialization. This will initialize
         // importlib. And if the custom importlib bytecode was registered above,
         // our extension module will get imported and initialized.
-        let status = unsafe { pyffi::_Py_InitializeMain() };
+        let status = unsafe { _Py_InitializeMain() };
         if unsafe { pyffi::PyStatus_Exception(status) } != 0 {
             return Err(NewInterpreterError::new_from_pystatus(
                 &status,
@@ -496,7 +502,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         Ok(write_modules_path)
     }
 
-    /// Proxy for [Python::with_gil()].
+    /// Proxy for [Python::attach()].
     ///
     /// This allows running Python code via the PyO3 Rust APIs. Alternatively,
     /// this can be used to run code when the Python GIL is held.
@@ -505,7 +511,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
     where
         F: for<'py> FnOnce(Python<'py>) -> R,
     {
-        Python::with_gil(f)
+        Python::attach(f)
     }
 
     /// Runs `Py_RunMain()` and finalizes the interpreter.
@@ -713,7 +719,7 @@ fn write_modules_to_path(py: Python, path: &Path) -> Result<(), &'static str> {
         .map_err(|_| "could not obtain sys.modules")?;
 
     let modules = modules
-        .downcast::<PyDict>()
+        .cast::<PyDict>()
         .map_err(|_| "sys.modules is not a dict")?;
 
     let mut names = BTreeSet::new();

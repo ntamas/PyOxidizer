@@ -20,7 +20,7 @@ use {
 fn discover_resolvers(py: Python) -> PyResult<Bound<PyList>> {
     let sys_module = py.import("sys")?;
     let meta_path = sys_module.getattr("meta_path")?;
-    let meta_path = meta_path.downcast::<PyList>()?;
+    let meta_path = meta_path.cast::<PyList>()?;
 
     let mut resolvers = vec![];
 

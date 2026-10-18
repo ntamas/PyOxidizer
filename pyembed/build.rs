@@ -30,8 +30,7 @@ fn main() {
     // Re-export the path to the configured Python interpreter. Tests can
     // use this to derive a useful default config that leverages it.
     let python_interpreter = interpreter_config
-        .executable
-        .as_ref()
+        .executable()
         .expect("PyO3 configuration does not define Python executable path");
 
     println!(
