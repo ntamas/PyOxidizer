@@ -63,6 +63,12 @@ Changes
 ^^^^^^^
 
 * Default Rust toolchain to use upgraded from 1.88.0 -> 1.99.1.
+* The automatically installed Rust toolchain on macOS now gets a symlink for
+  ``libLLVM.dylib`` next to ``rust-objcopy`` so that stripping debug info from
+  release binaries works. Rust 1.98+ ships a ``rust-objcopy`` with a broken
+  rpath (https://github.com/rust-lang/rust/issues/164063), which without the
+  workaround made every crate emit a ``stripping debug info with
+  rust-objcopy failed`` warning and left binaries unstripped.
 * Default Python distributions upgraded from python-build-standalone
   20241206 to 20261003. This brings CPython 3.10.22, 3.11.17, 3.12.15,
   3.13.16 and 3.14.8.

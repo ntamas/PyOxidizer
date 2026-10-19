@@ -298,6 +298,8 @@ pub fn install_rust_toolchain(
         }
     }
 
+    fix_apple_objcopy_library_path(&install_dir, host_triple)?;
+
     FileExt::unlock(&lock).context("unlocking")?;
 
     let exe_suffix = if host_triple.contains("-windows-") {
@@ -312,6 +314,56 @@ pub fn install_rust_toolchain(
         rustc_path: install_dir.join("bin").join(format!("rustc{}", exe_suffix)),
         cargo_path: install_dir.join("bin").join(format!("cargo{}", exe_suffix)),
     })
+}
+
+/// Work around a broken `rust-objcopy` in Rust 1.98+ toolchains on macOS.
+///
+/// Rust 1.98 started stripping Mach-O binaries with the `rust-objcopy` shipped
+/// in the `rustc` package. That binary links `libLLVM.dylib` dynamically, but its
+/// rpath (`@loader_path/../lib`) resolves to `lib/rustlib/<host>/lib/`, whereas the
+/// library is installed to `lib/`. rustup papers over this by exporting
+/// `DYLD_FALLBACK_LIBRARY_PATH`; we run the toolchain directly, so without help
+/// `rust-objcopy` aborts and rustc emits a warning for every crate it fails to
+/// strip. See https://github.com/rust-lang/rust/issues/164063.
+///
+/// Create a symlink at the location the rpath points to when it is missing.
+fn fix_apple_objcopy_library_path(install_dir: &Path, host_triple: &str) -> Result<()> {
+    if !host_triple.ends_with("-apple-darwin") {
+        return Ok(());
+    }
+
+    let rustlib_dir = install_dir.join("lib").join("rustlib").join(host_triple);
+
+    if !rustlib_dir.join("bin").join("rust-objcopy").is_file() {
+        return Ok(());
+    }
+
+    let lib_dir = rustlib_dir.join("lib");
+    let link_path = lib_dir.join("libLLVM.dylib");
+
+    // Leave existing files (or symlinks) alone, even if dangling.
+    if link_path.symlink_metadata().is_ok() {
+        return Ok(());
+    }
+
+    if !install_dir.join("lib").join("libLLVM.dylib").is_file() {
+        return Ok(());
+    }
+
+    std::fs::create_dir_all(&lib_dir)
+        .with_context(|| format!("creating directory {}", lib_dir.display()))?;
+
+    #[cfg(unix)]
+    {
+        warn!(
+            "symlinking {} to lib/libLLVM.dylib to work around rust-lang/rust#164063",
+            link_path.display()
+        );
+        std::os::unix::fs::symlink("../../../libLLVM.dylib", &link_path)
+            .with_context(|| format!("creating symlink {}", link_path.display()))?;
+    }
+
+    Ok(())
 }
 
 #[cfg(test)]
@@ -351,6 +403,46 @@ mod tests {
             temp_dir.path(),
             Some(&*CACHE_DIR),
         )?;
+
+        Ok(())
+    }
+
+    #[cfg(unix)]
+    #[test]
+    fn apple_objcopy_library_path() -> Result<()> {
+        let temp_dir = tempfile::Builder::new()
+            .prefix("tugger-rust-toolchain-test")
+            .tempdir()?;
+        let root = temp_dir.path();
+        let host = "aarch64-apple-darwin";
+        let rustlib_dir = root.join("lib").join("rustlib").join(host);
+        let link_path = rustlib_dir.join("lib").join("libLLVM.dylib");
+
+        // Nothing happens without rust-objcopy.
+        std::fs::create_dir_all(rustlib_dir.join("bin"))?;
+        std::fs::write(root.join("lib").join("libLLVM.dylib"), b"llvm")?;
+        fix_apple_objcopy_library_path(root, host)?;
+        assert!(link_path.symlink_metadata().is_err());
+
+        // Nothing happens for non-Apple hosts.
+        std::fs::write(rustlib_dir.join("bin").join("rust-objcopy"), b"")?;
+        fix_apple_objcopy_library_path(root, "x86_64-unknown-linux-gnu")?;
+        assert!(link_path.symlink_metadata().is_err());
+
+        // The symlink is created and resolves to the real library.
+        fix_apple_objcopy_library_path(root, host)?;
+        assert!(link_path.symlink_metadata()?.file_type().is_symlink());
+        assert_eq!(std::fs::read(&link_path)?, b"llvm");
+
+        // Running again is a no-op.
+        fix_apple_objcopy_library_path(root, host)?;
+        assert_eq!(std::fs::read(&link_path)?, b"llvm");
+
+        // An existing file is left alone.
+        std::fs::remove_file(&link_path)?;
+        std::fs::write(&link_path, b"other")?;
+        fix_apple_objcopy_library_path(root, host)?;
+        assert_eq!(std::fs::read(&link_path)?, b"other");
 
         Ok(())
     }
