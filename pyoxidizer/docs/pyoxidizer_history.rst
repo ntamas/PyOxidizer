@@ -110,6 +110,9 @@ Changes
 * New default Python distributions for the ``aarch64-pc-windows-msvc``
   (Python 3.11+), ``aarch64-unknown-linux-musl`` and
   ``x86_64_v4-unknown-linux-gnu`` targets.
+* :py:func:`default_python_distribution` now resolves to the oldest
+  available Python version for build targets that don't have a distribution
+  for the default version (3.10), instead of failing.
 * The ``aarch64-pc-windows-msvc`` distributions don't declare the OpenSSL
   DLLs that ``_ssl`` and ``_hashlib`` depend on. PyOxidizer now adds these
   dependencies from the DLLs shipped in the distribution so the DLLs get

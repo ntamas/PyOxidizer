@@ -1421,6 +1421,7 @@ impl PythonDistribution for StandaloneDistribution {
             "macosx-10.15-x86_64" => "macosx_10_15_x86_64",
             "macosx-11.0-arm64" => "macosx_11_0_arm64",
             "win-amd64" => "win_amd64",
+            "win-arm64" => "win_arm64",
             "win32" => "win32",
             p => panic!("unsupported Python platform: {}", p),
         }

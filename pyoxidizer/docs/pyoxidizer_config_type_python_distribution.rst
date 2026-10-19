@@ -138,7 +138,12 @@
        ``X.Y`` *major.minor* string denoting the Python release version
        to use.
 
-       Supported values are ``3.9``, ``3.10``, ``3.11``, and ``3.12``.
+       Supported values are ``3.10``, ``3.11``, ``3.12``, ``3.13`` and
+       ``3.14``. Not every version is available for every build target:
+       ``aarch64-pc-windows-msvc`` distributions start at ``3.11``.
+
+       If not specified, ``3.10`` is used. If the build target has no
+       ``3.10`` distribution, the oldest available version is used instead.
 
     ``flavor`` is a string denoting the distribution *flavor*. Values can be one
     of the following:
