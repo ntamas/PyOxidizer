@@ -301,18 +301,28 @@ fn parse_python_json(path: &Path) -> Result<PythonJsonMain> {
 
     let mut v: PythonJsonMain = serde_json::from_slice(&buf)?;
 
-    // Fix up references to libcrypto-1_1 and libssl-1_1 in Windows builds if
-    // needed. This is a temporary hack until python-build-standalone fixes this.
-    if v.python_major_minor_version == "3.11" || v.python_major_minor_version == "3.12" || v.python_major_minor_version == "3.13" {
-        for entries in v.build_info.extensions.values_mut() {
-            for entry in entries.iter_mut() {
-                for link in entry.links.iter_mut() {
-                    if link.name.starts_with("libcrypto-1_1") {
+    // Windows distributions since OpenSSL 3 still reference `libcrypto-1_1`
+    // and `libssl-1_1` DLLs even though the shipped DLLs are `libcrypto-3`
+    // and `libssl-3`. Fix up these references if the referenced DLL doesn't
+    // exist but the OpenSSL 3 one does. This is a hack until
+    // python-build-standalone fixes its metadata.
+    let python_dir = path
+        .parent()
+        .ok_or_else(|| anyhow!("unable to resolve parent directory of PYTHON.json"))?;
+
+    for entries in v.build_info.extensions.values_mut() {
+        for entry in entries.iter_mut() {
+            for link in entry.links.iter_mut() {
+                if !(link.name.starts_with("libcrypto-1_1") || link.name.starts_with("libssl-1_1")) {
+                    continue;
+                }
+
+                if let Some(path_dynamic) = &link.path_dynamic {
+                    let fixed = path_dynamic.replace("-1_1", "-3");
+
+                    if !python_dir.join(path_dynamic).exists() && python_dir.join(&fixed).exists() {
                         link.name = link.name.replace("-1_1", "-3");
-                        link.path_dynamic = link.path_dynamic.as_mut().map(|p| p.replace("-1_1", "-3"));
-                    } else if link.name.starts_with("libssl-1_1") {
-                        link.name = link.name.replace("-1_1", "-3");
-                        link.path_dynamic = link.path_dynamic.as_mut().map(|p| p.replace("-1_1", "-3"));
+                        link.path_dynamic = Some(fixed);
                     }
                 }
             }
@@ -320,6 +330,27 @@ fn parse_python_json(path: &Path) -> Result<PythonJsonMain> {
     }
 
     Ok(v)
+}
+
+/// Resolve a shared library bundled with a distribution that a link entry
+/// declares as a *system* library.
+///
+/// Since the switch to Tcl/Tk 9, python-build-standalone builds `libtcl` and
+/// `libtk` as shared libraries on Linux and macOS and `_tkinter` links against
+/// them dynamically. Its `PYTHON.json` declares those libraries as system
+/// libraries, but they are actually shipped in the distribution's `install/lib`
+/// directory. Such libraries can't be statically linked into a binary.
+fn bundled_shared_library(python_path: &Path, link: &LinkEntry) -> Option<PathBuf> {
+    if !link.system.unwrap_or(false) {
+        return None;
+    }
+
+    let lib_dir = python_path.join("install").join("lib");
+
+    ["so", "dylib"]
+        .iter()
+        .map(|ext| lib_dir.join(format!("lib{}.{}", link.name, ext)))
+        .find(|p| p.exists())
 }
 
 fn parse_python_json_from_distribution(dist_dir: &Path) -> Result<PythonJsonMain> {
@@ -888,6 +919,31 @@ impl StandaloneDistribution {
             let mut ems = PythonExtensionModuleVariants::default();
 
             for entry in variants.iter() {
+                // Extension modules depending on shared libraries bundled with the
+                // distribution can't be linked into the binary and we don't support
+                // distributing those shared libraries alongside the binary. So we
+                // pretend these extension modules don't exist.
+                let bundled_libraries = entry
+                    .links
+                    .iter()
+                    .filter(|link| bundled_shared_library(&python_path, link).is_some())
+                    .map(|link| link.name.clone())
+                    .collect::<Vec<_>>();
+
+                if !bundled_libraries.is_empty() {
+                    with_shell(|log| {
+                        log.warn(format!(
+                            "ignoring extension module {} (variant {}) because it depends on shared libraries bundled with the Python distribution that cannot be linked statically: {}",
+                            module,
+                            entry.variant,
+                            bundled_libraries.join(", ")
+                        ))
+                        .unwrap_or_default();
+                    });
+
+                    continue;
+                }
+
                 let extension_file_suffix = if let Some(p) = &entry.shared_lib {
                     if let Some(idx) = p.rfind('.') {
                         p[idx..].to_string()
@@ -971,7 +1027,9 @@ impl StandaloneDistribution {
                 });
             }
 
-            extension_modules.insert(module.clone(), ems);
+            if !ems.is_empty() {
+                extension_modules.insert(module.clone(), ems);
+            }
         }
 
         let include_path = if let Some(p) = pi.python_paths.get("include") {
@@ -1571,6 +1629,44 @@ pub mod tests {
         );
         assert_eq!(parse_llvm_bitcode_version("llvm-bitcode:"), None);
         assert_eq!(parse_llvm_bitcode_version("llvm-bitcode:abc"), None);
+    }
+
+    #[test]
+    fn test_bundled_shared_library() -> Result<()> {
+        let temp_dir = tempfile::Builder::new()
+            .prefix("pyoxidizer-test")
+            .tempdir()?;
+        let python_path = temp_dir.path();
+        let lib_dir = python_path.join("install").join("lib");
+        std::fs::create_dir_all(&lib_dir)?;
+        std::fs::write(lib_dir.join("libtcl9.0.dylib"), b"")?;
+        std::fs::write(lib_dir.join("libtcl9tk9.0.so"), b"")?;
+        std::fs::write(lib_dir.join("libtclstub.a"), b"")?;
+
+        let link = |name: &str, system: bool| LinkEntry {
+            name: name.to_string(),
+            path_static: None,
+            path_dynamic: None,
+            framework: None,
+            system: Some(system),
+        };
+
+        assert_eq!(
+            bundled_shared_library(python_path, &link("tcl9.0", true)),
+            Some(lib_dir.join("libtcl9.0.dylib"))
+        );
+        assert_eq!(
+            bundled_shared_library(python_path, &link("tcl9tk9.0", true)),
+            Some(lib_dir.join("libtcl9tk9.0.so"))
+        );
+        // Static libraries don't count.
+        assert_eq!(bundled_shared_library(python_path, &link("tclstub", true)), None);
+        // Real system libraries aren't in the distribution.
+        assert_eq!(bundled_shared_library(python_path, &link("z", true)), None);
+        // Only system entries are considered.
+        assert_eq!(bundled_shared_library(python_path, &link("tcl9.0", false)), None);
+
+        Ok(())
     }
 
     use {

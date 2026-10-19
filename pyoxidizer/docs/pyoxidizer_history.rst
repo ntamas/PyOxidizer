@@ -52,6 +52,15 @@ Changes
   custom libpython archive, since Apple's ``ar`` silently drops bitcode
   members. On macOS, Apple SDKs that LLD cannot parse are skipped when
   resolving the SDK to build against.
+* Extension modules depending on shared libraries bundled with the Python
+  distribution are now ignored (with a warning) instead of causing link
+  failures. This affects ``_tkinter`` in python-build-standalone
+  distributions since the switch to Tcl/Tk 9, which build ``libtcl`` and
+  ``libtk`` as shared libraries on Linux and macOS: ``tkinter`` is not
+  available in binaries built from these distributions.
+* The workaround for Windows distributions referencing OpenSSL 1.1 DLLs that
+  don't exist now applies to all Python versions (including 3.14+) and is
+  based on the presence of the DLLs rather than the Python version.
 
 0.125.0
 -------
