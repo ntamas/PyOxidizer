@@ -2806,51 +2806,49 @@ pub mod tests {
     fn test_linux_extension_build_with_library() -> Result<()> {
         let env = get_env()?;
 
-        // We are going to test this with pyyaml 5.3.1 because:
+        // We are going to test this with pyyaml because we need a Python
+        // extension that has a shared library dependency and that builds
+        // the extension in a way that it needs to link to an external shared
+        // library (libyaml in this case). pyyaml is built from its sdist
+        // (`--no-binary`) so that the extension is actually compiled against
+        // the libyaml installed in the testing environment; the wheels from
+        // PyPI bundle libyaml statically, which is not what we want to test.
         //
-        // - it works with Python 3.9 (and the build is pinned down to this
-        //   Python version)
-        // - we need a Python extension that has a shared library dependency
-        //   and that builds the extension in a way that it needs to link to
-        //   an external shared library (libyaml in this case); this rules out
-        //   pyyaml 5.4 and later because they link statically to libyaml when
-        //   it is found
-        // - pyyaml 6.x and later are not suitable until we fix the resource
-        //   classifier to start recognizing "*.libs"-style directories
+        // pyyaml 5.3.1 (used previously) does not compile on Python 3.10+
+        // because its pre-generated Cython code assigns to `Py_SIZE()`, so
+        // we use a recent release that regenerates the C code with Cython
+        // at build time.
         //
         // However, this means that:
         // - libyaml needs to be present in the testing environment
         // - the compiler used to compile the Python standalone distribution
         //   also needs to be present in the testing environment.
-        //   python-build-standalone builds on Linux now use clang, so we need
+        //   python-build-standalone builds on Linux use clang, so we need
         //   to make sure that Clang is available in the testing environment.
-        // - we need to make sure that newer versions of Clang do not break
-        //   the build because of warnings that are converted to errors (and
-        //   that were not a problem at the time pyyaml 5.3.1 was released)
         //
         // To ensure all these, make sure that:
         // - libyaml is installed in the testing environment (with the dev
         //   package if needed)
         // - Clang is installed in the testing environment
-        // - -Wincompatible-function-pointer-types warnings are not converted
-        //   to errors
         //
         // On top of all of this, pip 23.1 introduced a change that means that
         // the build process does not work as intended (it will not use our
         // patched distutils implementation) if the "wheel" package is not
-        // installed. See https://github.com/pypa/pip/issues/8559
+        // installed. See https://github.com/pypa/pip/issues/8559 . Recent
+        // python-build-standalone distributions ship a modern setuptools,
+        // and pip builds pyyaml in an isolated build environment, so our
+        // patched distutils is not used at all and no extra build metadata
+        // (object files, link libraries) is collected.
         //
         // All of this shows that what we are doing with patching distutils
         // on-the-fly to provide additional build metadata is extremely fragile
-        // and it will break with Python 3.12 anyway when distutils is removed
-        // from the standard library. In the long run the possibility of
-        // collecting additional metadata while an extension is being built
+        // and it does not work with Python 3.12 anyway where distutils was
+        // removed from the standard library. In the long run the possibility
+        // of collecting additional metadata while an extension is being built
         // with "pip install" has to be removed from PyOxidizer.
         //
-        // Right now we only modify the test to deal with the case of pip<23.1
-        // or pip>=23.1 with wheel installed (when the build metadata is provided),
-        // and pip>=23.1 without wheel (when it is not because we are not
-        // hitting our patched distutils).
+        // Right now we only modify the test to deal with both cases: when the
+        // build metadata is provided and when it is not.
 
         for libpython_link_mode in vec![
             BinaryLibpythonLinkMode::Static,
@@ -2870,7 +2868,11 @@ pub mod tests {
             let resources = builder.pip_install(
                 &env,
                 false,
-                &["pyyaml==5.3.1".to_string()],
+                &[
+                    "--no-binary".to_string(),
+                    "pyyaml".to_string(),
+                    "pyyaml==6.0.3".to_string(),
+                ],
                 &HashMap::new(),
             )?;
 
@@ -2912,16 +2914,16 @@ pub mod tests {
             let has_extra_build_metadata = orig.object_file_data.len() > 0;
 
             // Makes compare easier.
-            let mut e = orig.to_mut();
+            let e = orig.to_mut();
             e.shared_library = None;
             e.object_file_data = vec![];
 
             assert_eq!(
                 e,
                 &PythonExtensionModule {
-                    name: "_yaml".to_string(),
+                    name: "yaml._yaml".to_string(),
                     init_fn: Some("PyInit__yaml".to_string()),
-                    extension_file_suffix: ".cpython-39-x86_64-linux-gnu.so".to_string(),
+                    extension_file_suffix: ".cpython-310-x86_64-linux-gnu.so".to_string(),
                     shared_library: None,
                     object_file_data: vec![],
                     is_package: false,
