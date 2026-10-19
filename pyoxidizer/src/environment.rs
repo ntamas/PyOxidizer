@@ -103,8 +103,14 @@ pub const RUST_TOOLCHAIN_VERSION: &str = "1.99.1";
 pub static LINUX_TARGET_TRIPLES: Lazy<Vec<&'static str>> = Lazy::new(|| {
     vec![
         "aarch64-unknown-linux-gnu",
+        "aarch64-unknown-linux-musl",
         "x86_64-unknown-linux-gnu",
         "x86_64-unknown-linux-musl",
+        "x86_64_v2-unknown-linux-gnu",
+        "x86_64_v2-unknown-linux-musl",
+        "x86_64_v3-unknown-linux-gnu",
+        "x86_64_v3-unknown-linux-musl",
+        "x86_64_v4-unknown-linux-gnu",
     ]
 });
 
@@ -115,6 +121,7 @@ pub static MACOS_TARGET_TRIPLES: Lazy<Vec<&'static str>> =
 /// Target triples for Windows.
 pub static WINDOWS_TARGET_TRIPLES: Lazy<Vec<&'static str>> = Lazy::new(|| {
     vec![
+        "aarch64-pc-windows-msvc",
         "i686-pc-windows-gnu",
         "i686-pc-windows-msvc",
         "x86_64-pc-windows-gnu",

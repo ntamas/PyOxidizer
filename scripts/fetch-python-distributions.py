@@ -52,12 +52,14 @@ LINUX_GNU_TARGETS = [
     "x86_64-unknown-linux-gnu",
     "x86_64_v2-unknown-linux-gnu",
     "x86_64_v3-unknown-linux-gnu",
+    "x86_64_v4-unknown-linux-gnu",
 ]
 
 # The `+static` musl builds are fully statically linked and can only use
 # built-in extension modules. The non-static musl builds dynamically link
 # against musl and are not what PyOxidizer users expect from musl targets.
 LINUX_MUSL_TARGETS = [
+    "aarch64-unknown-linux-musl",
     "x86_64-unknown-linux-musl",
     "x86_64_v2-unknown-linux-musl",
     "x86_64_v3-unknown-linux-musl",
@@ -66,9 +68,16 @@ LINUX_MUSL_TARGETS = [
 # Windows builds dynamically link libpython (there is no static flavor any
 # more) and can load shared library extension modules.
 WINDOWS_TARGETS = [
+    "aarch64-pc-windows-msvc",
     "i686-pc-windows-msvc",
     "x86_64-pc-windows-msvc",
 ]
+
+# Targets that python-build-standalone only publishes for newer Python
+# versions, mapped to the first Python version available for them.
+MINIMUM_PYTHON_VERSIONS = {
+    "aarch64-pc-windows-msvc": (3, 11),
+}
 
 MACOS_TARGETS = [
     "aarch64-apple-darwin",
@@ -231,11 +240,19 @@ def main():
 
         return ENTRY.format(**records[key])
 
+    def available(major_minor, target_triple):
+        minimum = MINIMUM_PYTHON_VERSIONS.get(target_triple)
+        if minimum is None:
+            return True
+
+        return tuple(int(x) for x in major_minor.split(".")) >= minimum
+
     def group(targets, flavor):
         return [
             record(major_minor, target_triple, flavor)
             for major_minor in PYTHON_VERSIONS
             for target_triple in targets
+            if available(major_minor, target_triple)
         ]
 
     print("// This Source Code Form is subject to the terms of the Mozilla Public")

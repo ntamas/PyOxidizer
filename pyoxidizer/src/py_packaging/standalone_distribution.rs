@@ -300,35 +300,121 @@ fn parse_python_json(path: &Path) -> Result<PythonJsonMain> {
 
     let mut v: PythonJsonMain = serde_json::from_slice(&buf)?;
 
-    // Windows distributions since OpenSSL 3 still reference `libcrypto-1_1`
-    // and `libssl-1_1` DLLs even though the shipped DLLs are `libcrypto-3`
-    // and `libssl-3`. Fix up these references if the referenced DLL doesn't
-    // exist but the OpenSSL 3 one does. This is a hack until
-    // python-build-standalone fixes its metadata.
     let python_dir = path
         .parent()
         .ok_or_else(|| anyhow!("unable to resolve parent directory of PYTHON.json"))?;
 
-    for entries in v.build_info.extensions.values_mut() {
+    fix_windows_openssl_links(python_dir, &mut v.build_info.extensions)?;
+
+    Ok(v)
+}
+
+/// Fix up the OpenSSL DLL dependencies declared by Windows distributions.
+///
+/// The `PYTHON.json` of python-build-standalone's Windows distributions has
+/// two known problems with the OpenSSL DLLs that `_ssl` and `_hashlib`
+/// depend on:
+///
+/// * Distributions built with OpenSSL 3 still reference `libcrypto-1_1` and
+///   `libssl-1_1` DLLs even though the shipped DLLs are `libcrypto-3` and
+///   `libssl-3`.
+/// * `aarch64-pc-windows-msvc` distributions don't declare the OpenSSL DLLs
+///   at all, even though the extension modules import them.
+///
+/// Both are repaired by looking at which `libcrypto-*.dll` and `libssl-*.dll`
+/// files are actually shipped in `install/DLLs`: stale references are
+/// pointed at the shipped DLL and missing references are added. This is a
+/// hack until python-build-standalone fixes its metadata.
+fn fix_windows_openssl_links(
+    python_dir: &Path,
+    extensions: &mut BTreeMap<String, Vec<PythonBuildExtensionInfo>>,
+) -> Result<()> {
+    let dlls_dir = python_dir.join("install").join("DLLs");
+
+    if !dlls_dir.is_dir() {
+        return Ok(());
+    }
+
+    // Shipped OpenSSL DLL file names, keyed by library name prefix.
+    let mut shipped = BTreeMap::new();
+
+    for entry in
+        std::fs::read_dir(&dlls_dir).with_context(|| format!("reading {}", dlls_dir.display()))?
+    {
+        let file_name = entry?.file_name().to_string_lossy().to_string();
+        let lower = file_name.to_lowercase();
+
+        if !lower.ends_with(".dll") {
+            continue;
+        }
+
+        for lib in ["libcrypto", "libssl"] {
+            if lower.starts_with(&format!("{}-", lib)) {
+                shipped.insert(lib, file_name.clone());
+            }
+        }
+    }
+
+    if shipped.is_empty() {
+        return Ok(());
+    }
+
+    for (name, entries) in extensions.iter_mut() {
+        let needed: &[&str] = match name.as_str() {
+            "_ssl" => &["libcrypto", "libssl"],
+            "_hashlib" => &["libcrypto"],
+            _ => continue,
+        };
+
         for entry in entries.iter_mut() {
-            for link in entry.links.iter_mut() {
-                if !(link.name.starts_with("libcrypto-1_1") || link.name.starts_with("libssl-1_1")) {
+            // Only extension modules built as shared libraries load the DLLs.
+            if entry.shared_lib.is_none() {
+                continue;
+            }
+
+            for lib in needed {
+                let Some(dll) = shipped.get(lib) else {
                     continue;
+                };
+
+                let wanted_name = dll[..dll.len() - ".dll".len()].to_string();
+                let wanted_path = format!("install/DLLs/{}", dll);
+
+                let mut found = false;
+
+                for link in entry
+                    .links
+                    .iter_mut()
+                    .filter(|link| link.name.starts_with(&format!("{}-", lib)))
+                {
+                    found = true;
+
+                    let exists = link
+                        .path_dynamic
+                        .as_ref()
+                        .map(|p| python_dir.join(p).exists())
+                        .unwrap_or(false);
+
+                    if !exists {
+                        link.name = wanted_name.clone();
+                        link.path_dynamic = Some(wanted_path.clone());
+                    }
                 }
 
-                if let Some(path_dynamic) = &link.path_dynamic {
-                    let fixed = path_dynamic.replace("-1_1", "-3");
-
-                    if !python_dir.join(path_dynamic).exists() && python_dir.join(&fixed).exists() {
-                        link.name = link.name.replace("-1_1", "-3");
-                        link.path_dynamic = Some(fixed);
-                    }
+                if !found {
+                    entry.links.push(LinkEntry {
+                        name: wanted_name,
+                        path_static: None,
+                        path_dynamic: Some(wanted_path),
+                        framework: None,
+                        system: None,
+                    });
                 }
             }
         }
     }
 
-    Ok(v)
+    Ok(())
 }
 
 /// Resolve a shared library bundled with a distribution that a link entry
@@ -1246,6 +1332,7 @@ impl PythonDistribution for StandaloneDistribution {
                 "x86_64-unknown-linux-musl" => vec!["x86_64-unknown-linux-gnu"],
                 "aarch64-apple-darwin" => vec![],
                 "x86_64-apple-darwin" => vec![],
+                "aarch64-pc-windows-msvc" => vec![],
                 // 32-bit Windows GNU on 32-bit Windows MSVC and 64-bit Windows.
                 "i686-pc-windows-gnu" => vec![
                     "i686-pc-windows-msvc",
@@ -1614,6 +1701,206 @@ pub mod tests {
         assert_eq!(bundled_shared_library(python_path, &link("z", true)), None);
         // Only system entries are considered.
         assert_eq!(bundled_shared_library(python_path, &link("tcl9.0", false)), None);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_fix_windows_openssl_links() -> Result<()> {
+        let temp_dir = tempfile::Builder::new()
+            .prefix("pyoxidizer-test")
+            .tempdir()?;
+        let python_dir = temp_dir.path();
+        let dlls_dir = python_dir.join("install").join("DLLs");
+        std::fs::create_dir_all(&dlls_dir)?;
+
+        let link = |name: &str, path_dynamic: Option<&str>, system: bool| LinkEntry {
+            name: name.to_string(),
+            path_static: None,
+            path_dynamic: path_dynamic.map(|p| p.to_string()),
+            framework: None,
+            system: if system { Some(true) } else { None },
+        };
+        let extension = |links: Vec<LinkEntry>| PythonBuildExtensionInfo {
+            in_core: false,
+            init_fn: "PyInit_x".to_string(),
+            licenses: None,
+            license_paths: None,
+            license_public_domain: None,
+            links,
+            objs: vec![],
+            required: false,
+            static_lib: None,
+            shared_lib: Some("install/DLLs/x.pyd".to_string()),
+            variant: "default".to_string(),
+        };
+        let names = |entry: &PythonBuildExtensionInfo| {
+            entry
+                .links
+                .iter()
+                .map(|l| (l.name.clone(), l.path_dynamic.clone()))
+                .collect::<Vec<_>>()
+        };
+
+        // x86-64 style: stale OpenSSL 1.1 references, OpenSSL 3 DLLs shipped.
+        std::fs::write(dlls_dir.join("libcrypto-3-x64.dll"), b"")?;
+        std::fs::write(dlls_dir.join("libssl-3-x64.dll"), b"")?;
+
+        let mut extensions = BTreeMap::new();
+        extensions.insert(
+            "_ssl".to_string(),
+            vec![extension(vec![
+                link("crypt32", None, true),
+                link(
+                    "libcrypto-1_1-x64",
+                    Some("install/DLLs/libcrypto-1_1-x64.dll"),
+                    false,
+                ),
+                link(
+                    "libssl-1_1-x64",
+                    Some("install/DLLs/libssl-1_1-x64.dll"),
+                    false,
+                ),
+            ])],
+        );
+        extensions.insert(
+            "_hashlib".to_string(),
+            vec![extension(vec![link(
+                "libcrypto-1_1-x64",
+                Some("install/DLLs/libcrypto-1_1-x64.dll"),
+                false,
+            )])],
+        );
+        extensions.insert(
+            "_sqlite3".to_string(),
+            vec![extension(vec![link(
+                "sqlite3",
+                Some("install/DLLs/sqlite3.dll"),
+                false,
+            )])],
+        );
+
+        fix_windows_openssl_links(python_dir, &mut extensions)?;
+
+        assert_eq!(
+            names(&extensions["_ssl"][0]),
+            vec![
+                ("crypt32".to_string(), None),
+                (
+                    "libcrypto-3-x64".to_string(),
+                    Some("install/DLLs/libcrypto-3-x64.dll".to_string())
+                ),
+                (
+                    "libssl-3-x64".to_string(),
+                    Some("install/DLLs/libssl-3-x64.dll".to_string())
+                ),
+            ]
+        );
+        assert_eq!(
+            names(&extensions["_hashlib"][0]),
+            vec![(
+                "libcrypto-3-x64".to_string(),
+                Some("install/DLLs/libcrypto-3-x64.dll".to_string())
+            )]
+        );
+        assert_eq!(
+            names(&extensions["_sqlite3"][0]),
+            vec![(
+                "sqlite3".to_string(),
+                Some("install/DLLs/sqlite3.dll".to_string())
+            )]
+        );
+
+        // References to DLLs that exist are left alone.
+        std::fs::write(dlls_dir.join("libcrypto-1_1-x64.dll"), b"")?;
+        let mut extensions = BTreeMap::new();
+        extensions.insert(
+            "_hashlib".to_string(),
+            vec![extension(vec![link(
+                "libcrypto-1_1-x64",
+                Some("install/DLLs/libcrypto-1_1-x64.dll"),
+                false,
+            )])],
+        );
+        fix_windows_openssl_links(python_dir, &mut extensions)?;
+        assert_eq!(
+            names(&extensions["_hashlib"][0]),
+            vec![(
+                "libcrypto-1_1-x64".to_string(),
+                Some("install/DLLs/libcrypto-1_1-x64.dll".to_string())
+            )]
+        );
+
+        // aarch64 style: no OpenSSL references at all.
+        let temp_dir = tempfile::Builder::new()
+            .prefix("pyoxidizer-test")
+            .tempdir()?;
+        let python_dir = temp_dir.path();
+        let dlls_dir = python_dir.join("install").join("DLLs");
+        std::fs::create_dir_all(&dlls_dir)?;
+        std::fs::write(dlls_dir.join("libcrypto-3-arm64.dll"), b"")?;
+        std::fs::write(dlls_dir.join("libssl-3-arm64.dll"), b"")?;
+
+        let mut extensions = BTreeMap::new();
+        extensions.insert(
+            "_ssl".to_string(),
+            vec![extension(vec![
+                link("crypt32", None, true),
+                link("ws2_32", None, true),
+            ])],
+        );
+        // In-core extensions don't load DLLs.
+        let mut in_core = extension(vec![]);
+        in_core.in_core = true;
+        in_core.shared_lib = None;
+        extensions.insert(
+            "_hashlib".to_string(),
+            vec![extension(vec![link("ws2_32", None, true)]), in_core],
+        );
+
+        fix_windows_openssl_links(python_dir, &mut extensions)?;
+
+        assert_eq!(
+            names(&extensions["_ssl"][0]),
+            vec![
+                ("crypt32".to_string(), None),
+                ("ws2_32".to_string(), None),
+                (
+                    "libcrypto-3-arm64".to_string(),
+                    Some("install/DLLs/libcrypto-3-arm64.dll".to_string())
+                ),
+                (
+                    "libssl-3-arm64".to_string(),
+                    Some("install/DLLs/libssl-3-arm64.dll".to_string())
+                ),
+            ]
+        );
+        assert_eq!(
+            names(&extensions["_hashlib"][0]),
+            vec![
+                ("ws2_32".to_string(), None),
+                (
+                    "libcrypto-3-arm64".to_string(),
+                    Some("install/DLLs/libcrypto-3-arm64.dll".to_string())
+                ),
+            ]
+        );
+        assert!(extensions["_hashlib"][1].links.is_empty());
+
+        // Distributions without OpenSSL DLLs (non-Windows) are untouched.
+        let temp_dir = tempfile::Builder::new()
+            .prefix("pyoxidizer-test")
+            .tempdir()?;
+        let mut extensions = BTreeMap::new();
+        extensions.insert(
+            "_ssl".to_string(),
+            vec![extension(vec![link("crypto", None, false)])],
+        );
+        fix_windows_openssl_links(temp_dir.path(), &mut extensions)?;
+        assert_eq!(
+            names(&extensions["_ssl"][0]),
+            vec![("crypto".to_string(), None)]
+        );
 
         Ok(())
     }

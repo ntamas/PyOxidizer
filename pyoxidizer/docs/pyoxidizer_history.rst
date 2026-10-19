@@ -107,6 +107,13 @@ Changes
 * The workaround for Windows distributions referencing OpenSSL 1.1 DLLs that
   don't exist now applies to all Python versions (including 3.14+) and is
   based on the presence of the DLLs rather than the Python version.
+* New default Python distributions for the ``aarch64-pc-windows-msvc``
+  (Python 3.11+), ``aarch64-unknown-linux-musl`` and
+  ``x86_64_v4-unknown-linux-gnu`` targets.
+* The ``aarch64-pc-windows-msvc`` distributions don't declare the OpenSSL
+  DLLs that ``_ssl`` and ``_hashlib`` depend on. PyOxidizer now adds these
+  dependencies from the DLLs shipped in the distribution so the DLLs get
+  installed next to the extension modules.
 
 0.125.0
 -------

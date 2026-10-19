@@ -2524,9 +2524,22 @@ pub mod tests {
     fn test_windows_dynamic_distribution_dynamic_extension_files() -> Result<()> {
         let env = get_env()?;
 
-        for target in WINDOWS_TARGET_TRIPLES.iter() {
+        // (target triple, Python version, OpenSSL DLL name infix).
+        //
+        // Python 3.10 ships OpenSSL 1.1, later versions OpenSSL 3. The
+        // aarch64 distributions start at 3.11 and their PYTHON.json omits
+        // the OpenSSL DLLs, which PyOxidizer fills in.
+        let targets = [
+            ("i686-pc-windows-msvc", "3.10", "-1_1"),
+            ("x86_64-pc-windows-msvc", "3.10", "-1_1-x64"),
+            ("x86_64-pc-windows-msvc", "3.13", "-3-x64"),
+            ("aarch64-pc-windows-msvc", "3.11", "-3-arm64"),
+        ];
+
+        for (target, version, lib_suffix) in targets {
             let options = StandalonePythonExecutableBuilderOptions {
                 target_triple: target.to_string(),
+                distribution_version: Some(version.to_string()),
                 extension_module_filter: Some(ExtensionModuleFilter::Minimal),
                 resources_location: Some(ConcreteResourceLocation::RelativePath("lib".to_string())),
                 resources_location_fallback: Some(None),
@@ -2591,16 +2604,7 @@ pub mod tests {
                 "pulled in shared library dependencies for _ssl"
             );
 
-            let lib_suffix = match *target {
-                "i686-pc-windows-msvc" => "",
-                "x86_64-pc-windows-msvc" => "-x64",
-                _ => panic!("unexpected target: {}", target),
-            };
-
-            assert_eq!(
-                shared_libraries[0].name,
-                format!("libcrypto-1_1{}", lib_suffix)
-            );
+            assert_eq!(shared_libraries[0].name, format!("libcrypto{}", lib_suffix));
             assert_eq!(
                 shared_libraries[0]
                     .relative_path_shared_library
@@ -2610,10 +2614,7 @@ pub mod tests {
                 "lib"
             );
 
-            assert_eq!(
-                shared_libraries[1].name,
-                format!("libssl-1_1{}", lib_suffix)
-            );
+            assert_eq!(shared_libraries[1].name, format!("libssl{}", lib_suffix));
 
             let mut compiler = builder.host_distribution.create_bytecode_compiler(&env)?;
 
@@ -2626,7 +2627,7 @@ pub mod tests {
             assert_eq!(
                 &resources[0].1,
                 &vec![(
-                    PathBuf::from(format!("lib/libcrypto-1_1{}.dll", lib_suffix)),
+                    PathBuf::from(format!("lib/libcrypto{}.dll", lib_suffix)),
                     FileData::Path(
                         builder
                             .target_distribution
@@ -2634,7 +2635,7 @@ pub mod tests {
                             .join("python")
                             .join("install")
                             .join("DLLs")
-                            .join(format!("libcrypto-1_1{}.dll", lib_suffix))
+                            .join(format!("libcrypto{}.dll", lib_suffix))
                     ),
                     true
                 )]
@@ -2642,7 +2643,7 @@ pub mod tests {
             assert_eq!(
                 &resources[1].1,
                 &vec![(
-                    PathBuf::from(format!("lib/libssl-1_1{}.dll", lib_suffix)),
+                    PathBuf::from(format!("lib/libssl{}.dll", lib_suffix)),
                     FileData::Path(
                         builder
                             .target_distribution
@@ -2650,7 +2651,7 @@ pub mod tests {
                             .join("python")
                             .join("install")
                             .join("DLLs")
-                            .join(format!("libssl-1_1{}.dll", lib_suffix))
+                            .join(format!("libssl{}.dll", lib_suffix))
                     ),
                     true
                 )]
@@ -2900,6 +2901,7 @@ pub mod tests {
 
             if dist.target_triple().contains("windows") && dist.libpython_shared_library.is_some() {
                 let platform = match dist.target_triple() {
+                    "aarch64-pc-windows-msvc" => VcRedistributablePlatform::Arm64,
                     "i686-pc-windows-msvc" => VcRedistributablePlatform::X86,
                     "x86_64-pc-windows-msvc" => VcRedistributablePlatform::X64,
                     triple => {

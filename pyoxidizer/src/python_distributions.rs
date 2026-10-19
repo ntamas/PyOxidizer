@@ -77,7 +77,9 @@ mod tests {
                 .collect::<Vec<_>>(),
             vec![
                 "aarch64-apple-darwin",
+                "aarch64-pc-windows-msvc",
                 "aarch64-unknown-linux-gnu",
+                "aarch64-unknown-linux-musl",
                 "i686-pc-windows-msvc",
                 "x86_64-apple-darwin",
                 "x86_64-pc-windows-msvc",
@@ -87,6 +89,7 @@ mod tests {
                 "x86_64_v2-unknown-linux-musl",
                 "x86_64_v3-unknown-linux-gnu",
                 "x86_64_v3-unknown-linux-musl",
+                "x86_64_v4-unknown-linux-gnu",
             ]
         );
     }
