@@ -11,7 +11,6 @@ This module tree holds functionality that is centered around Python.
 pub mod binary;
 pub mod config;
 pub mod distribution;
-pub mod distutils;
 pub mod embedding;
 pub mod filtering;
 pub mod libpython;

@@ -7,10 +7,7 @@ Interaction with Python packaging tools (pip, setuptools, etc).
 */
 
 use {
-    super::{
-        binary::LibpythonLinkMode, distribution::PythonDistribution,
-        distutils::read_built_extensions, standalone_distribution::resolve_python_paths,
-    },
+    super::{distribution::PythonDistribution, standalone_distribution::resolve_python_paths},
     crate::{environment::Environment, shell::{with_concise_shell, with_shell, with_verbose_shell}},
     anyhow::{anyhow, Context, Result},
     duct::{cmd, ReaderHandle},
@@ -23,7 +20,7 @@ use {
         collections::{hash_map::RandomState, HashMap},
         hash::BuildHasher,
         io::{BufRead, BufReader},
-        path::{Path, PathBuf},
+        path::Path,
     },
 };
 
@@ -46,18 +43,8 @@ pub fn find_resources<'a>(
     dist: &dyn PythonDistribution,
     policy: &PythonPackagingPolicy,
     path: &Path,
-    state_dir: Option<PathBuf>,
 ) -> Result<Vec<PythonResource<'a>>> {
     let mut res = Vec::new();
-
-    let built_extensions = if let Some(p) = state_dir {
-        read_built_extensions(&p)?
-            .iter()
-            .map(|ext| (ext.name.clone(), ext.clone()))
-            .collect()
-    } else {
-        HashMap::new()
-    };
 
     for r in find_python_resources(
         path,
@@ -66,21 +53,7 @@ pub fn find_resources<'a>(
         policy.file_scanner_emit_files(),
         policy.file_scanner_classify_files(),
     )? {
-        let r = r?.to_memory()?;
-
-        match r {
-            PythonResource::ExtensionModule(e) => {
-                // Use a built extension if present, as it will contain more metadata.
-                res.push(if let Some(built) = built_extensions.get(&e.name) {
-                    PythonResource::from(built.to_memory()?)
-                } else {
-                    PythonResource::ExtensionModule(e)
-                });
-            }
-            _ => {
-                res.push(r);
-            }
-        }
+        res.push(r?.to_memory()?);
     }
 
     Ok(res)
@@ -216,7 +189,6 @@ pub fn pip_install<'a, S: BuildHasher>(
     env: &Environment,
     dist: &dyn PythonDistribution,
     policy: &PythonPackagingPolicy,
-    libpython_link_mode: LibpythonLinkMode,
     verbose: bool,
     install_args: &[String],
     extra_envs: &HashMap<String, String, S>,
@@ -226,9 +198,6 @@ pub fn pip_install<'a, S: BuildHasher>(
     dist.ensure_pip()?;
 
     let mut env: HashMap<String, String, RandomState> = std::env::vars().collect();
-    for (k, v) in dist.resolve_distutils(libpython_link_mode, temp_dir.path(), &[])? {
-        env.insert(k, v);
-    }
 
     for (key, value) in extra_envs.iter() {
         env.insert(key.clone(), value.clone());
@@ -288,10 +257,7 @@ pub fn pip_install<'a, S: BuildHasher>(
         return Err(anyhow!("error running pip"));
     }
 
-    let state_dir = env.get("PYOXIDIZER_DISTUTILS_STATE_DIR").map(PathBuf::from);
-
-    let resources =
-        find_resources(dist, policy, &target_dir, state_dir).context("scanning for resources")?;
+    let resources = find_resources(dist, policy, &target_dir).context("scanning for resources")?;
 
     temp_dir.close().context("closing temporary directory")?;
 
@@ -306,16 +272,14 @@ pub fn read_virtualenv<'a>(
 ) -> Result<Vec<PythonResource<'a>>> {
     let python_paths = resolve_python_paths(path, &dist.python_major_minor_version());
 
-    find_resources(dist, policy, &python_paths.site_packages, None)
+    find_resources(dist, policy, &python_paths.site_packages)
 }
 
 /// Run `setup.py install` against a path and return found resources.
-#[allow(clippy::too_many_arguments)]
 pub fn setup_py_install<'a, S: BuildHasher>(
     env: &Environment,
     dist: &dyn PythonDistribution,
     policy: &PythonPackagingPolicy,
-    libpython_link_mode: LibpythonLinkMode,
     package_path: &Path,
     verbose: bool,
     extra_envs: &HashMap<String, String, S>,
@@ -338,13 +302,6 @@ pub fn setup_py_install<'a, S: BuildHasher>(
     std::fs::create_dir_all(&python_paths.site_packages)?;
 
     let mut envs: HashMap<String, String, RandomState> = std::env::vars().collect();
-    for (k, v) in dist.resolve_distutils(
-        libpython_link_mode,
-        temp_dir.path(),
-        &[&python_paths.site_packages, &python_paths.stdlib],
-    )? {
-        envs.insert(k, v);
-    }
 
     for (key, value) in extra_envs {
         envs.insert(key.clone(), value.clone());
@@ -395,10 +352,6 @@ pub fn setup_py_install<'a, S: BuildHasher>(
         return Err(anyhow!("error running pip"));
     }
 
-    let state_dir = envs
-        .get("PYOXIDIZER_DISTUTILS_STATE_DIR")
-        .map(PathBuf::from);
-
     with_verbose_shell(|log| {
         log.status(
             "Scanning",
@@ -406,7 +359,7 @@ pub fn setup_py_install<'a, S: BuildHasher>(
         )
     })?;
 
-    let resources = find_resources(dist, policy, &python_paths.site_packages, state_dir)
+    let resources = find_resources(dist, policy, &python_paths.site_packages)
         .context("scanning for resources")?;
 
     temp_dir.close().context("closing temporary directory")?;
@@ -431,7 +384,6 @@ mod tests {
             &env,
             distribution.deref(),
             &distribution.create_packaging_policy()?,
-            LibpythonLinkMode::Dynamic,
             false,
             &["black==19.10b0".to_string()],
             &HashMap::new(),
@@ -454,7 +406,6 @@ mod tests {
             &env,
             distribution.deref(),
             &policy,
-            LibpythonLinkMode::Dynamic,
             false,
             &["cffi==1.15.0".to_string()],
             &HashMap::new(),

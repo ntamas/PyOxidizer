@@ -8,7 +8,7 @@ Defining and manipulating Python distributions.
 
 use {
     super::{
-        binary::{LibpythonLinkMode, PythonBinaryBuilder},
+        binary::PythonBinaryBuilder,
         config::PyembedPythonInterpreterConfig,
         standalone_distribution::StandaloneDistribution,
     },
@@ -194,31 +194,11 @@ pub trait PythonDistribution {
     /// Returns the path to a `pip` executable.
     fn ensure_pip(&self) -> Result<PathBuf>;
 
-    /// Resolve a `distutils` installation used for building Python packages.
-    ///
-    /// Some distributions may need to use a modified `distutils` to coerce builds to work
-    /// as PyOxidizer desires. This method is used to realize such a `distutils` installation.
-    ///
-    /// Note that we pass in an explicit libpython link mode because the link mode
-    /// we care about may differ from the link mode of the distribution itself (as some
-    /// distributions support multiple link modes).
-    ///
-    /// The return is a map of environment variables to set in the build environment.
-    fn resolve_distutils(
-        &self,
-        libpython_link_mode: LibpythonLinkMode,
-        dest_dir: &Path,
-        extra_python_paths: &[&Path],
-    ) -> Result<HashMap<String, String>>;
-
     /// Whether this distribution supports loading shared libraries from memory.
     ///
     /// This effectively answers whether we can embed a shared library into an
     /// executable and load it without having to materialize it on a filesystem.
     fn supports_in_memory_shared_library_loading(&self) -> bool;
-
-    /// Whether this distribution supports compiling C extensions from source.
-    fn supports_compiling_c_extensions(&self) -> bool;
 
     /// Determine whether a named module is in a known standard library test package.
     fn is_stdlib_test_package(&self, name: &str) -> bool {

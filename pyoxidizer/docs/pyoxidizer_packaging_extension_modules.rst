@@ -50,15 +50,6 @@ work. These restrictions are typically a side-effect of limitations
 of the :ref:`Python distribution <packaging_python_distributions>` being
 used/targeted. These restrictions are documented in the sections below.
 
-Known Incompatibility with Cython
----------------------------------
-
-PyOxidizer currently has a known incompatibility with Cython. Specifically,
-PyOxidizer fails to find object files that Cython builds. This can lead
-to missing symbols and build/link time errors.
-
-This is tracked by https://github.com/indygreg/PyOxidizer/issues/567.
-
 .. _packaging_extension_modules_musl:
 
 musl libc Linux Distributions Only Support Built-in Extension Modules
@@ -77,11 +68,12 @@ files typically). This means PyOxidizer cannot consume Python wheels
 or other Python resource sources containing pre-built Python extension
 modules.
 
-In order for PyOxidizer to support a Python extension module built for
-musl libc, it must compile that extension module from source and link
-the resulting object files / static library directly into the built
-binary and expose that extension module as a *built-in*. This is done
-using :ref:`packaging_distutils_hack`.
+In order for a Python extension module to be usable with musl libc, it
+would have to be statically linked into the built binary and exposed as
+a *built-in*. PyOxidizer does not support this for third party extension
+modules: see :ref:`packaging_extension_modules_no_source_builds`. Only
+the *built-in* extension modules shipped with the Python distribution
+are available on musl libc targets.
 
 .. _packaging_extension_modules_windows_static:
 
@@ -118,8 +110,9 @@ The ``in-memory`` resource location is interpreted by PyOxidizer as
 PyOxidizer will try its hardest to satisfy this request.
 
 If the object files / static library of an extension module are known
-to PyOxidizer, these will be statically linked into the built binary
-and the extension module will be exposed as a *built-in* extension
+to PyOxidizer (which is the case for extension modules that are part of
+the Python distribution), these will be statically linked into the built
+binary and the extension module will be exposed as a *built-in* extension
 module.
 
 If only a shared library is available for the extension module,
@@ -175,46 +168,31 @@ to be handled by the operating system's default rules. And this means
 that the shared library file must exist on the filesystem, next to a
 file-based extension module.
 
-.. _packaging_distutils_hack:
+.. _packaging_extension_modules_no_source_builds:
 
-Building with a Custom Distutils
-================================
+Extension Modules Are Not Compiled as Built-ins
+===============================================
 
-If PyOxidizer is not able to reuse an existing shared library
-extension module or the build configuration is forcing an extension
-to be built as a *built-in*, PyOxidizer attempts to compile the
-extension module from source so that it can be statically linked as
-a *built-in*.
+Older versions of PyOxidizer attempted to compile extension modules from
+source as *built-in* extension modules when a package was installed with
+:py:meth:`PythonExecutable.pip_install` or
+:py:meth:`PythonExecutable.setup_py_install`: a modified ``distutils``
+was injected into the invoked Python process to capture the object files
+and library dependencies produced by the build so they could be linked
+statically into the built binary.
 
-The way PyOxidizer achieves this is a bit crude, but often effective.
+This mechanism no longer works and has been removed. ``distutils`` was
+removed from the Python standard library in Python 3.12, modern versions
+of ``setuptools`` always use their own vendored copy of ``distutils``,
+and ``pip`` builds packages in an isolated build environment where the
+modified ``distutils`` is not visible.
 
-When PyOxidizer invokes ``pip`` or ``setup.py`` to build a package,
-it installs a modified version of ``distutils`` into the invoked
-Python's ``sys.path``. This modified ``distutils`` changes the
-behavior of some key build steps (notably how C extensions are compiled)
-such that the build emits artifacts that PyOxidizer can statically
-link into a custom binary.
-
-For example, on Linux, PyOxidizer copies the intermediate object files
-produced by the build and links them into the binary containing the
-generated ``libpython``. PyOxidizer completely ignores the shared
-library that is or would typically be produced.
-
-If ``setup.py`` scripts are following the traditional pattern of using
-`distutils.core.Extension <https://docs.python.org/3/distutils/apiref.html#distutils.core.Extension>`_
-to define extension modules, things tend to *just work* (assuming extension
-modules are supported by PyOxidizer for the target platform). However,
-if ``setup.py`` scripts are doing their own monkeypatching of
-``distutils``, rely on custom build steps or types to compile extension
-modules, or invoke separate Python processes to interact with ``distutils``,
-things may break.
-
-The easiest way to avoid the pitfalls of a custom ``distutils`` build
-is to not attempt to produce a statically linked binary: use a
-``standalone_dynamic`` distribution flavor that supports loading
-extension modules from files.
-
-Until PyOxidizer supports telling it additional object files or
-static libraries to link into a binary, there's no easy workaround aside
-from giving up on a statically linked binary. Better support will hopefully
-be present in future versions of PyOxidizer.
+As a consequence, extension modules in packages installed with
+:py:meth:`PythonExecutable.pip_install` or
+:py:meth:`PythonExecutable.setup_py_install` are always *standalone*
+extension modules (shared libraries), exactly as they would be when
+installed into a regular Python environment. They can only be used with
+Python distributions that support loading shared library extension
+modules, and they must be placed in a
+:ref:`resource location <packaging_resource_locations>` that allows
+this (typically ``filesystem-relative``).

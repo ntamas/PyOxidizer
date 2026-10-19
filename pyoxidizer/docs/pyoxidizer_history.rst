@@ -45,6 +45,19 @@ Backwards Compatibility Notes
 * Linux and macOS distributions are now the ``pgo+lto`` flavor and therefore
   use LTO. Linux musl distributions are the ``noopt+static`` flavor, which is
   the fully statically linked flavor previously known as ``noopt``.
+* The modified ``distutils`` that PyOxidizer injected into ``pip install``
+  and ``setup.py install`` invocations to capture object files of compiled
+  extension modules (so they could be linked statically as built-in
+  extension modules) has been removed. It could no longer take effect:
+  ``distutils`` is gone from the standard library since Python 3.12,
+  ``setuptools`` uses its own vendored ``distutils``, and ``pip`` builds
+  packages in isolated build environments. Extension modules built by
+  ``pip_install()`` and ``setup_py_install()`` are now always shared
+  libraries. The ``PythonDistribution::resolve_distutils()`` and
+  ``supports_compiling_c_extensions()`` Rust APIs have been removed and
+  ``pip_install()``, ``setup_py_install()`` and ``find_resources()`` in
+  ``py_packaging::packaging_tool`` no longer take a libpython link mode or
+  a build state directory.
 
 Changes
 ^^^^^^^

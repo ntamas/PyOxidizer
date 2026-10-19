@@ -572,7 +572,6 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
             env,
             &*self.target_distribution,
             self.python_packaging_policy(),
-            self.libpython.link_mode,
             verbose,
             install_args,
             extra_envs,
@@ -594,7 +593,6 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
             &*self.target_distribution,
             self.python_packaging_policy(),
             path,
-            None,
         )
         .context("finding resources")?
         .iter()
@@ -639,7 +637,6 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
             env,
             &*self.target_distribution,
             self.python_packaging_policy(),
-            self.libpython.link_mode,
             package_path,
             verbose,
             extra_envs,
@@ -1121,9 +1118,6 @@ pub mod tests {
         },
         std::ops::DerefMut,
     };
-
-    #[cfg(target_os = "linux")]
-    use python_packaging::resource::LibraryDependency;
 
     pub static WINDOWS_TARGET_TRIPLES: Lazy<Vec<&'static str>> =
         Lazy::new(|| vec!["i686-pc-windows-msvc", "x86_64-pc-windows-msvc"]);
@@ -2814,130 +2808,73 @@ pub mod tests {
         // the libyaml installed in the testing environment; the wheels from
         // PyPI bundle libyaml statically, which is not what we want to test.
         //
-        // pyyaml 5.3.1 (used previously) does not compile on Python 3.10+
-        // because its pre-generated Cython code assigns to `Py_SIZE()`, so
-        // we use a recent release that regenerates the C code with Cython
-        // at build time.
-        //
-        // However, this means that:
-        // - libyaml needs to be present in the testing environment
+        // This means that:
+        // - libyaml needs to be present in the testing environment (with the
+        //   dev package if needed)
         // - the compiler used to compile the Python standalone distribution
         //   also needs to be present in the testing environment.
         //   python-build-standalone builds on Linux use clang, so we need
         //   to make sure that Clang is available in the testing environment.
         //
-        // To ensure all these, make sure that:
-        // - libyaml is installed in the testing environment (with the dev
-        //   package if needed)
-        // - Clang is installed in the testing environment
-        //
-        // On top of all of this, pip 23.1 introduced a change that means that
-        // the build process does not work as intended (it will not use our
-        // patched distutils implementation) if the "wheel" package is not
-        // installed. See https://github.com/pypa/pip/issues/8559 . Recent
-        // python-build-standalone distributions ship a modern setuptools,
-        // and pip builds pyyaml in an isolated build environment, so our
-        // patched distutils is not used at all and no extra build metadata
-        // (object files, link libraries) is collected.
-        //
-        // All of this shows that what we are doing with patching distutils
-        // on-the-fly to provide additional build metadata is extremely fragile
-        // and it does not work with Python 3.12 anyway where distutils was
-        // removed from the standard library. In the long run the possibility
-        // of collecting additional metadata while an extension is being built
-        // with "pip install" has to be removed from PyOxidizer.
-        //
-        // Right now we only modify the test to deal with both cases: when the
-        // build metadata is provided and when it is not.
+        // pip builds the package in an isolated build environment with its
+        // own setuptools, so the extension is always produced as a shared
+        // library; PyOxidizer does not collect object files or link library
+        // metadata from the build.
+        let options = StandalonePythonExecutableBuilderOptions {
+            target_triple: "x86_64-unknown-linux-gnu".to_string(),
+            distribution_version: Some("3.10".into()),
+            extension_module_filter: Some(ExtensionModuleFilter::All),
+            resources_location: Some(ConcreteResourceLocation::InMemory),
+            ..StandalonePythonExecutableBuilderOptions::default()
+        };
 
-        for libpython_link_mode in vec![
-            BinaryLibpythonLinkMode::Static,
-            BinaryLibpythonLinkMode::Dynamic,
-        ] {
-            let options = StandalonePythonExecutableBuilderOptions {
-                target_triple: "x86_64-unknown-linux-gnu".to_string(),
-                distribution_version: Some("3.10".into()),
-                extension_module_filter: Some(ExtensionModuleFilter::All),
-                libpython_link_mode: libpython_link_mode.clone(),
-                resources_location: Some(ConcreteResourceLocation::InMemory),
-                ..StandalonePythonExecutableBuilderOptions::default()
-            };
+        let mut builder = options.new_builder()?;
 
-            let mut builder = options.new_builder()?;
+        let resources = builder.pip_install(
+            &env,
+            false,
+            &[
+                "--no-binary".to_string(),
+                "pyyaml".to_string(),
+                "pyyaml==6.0.3".to_string(),
+            ],
+            &HashMap::new(),
+        )?;
 
-            let resources = builder.pip_install(
-                &env,
-                false,
-                &[
-                    "--no-binary".to_string(),
-                    "pyyaml".to_string(),
-                    "pyyaml==6.0.3".to_string(),
-                ],
-                &HashMap::new(),
-            )?;
+        let extensions = resources
+            .iter()
+            .filter_map(|r| match r {
+                PythonResource::ExtensionModule(e) => Some(e),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
 
-            let extensions = resources
-                .iter()
-                .filter_map(|r| match r {
-                    PythonResource::ExtensionModule(e) => Some(e),
-                    _ => None,
-                })
-                .collect::<Vec<_>>();
+        assert_eq!(extensions.len(), 1);
 
-            assert_eq!(extensions.len(), 1);
+        let mut orig = extensions[0].clone();
+        assert!(orig.shared_library.is_some());
 
-            let mut orig = extensions[0].clone();
-            assert!(orig.shared_library.is_some());
+        // Makes compare easier.
+        let e = orig.to_mut();
+        e.shared_library = None;
 
-            let (objects_len_min, objects_len_max, link_libraries) = match libpython_link_mode {
-                BinaryLibpythonLinkMode::Dynamic => (0, 0, vec![]),
-                BinaryLibpythonLinkMode::Static => (
-                    0, 1,
-                    vec![LibraryDependency {
-                        name: "yaml".to_string(),
-                        static_library: None,
-                        static_filename: None,
-                        dynamic_library: None,
-                        dynamic_filename: None,
-                        framework: false,
-                        system: false,
-                    }],
-                ),
-                BinaryLibpythonLinkMode::Default => {
-                    panic!("should not get here");
-                }
-            };
-
-            assert!(orig.object_file_data.len() >= objects_len_min);
-            assert!(orig.object_file_data.len() <= objects_len_max);
-
-            let has_extra_build_metadata = orig.object_file_data.len() > 0;
-
-            // Makes compare easier.
-            let e = orig.to_mut();
-            e.shared_library = None;
-            e.object_file_data = vec![];
-
-            assert_eq!(
-                e,
-                &PythonExtensionModule {
-                    name: "yaml._yaml".to_string(),
-                    init_fn: Some("PyInit__yaml".to_string()),
-                    extension_file_suffix: ".cpython-310-x86_64-linux-gnu.so".to_string(),
-                    shared_library: None,
-                    object_file_data: vec![],
-                    is_package: false,
-                    link_libraries: if has_extra_build_metadata { link_libraries } else { vec![] },
-                    is_stdlib: false,
-                    builtin_default: false,
-                    required: false,
-                    variant: None,
-                    license: None,
-                },
-                "PythonExtensionModule for {:?}",
-                libpython_link_mode
-            );
-        }
+        assert_eq!(
+            e,
+            &PythonExtensionModule {
+                name: "yaml._yaml".to_string(),
+                init_fn: Some("PyInit__yaml".to_string()),
+                extension_file_suffix: ".cpython-310-x86_64-linux-gnu.so".to_string(),
+                shared_library: None,
+                object_file_data: vec![],
+                is_package: false,
+                link_libraries: vec![],
+                is_stdlib: false,
+                builtin_default: false,
+                required: false,
+                variant: None,
+                license: None,
+            },
+        );
 
         Ok(())
     }

@@ -346,9 +346,12 @@ the build system (see ``python-build-standalone`` project).
 
 There is ~0 support for building statically linked extension modules
 in packaging tools, from the build step itself all the way up to
-distribution. (PyOxidizer's approach is to hack ``distutils`` to
-record and save the object files that were compiled and then ``PyOxidizer``
-manually links these object files into the final binary.)
+distribution. (Older versions of PyOxidizer hacked ``distutils`` to
+record and save the object files that were compiled and then manually
+linked these object files into the final binary. This stopped working
+once ``setuptools`` started vendoring its own ``distutils`` and ``pip``
+started building packages in isolated environments, and ``distutils``
+was removed from the standard library in Python 3.12.)
 
 To achieve a statically linked executable containing ``libpython`` and
 extension modules, you effectively need to build everything from source.

@@ -6,13 +6,12 @@
 
 use {
     super::{
-        binary::{LibpythonLinkMode, PythonBinaryBuilder},
+        binary::PythonBinaryBuilder,
         config::{default_memory_allocator, PyembedPythonInterpreterConfig},
         distribution::{
             resolve_python_distribution_from_location, AppleSdkInfo, BinaryLibpythonLinkMode,
             DistributionExtractLock, PythonDistribution, PythonDistributionLocation,
         },
-        distutils::prepare_hacked_distutils,
         standalone_builder::StandalonePythonExecutableBuilder,
     },
     crate::{environment::{Environment, LINUX_TARGET_TRIPLES, MACOS_TARGET_TRIPLES}, shell::with_shell},
@@ -384,6 +383,7 @@ pub struct PythonPaths {
 
     pub bin_dir: PathBuf,
     pub python_exe: PathBuf,
+    #[allow(dead_code)]
     pub stdlib: PathBuf,
     pub site_packages: PathBuf,
 
@@ -1500,45 +1500,6 @@ impl PythonDistribution for StandaloneDistribution {
         Ok(pip_path)
     }
 
-    fn resolve_distutils(
-        &self,
-        libpython_link_mode: LibpythonLinkMode,
-        dest_dir: &Path,
-        extra_python_paths: &[&Path],
-    ) -> Result<HashMap<String, String>> {
-        if !self.supports_compiling_c_extensions() {
-            return Ok(HashMap::new());
-        }
-
-        let mut res = match libpython_link_mode {
-            // We need to patch distutils if the distribution is statically linked.
-            LibpythonLinkMode::Static => prepare_hacked_distutils(
-                &self.stdlib_path.join("distutils"),
-                dest_dir,
-                extra_python_paths,
-            ),
-            LibpythonLinkMode::Dynamic => Ok(HashMap::new()),
-        }?;
-
-        // Modern versions of setuptools vendor their own copy of distutils
-        // and use it by default. If we hacked distutils above, we need to ensure
-        // that hacked copy is used. Even if we don't hack distutils, there is an
-        // unknown change in behavior in a release after setuptools 63.2.0 causing
-        // extension module building to fail due to missing Python.h. In older
-        // versions the CFLAGS has an -I with the path to our standalone
-        // distribution. But in modern versions it uses the `/install/include/pythonX.Y`
-        // path from sysconfig with the proper prefixing. This bug was exposed when
-        // we attempted to upgrade PBS distributions from 20220802 to 20221002.
-        // We'll need to fix this before Python 3.12, which drops distutils from the
-        // stdlib.
-        //
-        // The actual value of the environment variable doesn't matter as long as it
-        // isn't "local". However, the setuptools docs suggest using "stdlib."
-        res.insert("SETUPTOOLS_USE_DISTUTILS".to_string(), "stdlib".to_string());
-
-        Ok(res)
-    }
-
     /// Determines whether dynamically linked extension modules can be loaded from memory.
     fn supports_in_memory_shared_library_loading(&self) -> bool {
         // Loading from memory is only supported on Windows where symbols are
@@ -1549,18 +1510,6 @@ impl PythonDistribution for StandaloneDistribution {
             && self
                 .extension_module_loading
                 .contains(&"shared-library".to_string())
-    }
-
-    /// Determines whether compiling C extensions from source is supported with
-    /// this distribution.
-    /// 
-    /// We need our patched distutils to do this: the patch ensures that all
-    /// object files created during the build are caught and copied to a folder
-    /// where we can access them later. However, distutils was removed from
-    /// the Python standard library in 3.12, so we are not able to support
-    /// building C extensions from source from Python 3.12 onwards.
-    fn supports_compiling_c_extensions(&self) -> bool {
-        self.extension_modules.contains_key("distutils")
     }
 
     fn tcl_files(&self) -> Result<Vec<(PathBuf, FileEntry)>> {
