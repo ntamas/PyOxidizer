@@ -131,6 +131,8 @@ pyoxy-build-linux-all:
   just pyoxy-build-linux-stage ${PYOXY_VERSION} x86_64-unknown-linux-gnu 3.10
   just pyoxy-build-linux-stage ${PYOXY_VERSION} x86_64-unknown-linux-gnu 3.11
   just pyoxy-build-linux-stage ${PYOXY_VERSION} x86_64-unknown-linux-gnu 3.12
+  just pyoxy-build-linux-stage ${PYOXY_VERSION} x86_64-unknown-linux-gnu 3.13
+  just pyoxy-build-linux-stage ${PYOXY_VERSION} x86_64-unknown-linux-gnu 3.14
 
 actions-build-pyoxy-macos triple python_version:
   #!/usr/bin/env bash
@@ -287,7 +289,7 @@ pyoxy-release-prepare commit tag:
   rm -rf dist/pyoxy*
   just assemble-exe-artifacts pyoxy {{commit}} dist/pyoxy-artifacts
 
-  for py in 3.10 3.11 3.12; do
+  for py in 3.10 3.11 3.12 3.13 3.14; do
     for triple in aarch64-apple-darwin x86_64-apple-darwin x86_64-unknown-linux-gnu macos-universal; do
       release_name=pyoxy-{{tag}}-${triple}-cpython${py}
       source=dist/pyoxy-artifacts/exe-pyoxy-${triple}-${py}

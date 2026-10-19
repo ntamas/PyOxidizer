@@ -17,6 +17,10 @@ Changelog
 
 Not yet released.
 
+* Official release artifacts now contain Python 3.10, 3.11, 3.12, 3.13 and
+  3.14 variants. The Python 3.9 variant is no longer provided, as
+  PyOxidizer dropped support for Python 3.9.
+
 0.2.0
 -----
 
