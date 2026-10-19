@@ -484,27 +484,6 @@ mod tests {
     }
 
     #[test]
-    fn test_default_python_distribution_python_39() -> Result<()> {
-        let mut env = test_evaluation_context_builder()?.into_context()?;
-
-        let dist = env.eval("default_python_distribution(python_version='3.9')")?;
-        assert_eq!(dist.get_type(), "PythonDistribution");
-
-        let wanted = PYTHON_DISTRIBUTIONS
-            .find_distribution(
-                default_target_triple(),
-                &DistributionFlavor::Standalone,
-                Some("3.9"),
-            )
-            .unwrap();
-
-        let x = dist.downcast_ref::<PythonDistributionValue>().unwrap();
-        assert_eq!(x.source, wanted.location);
-
-        Ok(())
-    }
-
-    #[test]
     fn test_default_python_distribution_python_310() -> Result<()> {
         let mut env = test_evaluation_context_builder()?.into_context()?;
 
@@ -579,6 +558,27 @@ mod tests {
                 default_target_triple(),
                 &DistributionFlavor::Standalone,
                 Some("3.13"),
+            )
+            .unwrap();
+
+        let x = dist.downcast_ref::<PythonDistributionValue>().unwrap();
+        assert_eq!(x.source, wanted.location);
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_default_python_distribution_python_314() -> Result<()> {
+        let mut env = test_evaluation_context_builder()?.into_context()?;
+
+        let dist = env.eval("default_python_distribution(python_version='3.14')")?;
+        assert_eq!(dist.get_type(), "PythonDistribution");
+
+        let wanted = PYTHON_DISTRIBUTIONS
+            .find_distribution(
+                default_target_triple(),
+                &DistributionFlavor::Standalone,
+                Some("3.14"),
             )
             .unwrap();
 

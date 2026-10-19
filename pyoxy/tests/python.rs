@@ -20,7 +20,7 @@ fn run() -> Result<()> {
         .stdout(predicate::eq("hello, world\n").normalize());
 
     // If the executable is named `python` it behaves like `python`.
-    for bin_name in ["python", "python3", "python3.9", "pythonfoo"] {
+    for bin_name in ["python", "python3", "python3.10", "pythonfoo"] {
         let td = tempfile::Builder::new().prefix("pyoxy-test-").tempdir()?;
 
         let source_exe = cargo_bin("pyoxy");

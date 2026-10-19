@@ -46,17 +46,19 @@ In theory, yes. However, it is considerable more effort than Python 3. And
 since Python 2.7 is being deprecated in 2020, in the project author's
 opinion it isn't worth the effort.
 
-.. _faq_python_38:
+.. _faq_python_310:
 
-Why is Python 3.9 Required?
-===========================
+Why is Python 3.10 Required?
+============================
 
 The upstream ``python-build-standalone`` project that PyOxidizer relies on
-does not support Python 3.8 any more. The last PyOxidizer version that
-supported Python 3.8 was PyOxidizer 0.24.0. That being said, it would probably
-be possible to continue supporting Python 3.8, but the effort to do so is
-not justified by the added value. If you need Python 3.8 support, file an
-issue on Github.
+does not publish distributions for Python 3.9 or older any more. The last
+PyOxidizer version that supported Python 3.9 was PyOxidizer 0.125.0 (and
+the last one supporting Python 3.8 was 0.24.0). That being said, it would
+probably be possible to continue supporting older Python versions with
+older ``python-build-standalone`` releases, but the effort to do so is not
+justified by the added value. If you need support for an older Python
+version, file an issue on GitHub.
 
 Versions earlier than Python 3.8 are not supported because Python 3.8
 contains a new C API for controlling how embedded Python interpreters are
@@ -74,7 +76,7 @@ this wasn't perceived as a significant annoyance.
 
 This is due to a dependent crate insisting that a Python executable
 exist on ``PATH``. Set the ``PYO3_PYTHON`` environment variable to
-the path of a Python 3.8+ executable and try again. e.g.::
+the path of a Python 3.10+ executable and try again. e.g.::
 
    # UNIX
    $ export PYO3_PYTHON=/usr/bin/python3.9

@@ -153,7 +153,9 @@ Essentially:
    loading resources data, indexing built-ins and frozen modules, and clearing out
    `sys.met_path` of the default meta path importers.
 5. Call `_Py_InitializeMain()` to finish Python initialization. `OxidizedFinder` is
-   able to service Python standard library imports.
+   able to service Python standard library imports. (Python 3.14 doesn't provide
+   `_Py_InitializeMain()`; there we call `Py_InitializeFromConfig()` a second time
+   with `PyConfig._init_main = 1`, which has the same effect.)
 6. Clear out `sys.meta_path` and `sys.path_hooks` from unwanted changes made as part
    of initializing "external" importers.
 

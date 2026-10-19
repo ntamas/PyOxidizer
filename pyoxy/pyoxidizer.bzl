@@ -2,7 +2,7 @@
 # enable us to link Python into a new binary.
 
 BUILD_PATH = VARS.get("BUILD_PATH", CWD + "/build")
-PYTHON_VERSION = VARS.get("PYTHON_VERSION", "3.9")
+PYTHON_VERSION = VARS.get("PYTHON_VERSION", "3.10")
 
 set_build_path(BUILD_PATH)
 

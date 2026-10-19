@@ -128,7 +128,6 @@ pyoxy-build-linux-all:
 
   PYOXY_VERSION=$(cargo metadata --manifest-path pyoxy/Cargo.toml --no-deps | jq --raw-output '.packages[] | select(.name == "pyoxy") | .version')
 
-  just pyoxy-build-linux-stage ${PYOXY_VERSION} x86_64-unknown-linux-gnu 3.9
   just pyoxy-build-linux-stage ${PYOXY_VERSION} x86_64-unknown-linux-gnu 3.10
   just pyoxy-build-linux-stage ${PYOXY_VERSION} x86_64-unknown-linux-gnu 3.11
   just pyoxy-build-linux-stage ${PYOXY_VERSION} x86_64-unknown-linux-gnu 3.12
@@ -288,7 +287,7 @@ pyoxy-release-prepare commit tag:
   rm -rf dist/pyoxy*
   just assemble-exe-artifacts pyoxy {{commit}} dist/pyoxy-artifacts
 
-  for py in 3.9 3.10 3.11 3.12; do
+  for py in 3.10 3.11 3.12; do
     for triple in aarch64-apple-darwin x86_64-apple-darwin x86_64-unknown-linux-gnu macos-universal; do
       release_name=pyoxy-{{tag}}-${triple}-cpython${py}
       source=dist/pyoxy-artifacts/exe-pyoxy-${triple}-${py}
@@ -488,8 +487,7 @@ pyoxidizer-release:
 pyoxidizer-update-python-distributions: _python_scripts_venv
   venv/bin/python3 \
     scripts/fetch-python-distributions.py \
-    --tag 20241206 \
-    --api-token $GH_API_TOKEN > pyoxidizer/src/default_python_distributions.rs
+    --tag 20261003 > pyoxidizer/src/default_python_distributions.rs
   rustfmt pyoxidizer/src/default_python_distributions.rs
 
 # Perform Rust crate releases.

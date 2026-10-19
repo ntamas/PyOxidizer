@@ -129,7 +129,7 @@ Here is what those target triple values translate to:
 Python Version Compatibility
 ============================
 
-PyOxidizer is capable of working with Python 3.9, 3.10, 3.11 and 3.12.
+PyOxidizer is capable of working with Python 3.10, 3.11, 3.12, 3.13 and 3.14.
 
 Python 3.10 is the default Python version because it has been around
 for a while and is relatively stable.

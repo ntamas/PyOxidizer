@@ -646,7 +646,8 @@ impl<'a> PythonResourcesState<'a, u8> {
             frozen_stdlib_modules.push("importlib.machinery");
             frozen_stdlib_modules.push("runpy");
 
-            // TODO: exclude this from Python 3.14 onwards
+            // Python 3.14 dropped the `os.path` alias from the frozen modules.
+            #[cfg(not(Py_3_14))]
             frozen_stdlib_modules.push("os.path");
 
             for name in &frozen_stdlib_modules {

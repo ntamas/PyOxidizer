@@ -27,7 +27,7 @@ use {
         licensing::{
             derive_package_license_infos, ComponentFlavor, LicensedComponent, LicensedComponents,
         },
-        location::AbstractResourceLocation,
+        location::{AbstractResourceLocation, ConcreteResourceLocation},
         policy::PythonPackagingPolicy,
         resource::{
             PythonExtensionModule, PythonModuleSource, PythonPackageDistributionResource,
@@ -680,6 +680,38 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
 
             if let Some(callback) = &callback {
                 callback(&self.packaging_policy, &resource, &mut add_context)?;
+            }
+
+            // Extension modules that aren't part of libpython can only be
+            // linked as built-ins if we build a custom libpython. Otherwise
+            // they can only be loaded as shared libraries, which the resources
+            // location policy may not allow. Skip such extension modules instead
+            // of failing: the distribution merely offers them and nothing
+            // explicitly requested them.
+            let can_be_builtin =
+                ext.in_libpython() || self.libpython.link_mode == LibpythonLinkMode::Static;
+
+            if !can_be_builtin && !ext.is_minimally_required() {
+                let require_in_memory = add_context.location == ConcreteResourceLocation::InMemory
+                    && !matches!(
+                        add_context.location_fallback,
+                        Some(ConcreteResourceLocation::RelativePath(_))
+                    );
+
+                let loadable = if require_in_memory {
+                    self.supports_in_memory_dynamically_linked_extension_loading
+                } else {
+                    self.target_distribution.is_extension_module_file_loadable()
+                        || self.supports_in_memory_dynamically_linked_extension_loading
+                };
+
+                if !loadable {
+                    warn!(
+                        "ignoring extension module {} because it is not part of libpython and cannot be loaded as a shared library with the current settings",
+                        ext.name
+                    );
+                    continue;
+                }
             }
 
             if let Some(component) = &ext.license {
@@ -1426,17 +1458,22 @@ pub mod tests {
 
             let builtin_names = builder.extension_build_contexts.keys().collect::<Vec<_>>();
 
-            // All extensions compiled as built-ins by default.
-            for (name, _) in builder.target_distribution.extension_modules.iter() {
+            // All extensions compiled as built-ins by default, except those that
+            // aren't part of libpython when we don't build a custom libpython.
+            for (name, variants) in builder.target_distribution.extension_modules.iter() {
+                let can_be_builtin = builder.libpython.link_mode == LibpythonLinkMode::Static
+                    || variants.iter().any(|em| em.in_libpython());
+
                 if builder
                     .python_packaging_policy()
                     .broken_extensions_for_triple(&builder.target_triple)
                     .unwrap_or(&vec![])
                     .contains(name)
+                    || !can_be_builtin
                 {
-                    assert!(!builtin_names.contains(&name))
+                    assert!(!builtin_names.contains(&name), "{}", name)
                 } else {
-                    assert!(builtin_names.contains(&name));
+                    assert!(builtin_names.contains(&name), "{}", name);
                 }
             }
         }
@@ -1987,17 +2024,22 @@ pub mod tests {
 
                 let builtin_names = builder.extension_build_contexts.keys().collect::<Vec<_>>();
 
-                // All extensions compiled as built-ins by default.
-                for (name, _) in builder.target_distribution.extension_modules.iter() {
+                // All extensions compiled as built-ins by default, except those that
+                // aren't part of libpython when we don't build a custom libpython.
+                for (name, variants) in builder.target_distribution.extension_modules.iter() {
+                    let can_be_builtin = builder.libpython.link_mode == LibpythonLinkMode::Static
+                        || variants.iter().any(|em| em.in_libpython());
+
                     if builder
                         .python_packaging_policy()
                         .broken_extensions_for_triple(&builder.target_triple)
                         .unwrap_or(&vec![])
                         .contains(name)
+                        || !can_be_builtin
                     {
-                        assert!(!builtin_names.contains(&name))
+                        assert!(!builtin_names.contains(&name), "{}", name)
                     } else {
-                        assert!(builtin_names.contains(&name));
+                        assert!(builtin_names.contains(&name), "{}", name);
                     }
                 }
             }
@@ -2816,7 +2858,7 @@ pub mod tests {
         ] {
             let options = StandalonePythonExecutableBuilderOptions {
                 target_triple: "x86_64-unknown-linux-gnu".to_string(),
-                distribution_version: Some("3.9".into()),
+                distribution_version: Some("3.10".into()),
                 extension_module_filter: Some(ExtensionModuleFilter::All),
                 libpython_link_mode: libpython_link_mode.clone(),
                 resources_location: Some(ConcreteResourceLocation::InMemory),

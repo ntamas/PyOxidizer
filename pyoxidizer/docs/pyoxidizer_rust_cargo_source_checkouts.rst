@@ -60,15 +60,15 @@ configuration can be fragile.
    Almost all workspace build failures are somehow related to the ``pyembed``
    crate.
 
-In its default configuration, a Python 3.9 executable needs to be found on
+In its default configuration, a Python 3.10+ executable needs to be found on
 ``PATH``. If said executable can't be found, you'll get a
 ``No python interpreter found of version 3.*`` error at build time.
 
-To work around this, add a ``python3.9`` or ``python3`` executable to
+To work around this, add a ``python3.10`` (or newer) or ``python3`` executable to
 ``PATH`` or run ``cargo build`` with the ``PYO3_PYTHON`` environment
 variable pointing to a specific Python 3 executable. e.g.
 
-    $ PYO3_PYTHON=/path/to/python3.9 cargo build -p pyembed
+    $ PYO3_PYTHON=/path/to/python3.10 cargo build -p pyembed
 
 ``python-oxidized-importer`` Crate
 ==================================

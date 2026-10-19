@@ -39,11 +39,35 @@ Backwards Compatibility Notes
 * The minimum Rust version has been changed from 1.88 to 1.95. Rust 1.95 is
   the first release whose bundled LLVM (22) can read the LLVM bitcode objects
   shipped in ``pgo+lto`` python-build-standalone distributions.
+* Support for Python 3.9 has been removed, as python-build-standalone no
+  longer publishes distributions for it.
+* Support for Python 3.14 has been added.
+* Linux and macOS distributions are now the ``pgo+lto`` flavor and therefore
+  use LTO. Linux musl distributions are the ``noopt+static`` flavor, which is
+  the fully statically linked flavor previously known as ``noopt``.
 
 Changes
 ^^^^^^^
 
 * Default Rust toolchain to use upgraded from 1.88.0 -> 1.99.1.
+* Default Python distributions upgraded from python-build-standalone
+  20241206 to 20261003. This brings CPython 3.10.22, 3.11.17, 3.12.15,
+  3.13.16 and 3.14.8.
+* ``scripts/fetch-python-distributions.py`` now takes the distribution
+  digests from the release's ``SHA256SUMS`` file instead of downloading every
+  archive, and no longer needs a GitHub API token.
+* ``pyembed`` now supports Python 3.14, which removed the private
+  ``_Py_InitializeMain()`` function used for multi-phase interpreter
+  initialization. On 3.14, ``Py_InitializeFromConfig()`` is called a second
+  time to finish initialization instead.
+* Extension modules in a distribution that are not part of libpython (e.g.
+  the ``_test*`` modules and ``_dbm`` in python-build-standalone 20261003)
+  are now ignored with a warning when libpython is linked dynamically and the
+  resources location policy doesn't allow loading them as shared libraries,
+  instead of failing the build.
+* When linking an LLVM bitcode libpython on macOS, a wrapper around the Rust
+  toolchain's ``ld64.lld`` is used so the linker can find ``libLLVM.dylib``
+  in toolchains lacking the rpath for it.
 * Python distributions whose libpython consists of LLVM bitcode (the
   ``pgo+lto`` python-build-standalone distributions) can now be linked.
   PyOxidizer validates that the Rust toolchain's LLVM can read the bitcode,

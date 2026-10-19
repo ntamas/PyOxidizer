@@ -130,9 +130,10 @@ Lesser Missing Features
 Python Version Support
 ----------------------
 
-Python 3.9, 3.10, 3.11 and 3.12 are currently supported. Older versions of
-PyOxidizer (through version 0.7) supported Python 3.7. The last version to
-support Python 3.8 was PyOxidizer 0.24. See :ref:`faq_python_38` for why we
+Python 3.10, 3.11, 3.12, 3.13 and 3.14 are currently supported. Older
+versions of PyOxidizer (through version 0.7) supported Python 3.7. The last
+version to support Python 3.8 was PyOxidizer 0.24 and the last version to
+support Python 3.9 was PyOxidizer 0.125. See :ref:`faq_python_310` for why we
 require these Python versions.
 
 Reordering Resource Files

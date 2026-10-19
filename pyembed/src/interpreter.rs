@@ -33,8 +33,37 @@ use {
 
 // PyO3 no longer exposes this private (but PEP 587 sanctioned) function, which we need
 // for multi-phase initialization.
+//
+// CPython 3.14 removed the function (https://github.com/python/cpython/issues/129033)
+// and 3.15 restored it (https://github.com/python/cpython/issues/142417).
+#[cfg(not(all(Py_3_14, not(Py_3_15))))]
 extern "C" {
     fn _Py_InitializeMain() -> pyffi::PyStatus;
+}
+
+/// Finish initializing a Python interpreter whose core was initialized with
+/// `PyConfig._init_main = 0`.
+///
+/// `py_config` must be the config that was passed to `Py_InitializeFromConfig()`.
+unsafe fn initialize_main(py_config: &mut pyffi::PyConfig) -> pyffi::PyStatus {
+    #[cfg(all(Py_3_14, not(Py_3_15)))]
+    {
+        // Python 3.14 doesn't export `_Py_InitializeMain()`. But calling
+        // `Py_InitializeFromConfig()` again on a core-initialized interpreter
+        // reconfigures it with the given config and then runs the main
+        // initialization if `_init_main` is set. So that's how we finish
+        // initialization on 3.14.
+        py_config._init_main = 1;
+
+        unsafe { pyffi::Py_InitializeFromConfig(py_config) }
+    }
+
+    #[cfg(not(all(Py_3_14, not(Py_3_15))))]
+    {
+        let _ = py_config;
+
+        unsafe { _Py_InitializeMain() }
+    }
 }
 
 static GLOBAL_INTERPRETER_GUARD: Lazy<std::sync::Mutex<()>> =
@@ -234,7 +263,7 @@ impl<'interpreter, 'resources> MainPythonInterpreter<'interpreter, 'resources> {
         // Now proceed with the Python main initialization. This will initialize
         // importlib. And if the custom importlib bytecode was registered above,
         // our extension module will get imported and initialized.
-        let status = unsafe { _Py_InitializeMain() };
+        let status = unsafe { initialize_main(&mut py_config) };
         if unsafe { pyffi::PyStatus_Exception(status) } != 0 {
             return Err(NewInterpreterError::new_from_pystatus(
                 &status,
