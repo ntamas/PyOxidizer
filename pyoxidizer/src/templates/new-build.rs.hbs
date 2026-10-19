@@ -122,6 +122,28 @@ fn main() {
 
     let target_os = std::env::var("CARGO_CFG_TARGET_OS").expect("CARGO_CFG_TARGET_OS not defined");
 
+    // PyOxidizer records linker arguments needed to link libpython (e.g. the
+    // arguments selecting the LLD linker needed for LLVM bitcode libpython) as
+    // `extra_build_script_line` entries in the PyO3 configuration file. Cargo
+    // only honors `cargo:rustc-link-arg` lines emitted by the build script of
+    // the crate producing the binary, not those emitted by dependencies such
+    // as `pyo3-ffi`, so we have to emit them ourselves.
+    println!("cargo:rerun-if-env-changed=PYO3_CONFIG_FILE");
+    if let Ok(config_path) = std::env::var("PYO3_CONFIG_FILE") {
+        println!("cargo:rerun-if-changed={}", config_path);
+
+        let config = std::fs::read_to_string(&config_path)
+            .unwrap_or_else(|e| panic!("could not read {}: {}", config_path, e));
+
+        for line in config.lines() {
+            if let Some(value) = line.strip_prefix("extra_build_script_line=") {
+                if value.starts_with("cargo:rustc-link-arg=") {
+                    println!("{}", value);
+                }
+            }
+        }
+    }
+
     // Export symbols from built binaries. This is needed to ensure libpython's
     // symbols are exported. Without those symbols being exported, loaded extension
     // modules won't find the libpython symbols and won't be able to run.

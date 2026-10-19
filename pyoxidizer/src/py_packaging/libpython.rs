@@ -11,6 +11,7 @@ use {
         environment::Environment,
         py_packaging::{
             binary::LibpythonInfo, distribution::AppleSdkInfo, embedding::LinkingAnnotation,
+            lld::LldWrapper,
         },
         shell::{with_shell, with_verbose_shell},
     },
@@ -193,6 +194,10 @@ pub struct BuiltLibpython {
 
     /// Describes annotations necessary to link this libpython.
     pub linking_annotations: Vec<LinkingAnnotation>,
+
+    /// Wrapper for the LLD linker needed to link this libpython, if it
+    /// consists of LLVM bitcode.
+    pub lld_wrapper: Option<LldWrapper>,
 }
 
 /// Create a static libpython from a Python distribution.
@@ -224,6 +229,15 @@ pub fn link_libpython(
     let mut linking_annotations = vec![];
 
     let windows = crate::environment::WINDOWS_TARGET_TRIPLES.contains(&target_triple);
+
+    // If the object files are LLVM bitcode, the final link needs the Rust
+    // toolchain's LLD. Resolve it up front so toolchain problems are reported
+    // before we spend time assembling the library.
+    let lld_wrapper = if let Some(version) = &libpython_info.llvm_bitcode_version {
+        Some(LldWrapper::new(env, host_triple, target_triple, version)?)
+    } else {
+        None
+    };
 
     // We derive a custom Modules/config.c from the set of extension modules.
     // We need to do this because config.c defines the built-in extensions and
@@ -430,6 +444,7 @@ pub fn link_libpython(
     Ok(BuiltLibpython {
         libpython_data,
         linking_annotations,
+        lld_wrapper,
     })
 }
 

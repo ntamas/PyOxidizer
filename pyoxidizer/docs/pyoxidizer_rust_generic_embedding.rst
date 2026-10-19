@@ -44,6 +44,35 @@ version, e.g. ``39``).
 
 The library can be linked to provide an embedded Python interpreter.
 
+.. _pyoxidizer_rust_generic_embedding_lld:
+
+An LLD Linker Wrapper
+---------------------
+
+The Linux and macOS python-build-standalone distributions are built with
+link-time optimization and their object files consist of LLVM bitcode rather
+than native machine code. The system linkers (GNU ``ld``, Apple ``ld``)
+generally cannot consume this bitcode, so the final binary needs to be linked
+with an LLD built against an LLVM at least as new as the one that produced the
+bitcode. The Rust toolchain ships such an LLD (``rust-lld``).
+
+When the libpython consists of LLVM bitcode, an ``lld`` directory containing
+a small wrapper script around the Rust toolchain's LLD is written next to the
+library (``lld/ld`` on Linux, ``lld/ld64.lld`` on macOS) and the
+:ref:`PyO3 build configuration <pyoxidizer_rust_generic_embedding_pyo3_config>`
+contains the linker arguments (``-B<path>`` and, on macOS, ``-fuse-ld=lld``)
+that make the C compiler driver link with it.
+
+Because the wrapper refers to the Rust toolchain that was available when the
+artifacts were generated, the artifacts are tied to that toolchain
+installation.
+
+On macOS, LLD must also be able to parse the Apple SDK being linked against,
+and LLD can lag behind the newest SDKs (for example, LLD 23 can't parse the
+macOS 27 SDK). ``pyoxidizer build`` probes the installed SDKs and sets
+``SDKROOT`` to one that works; when building with ``cargo`` directly you may
+need to set ``SDKROOT`` to an older SDK yourself.
+
 A Rust Source File Containing a Python Interpreter Config
 ---------------------------------------------------------
 
@@ -62,6 +91,8 @@ A file containing the :ref:`python_packed_resources` for the Python standard
 library will be written. This file can be used by :ref:`oxidized_importer` to
 import the standard library efficiently.
 
+.. _pyoxidizer_rust_generic_embedding_pyo3_config:
+
 PyO3 Build Configuration
 ------------------------
 
@@ -72,6 +103,36 @@ by this command.
 To use this configuration, set the ``PYO3_CONFIG_FILE`` environment variable
 to its **absolute** path and Python should get linked the way PyOxidizer would
 link it.
+
+The configuration file contains ``extra_build_script_line`` entries with the
+``cargo:`` directives needed to link ``libpython``. The ``pyo3-ffi`` crate
+emits these from its build script. However, Cargo only honors
+``cargo:rustc-link-arg`` lines emitted by the build script of the crate
+producing the final binary, not lines emitted by dependencies. So the
+linker arguments in the configuration file (such as the ones selecting the
+:ref:`LLD linker <pyoxidizer_rust_generic_embedding_lld>`) need to be re-emitted
+by your crate's build script. The configuration file is a simple ``key=value``
+text file, so this can be done without additional dependencies:
+
+.. code-block:: rust
+
+    fn main() {
+        println!("cargo:rerun-if-env-changed=PYO3_CONFIG_FILE");
+
+        if let Ok(config_path) = std::env::var("PYO3_CONFIG_FILE") {
+            println!("cargo:rerun-if-changed={}", config_path);
+
+            let config = std::fs::read_to_string(&config_path).unwrap();
+
+            for line in config.lines() {
+                if let Some(value) = line.strip_prefix("extra_build_script_line=") {
+                    if value.starts_with("cargo:rustc-link-arg=") {
+                        println!("{}", value);
+                    }
+                }
+            }
+        }
+    }
 
 Python Standard Library
 -----------------------

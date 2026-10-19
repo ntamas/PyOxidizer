@@ -14,6 +14,7 @@ pub mod distribution;
 pub mod embedding;
 pub mod filtering;
 pub mod libpython;
+pub mod lld;
 pub mod packaging_tool;
 pub mod resource;
 pub mod standalone_builder;

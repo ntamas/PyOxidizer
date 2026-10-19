@@ -329,6 +329,7 @@ impl StandalonePythonExecutableBuilder {
                 Ok(LinkStaticLibraryData {
                     library_data: library_info.libpython_data,
                     linking_annotations: library_info.linking_annotations,
+                    lld_wrapper: library_info.lld_wrapper,
                 }
                 .into())
             }

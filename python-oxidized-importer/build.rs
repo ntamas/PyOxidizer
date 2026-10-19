@@ -5,6 +5,24 @@
 fn main() {
     pyo3_build_config::use_pyo3_cfgs();
     link_windows_libpython_import_library();
+    emit_pyo3_config_link_args();
+}
+
+/// Re-emits linker arguments from the PyO3 configuration.
+///
+/// PyOxidizer records the linker arguments needed to link libpython (e.g. the
+/// `-B` argument selecting the LLD linker needed for LLVM bitcode libpython)
+/// in the PyO3 configuration file. Cargo only honors `cargo:rustc-link-arg`
+/// lines emitted by the build script of the crate owning the linked target,
+/// not those emitted by dependencies such as `pyo3-ffi`. This crate's `cdylib`
+/// target is linked whenever the crate is built, so we need to emit the
+/// arguments ourselves.
+fn emit_pyo3_config_link_args() {
+    for line in pyo3_build_config::get().extra_build_script_lines() {
+        if line.starts_with("cargo:rustc-link-arg=") {
+            println!("{}", line);
+        }
+    }
 }
 
 /// Links the libpython import library on Windows.

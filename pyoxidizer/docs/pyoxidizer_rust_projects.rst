@@ -215,6 +215,13 @@ Please consult this file if running into build errors when not building through
 
 Also consider porting these linker settings to your own crate.
 
+The auto-generated ``build.rs`` re-emits the ``cargo:rustc-link-arg`` lines
+recorded in the PyO3 configuration file referenced by ``PYO3_CONFIG_FILE``.
+This is required to link the LLVM bitcode ``libpython`` of the Linux and macOS
+python-build-standalone distributions with the Rust toolchain's LLD, as Cargo
+does not honor linker arguments emitted by dependencies' build scripts. See
+:ref:`pyoxidizer_rust_generic_embedding_pyo3_config` for details.
+
 Building with Cargo and PyOxidizer
 ==================================
 

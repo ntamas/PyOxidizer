@@ -2,7 +2,7 @@
 // License, v. 2.0. If a copy of the MPL was not distributed with this
 // file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 fn main() {
     println!("cargo:rerun-if-env-changed=PYO3_CONFIG_FILE");
@@ -29,6 +29,8 @@ fn main() {
         let config_path = PathBuf::from(config_path);
         println!("cargo:rerun-if-changed={}", config_path.display());
 
+        emit_pyo3_config_link_args(&config_path);
+
         let artifact_dir = config_path
             .parent()
             .expect("could not resolve parent directory of PyO3 config file");
@@ -42,6 +44,27 @@ fn main() {
                 "cargo:rustc-env=PYTHON_PACKED_RESOURCES_PATH={}",
                 packed_resources_path.display()
             );
+        }
+    }
+}
+
+/// Re-emits linker arguments from the PyO3 configuration file.
+///
+/// PyOxidizer records the linker arguments needed to link libpython (e.g. the
+/// `-B` argument selecting the LLD linker needed for LLVM bitcode libpython)
+/// as `extra_build_script_line` entries in the PyO3 configuration file. Cargo
+/// only honors `cargo:rustc-link-arg` lines emitted by the build script of
+/// the crate producing the binary, not those emitted by dependencies such as
+/// `pyo3-ffi`, so we have to emit them ourselves.
+fn emit_pyo3_config_link_args(config_path: &Path) {
+    let config = std::fs::read_to_string(config_path)
+        .unwrap_or_else(|e| panic!("could not read {}: {}", config_path.display(), e));
+
+    for line in config.lines() {
+        if let Some(value) = line.strip_prefix("extra_build_script_line=") {
+            if value.starts_with("cargo:rustc-link-arg=") {
+                println!("{}", value);
+            }
         }
     }
 }

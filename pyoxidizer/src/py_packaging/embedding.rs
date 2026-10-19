@@ -5,7 +5,7 @@
 /*! Functionality for embedding Python in a binary. */
 
 use {
-    crate::py_packaging::config::PyembedPythonInterpreterConfig,
+    crate::py_packaging::{config::PyembedPythonInterpreterConfig, lld::LldWrapper},
     anyhow::{anyhow, Context, Result},
     pyo3_build_config::{
         BuildFlags, InterpreterConfig as PyO3InterpreterConfig,
@@ -187,6 +187,12 @@ pub struct LinkStaticLibraryData {
 
     /// Additional linker directives to link this static library.
     pub linking_annotations: Vec<LinkingAnnotation>,
+
+    /// Wrapper for the LLD linker, needed when the library consists of LLVM bitcode.
+    ///
+    /// The wrapper is written next to the library and the linker is pointed
+    /// at it via linking annotations.
+    pub lld_wrapper: Option<LldWrapper>,
 }
 
 impl LinkStaticLibraryData {
@@ -212,6 +218,10 @@ impl LinkablePython for LinkStaticLibraryData {
         std::fs::write(&lib_path, &self.library_data)
             .with_context(|| format!("writing {}", lib_path.display()))?;
 
+        if let Some(wrapper) = &self.lld_wrapper {
+            wrapper.write(dest_dir).context("writing LLD wrapper")?;
+        }
+
         Ok(())
     }
 
@@ -231,6 +241,11 @@ impl LinkablePython for LinkStaticLibraryData {
         ];
 
         annotations.extend(self.linking_annotations.iter().cloned());
+
+        if let Some(wrapper) = &self.lld_wrapper {
+            annotations.extend(wrapper.linking_annotations(dest_dir));
+        }
+
         annotations.extend(linking_annotations_for_target(target_triple));
 
         Ok(annotations)
@@ -262,6 +277,16 @@ impl LinkablePython for LibpythonLinkSettings {
         match self {
             Self::ExistingDynamic(l) => l.linking_annotations(dest_dir, alias, target_triple),
             Self::StaticData(l) => l.linking_annotations(dest_dir, alias, target_triple),
+        }
+    }
+}
+
+impl LibpythonLinkSettings {
+    /// Obtain the LLD wrapper needed to link this libpython, if any.
+    pub fn lld_wrapper(&self) -> Option<&LldWrapper> {
+        match self {
+            Self::ExistingDynamic(_) => None,
+            Self::StaticData(l) => l.lld_wrapper.as_ref(),
         }
     }
 }
@@ -331,6 +356,14 @@ impl<'a> EmbeddedPythonContext<'a> {
     /// Resolve the filesystem path to the PyO3 configuration file.
     pub fn pyo3_config_path(&self, dest_dir: impl AsRef<Path>) -> PathBuf {
         dest_dir.as_ref().join("pyo3-build-config-file.txt")
+    }
+
+    /// Obtain the LLD wrapper needed to link libpython, if any.
+    ///
+    /// The wrapper is written by `write_files()`. Linking annotations
+    /// referencing it are part of the PyO3 configuration file.
+    pub fn lld_wrapper(&self) -> Option<&LldWrapper> {
+        self.link_settings.lld_wrapper()
     }
 
     /// Resolve a [PyO3InterpreterConfig] for this instance.
