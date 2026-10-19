@@ -299,11 +299,20 @@ pub fn apple_sdk_usable_by_lld(
 mod tests {
     use super::*;
 
+    // Paths are formatted with the platform's separator, so the expected
+    // strings are derived with the same path operations to keep the tests
+    // passing on Windows hosts, where the wrapper is never used.
+
     #[test]
     fn test_wrapper_linux() {
+        let sysroot = Path::new("/sysroot");
+        let lld_dir = sysroot.join("lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld");
+        let artifacts = Path::new("/artifacts");
+        let wrapper_dir = artifacts.join(LLD_WRAPPER_DIR);
+
         let w = LldWrapper::from_toolchain(
-            Path::new("/sysroot"),
-            Path::new("/sysroot/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld"),
+            sysroot,
+            &lld_dir,
             "x86_64-unknown-linux-gnu",
             "x86_64-unknown-linux-gnu",
         );
@@ -311,43 +320,57 @@ mod tests {
         assert_eq!(w.file_name, "ld");
         assert!(!w.use_fuse_ld);
         assert!(w.script.starts_with("#!/bin/sh\n"));
-        assert!(w.script.ends_with(
-            "exec \"/sysroot/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld/ld.lld\" \"$@\"\n"
-        ));
+        assert!(w.script.ends_with(&format!(
+            "exec \"{}\" \"$@\"\n",
+            lld_dir.join("ld.lld").display()
+        )));
         assert!(!w.script.contains("DYLD_LIBRARY_PATH"));
 
-        assert_eq!(w.path("/artifacts"), PathBuf::from("/artifacts/lld/ld"));
+        assert_eq!(w.path(artifacts), wrapper_dir.join("ld"));
         assert_eq!(
-            w.linker_args("/artifacts"),
-            vec!["-B/artifacts/lld".to_string()]
+            w.linker_args(artifacts),
+            vec![format!("-B{}", wrapper_dir.display())]
         );
         assert_eq!(
-            w.linking_annotations("/artifacts"),
-            vec![LinkingAnnotation::Argument("-B/artifacts/lld".to_string())]
+            w.linking_annotations(artifacts),
+            vec![LinkingAnnotation::Argument(format!(
+                "-B{}",
+                wrapper_dir.display()
+            ))]
         );
     }
 
     #[test]
     fn test_wrapper_macos() {
+        let sysroot = Path::new("/sysroot");
+        let lld_dir = sysroot.join("lib/rustlib/aarch64-apple-darwin/bin/gcc-ld");
+        let artifacts = Path::new("/artifacts");
+        let wrapper_dir = artifacts.join(LLD_WRAPPER_DIR);
+
         let w = LldWrapper::from_toolchain(
-            Path::new("/sysroot"),
-            Path::new("/sysroot/lib/rustlib/aarch64-apple-darwin/bin/gcc-ld"),
+            sysroot,
+            &lld_dir,
             "aarch64-apple-darwin",
             "x86_64-apple-darwin",
         );
 
         assert_eq!(w.file_name, "ld64.lld");
         assert!(w.use_fuse_ld);
-        assert!(w.script.contains(
-            "DYLD_LIBRARY_PATH=\"/sysroot/lib${DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}\"\n"
-        ));
-        assert!(w.script.ends_with(
-            "exec \"/sysroot/lib/rustlib/aarch64-apple-darwin/bin/gcc-ld/ld64.lld\" \"$@\"\n"
-        ));
+        assert!(w.script.contains(&format!(
+            "DYLD_LIBRARY_PATH=\"{}${{DYLD_LIBRARY_PATH:+:$DYLD_LIBRARY_PATH}}\"\n",
+            sysroot.join("lib").display()
+        )));
+        assert!(w.script.ends_with(&format!(
+            "exec \"{}\" \"$@\"\n",
+            lld_dir.join("ld64.lld").display()
+        )));
 
         assert_eq!(
-            w.linker_args("/artifacts"),
-            vec!["-fuse-ld=lld".to_string(), "-B/artifacts/lld".to_string()]
+            w.linker_args(artifacts),
+            vec![
+                "-fuse-ld=lld".to_string(),
+                format!("-B{}", wrapper_dir.display())
+            ]
         );
     }
 
