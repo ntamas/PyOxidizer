@@ -36,9 +36,11 @@ Next
 Backwards Compatibility Notes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-* The minimum Rust version has been changed from 1.88 to 1.95. Rust 1.95 is
+* The minimum Rust version has been changed from 1.81 to 1.95. Rust 1.95 is
   the first release whose bundled LLVM (22) can read the LLVM bitcode objects
   shipped in ``pgo+lto`` python-build-standalone distributions.
+* PyO3 crate upgraded from 0.25 to 0.30. The ``zip`` crate used by
+  ``python-packaging`` and ``pyembed`` was upgraded from 4.3 to 9.0.
 * Support for Python 3.9 has been removed, as python-build-standalone no
   longer publishes distributions for it.
 * Support for Python 3.14 has been added.
@@ -63,6 +65,9 @@ Changes
 ^^^^^^^
 
 * Default Rust toolchain to use upgraded from 1.88.0 -> 1.99.1.
+* License detection for Python packages now honors the ``License-Expression``
+  metadata header, and a package declaring both SPDX and non-SPDX licenses is
+  now classified by its SPDX licenses instead of being treated as unknown.
 * The automatically installed Rust toolchain on macOS now gets a symlink for
   ``libLLVM.dylib`` next to ``rust-objcopy`` so that stripping debug info from
   release binaries works. Rust 1.98+ ships a ``rust-objcopy`` with a broken
@@ -116,6 +121,10 @@ Changes
 * New default Python distributions for the ``aarch64-pc-windows-msvc``
   (Python 3.11+), ``aarch64-unknown-linux-musl`` and
   ``x86_64_v4-unknown-linux-gnu`` targets.
+* On Windows, the libpython import library is now linked explicitly. PyO3
+  0.30 links libpython via ``raw-dylib``, which only provides the symbols
+  PyO3 itself declares, so the private CPython functions used by
+  ``pyembed`` no longer resolved at link time.
 * :py:func:`default_python_distribution` now resolves to the oldest
   available Python version for build targets that don't have a distribution
   for the default version (3.10), instead of failing.
