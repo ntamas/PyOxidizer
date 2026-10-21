@@ -33,6 +33,11 @@ Next
 
 (Not yet released)
 
+0.126.0
+-------
+
+Released 2026-10-21
+
 Backwards Compatibility Notes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
