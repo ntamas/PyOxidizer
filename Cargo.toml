@@ -25,6 +25,8 @@ resolver = "2"
 
 [workspace.metadata.release]
 allow-branch = ["main"]
+# This fork is not published to crates.io.
+publish = false
 push-remote = "origin"
 pre-release-commit-message = "workspace: perform releases"
 tag-message = "{{crate_name}}: version {{version}}"
