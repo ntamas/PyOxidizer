@@ -27,6 +27,10 @@ tar_command := if os() == "macos" {
   "tar"
 }
 
+# Name of the repository section in ~/.pypirc that PyOxidizer wheels are
+# uploaded to. This fork is not published on pypi.org.
+pypi_repository := env_var_or_default("PYOXIDIZER_PYPI_REPOSITORY", "collmot")
+
 actions-install-sccache-linux:
   python3 scripts/secure_download.py \
     https://github.com/mozilla/sccache/releases/download/v0.3.3/sccache-v0.3.3-x86_64-unknown-linux-musl.tar.gz \
@@ -476,10 +480,15 @@ pyoxidizer-release-prepare commit tag:
 
   just _create_shasums dist/pyoxidizer
 
-# Upload PyOxidizer release artifacts.
+# Upload PyOxidizer release wheels to the private package index.
+#
+# The release commit and tag are created by `cargo release` (see the
+# `release-rust` recipe), and no GitHub release is created for this fork, so
+# the only thing left to upload are the wheels built by
+# `pyoxidizer-release-prepare`. The `commit` and `tag` arguments are accepted
+# for compatibility with the `_release` helper.
 pyoxidizer-release-upload commit tag:
-  just _upload_release pyoxidizer PyOxidizer {{commit}} {{tag}}
-  twine upload dist/pyoxidizer/*.whl
+  twine upload --repository {{pypi_repository}} dist/pyoxidizer/*.whl
 
 # Perform release automation for PyOxidizer.
 pyoxidizer-release:

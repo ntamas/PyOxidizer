@@ -25,13 +25,16 @@ Name: pyoxidizer
 Version: %s
 Summary: Package self-contained Python applications
 Keywords: python
-Home-Page: https://github.com/indygreg/PyOxidizer
-Author: Gregory Szorc <gregory.szorc@gmail.com>
-Author-Email: Gregory Szorc <gregory.szorc@gmail.com>
+Home-Page: https://github.com/ntamas/PyOxidizer
+Author: Gregory Szorc, Tamas Nepusz
+Author-Email: Gregory Szorc <gregory.szorc@gmail.com>, Tamas Nepusz <ntamas@protonmail.ch>
 License: MPL-2.0
 Description-Content-Type: text/markdown; charset=UTF-8; variant=GFM
 
 PyOxidizer is a utility for producing distributable Python applications.
+
+This is the fork of PyOxidizer maintained at https://github.com/ntamas/PyOxidizer.
+It is not published on pypi.org.
 
 See the docs at https://pyoxidizer.readthedocs.org/ for more.
 """
