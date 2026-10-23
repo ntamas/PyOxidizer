@@ -33,6 +33,11 @@ Next
 
 (Not yet released)
 
+0.127.0
+-------
+
+Released 2026-10-23
+
 Changes
 ^^^^^^^
 
