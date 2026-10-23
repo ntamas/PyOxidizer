@@ -33,6 +33,20 @@ Next
 
 (Not yet released)
 
+Changes
+^^^^^^^
+
+* The ``python_platform_compatibility_tag_override`` attribute of
+  :py:class:`PythonPackagingPolicy` now also accepts a list of platform
+  tags. Each tag is passed to ``pip download`` as a separate ``--platform``
+  argument, so wheels matching any of them are accepted. This allows e.g.
+  ``["manylinux_2_28_x86_64", "manylinux2014_x86_64"]`` to resolve
+  dependencies that have moved on to newer manylinux tags alongside ones
+  that still only publish ``manylinux2014`` wheels. Reading the attribute
+  now yields a list instead of a string. The Rust API accessors were renamed
+  to ``python_platform_compatibility_tag_overrides()`` and
+  ``set_python_platform_compatibility_tag_overrides()`` and take a ``Vec``.
+
 0.126.0
 -------
 

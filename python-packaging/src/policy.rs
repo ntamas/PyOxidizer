@@ -180,10 +180,12 @@ pub struct PythonPackagingPolicy {
     no_bytecode_modules: HashSet<String>,
 
     /// User-defined override of the Python platform compatibility tag.
-    /// None means to derive it from the PEP 425 Python platform tag.
+    /// Empty means to derive it from the PEP 425 Python platform tag.
     /// This can be used by the user to upgrade the platform tag to a later
-    /// macOS deployment version if needed.
-    python_platform_compatibility_tag_override: Option<String>,
+    /// macOS deployment version or manylinux version if needed. Multiple
+    /// tags can be specified, in which case wheels matching any of them
+    /// are accepted.
+    python_platform_compatibility_tag_overrides: Vec<String>,
 }
 
 impl Default for PythonPackagingPolicy {
@@ -208,7 +210,7 @@ impl Default for PythonPackagingPolicy {
             bytecode_optimize_level_one: false,
             bytecode_optimize_level_two: false,
             no_bytecode_modules: HashSet::new(),
-            python_platform_compatibility_tag_override: None,
+            python_platform_compatibility_tag_overrides: vec![],
         }
     }
 }
@@ -390,20 +392,24 @@ impl PythonPackagingPolicy {
         self.bytecode_optimize_level_two = value;
     }
 
-    /// Get the user-defined override for the Python platform compatibility tag.
+    /// Get the user-defined overrides for the Python platform compatibility tag.
     ///
-    /// Returns an `Option<&String>` containing the override if set, or `None` if not set.
-    pub fn python_platform_compatibility_tag_override(&self) -> Option<&String> {
-        self.python_platform_compatibility_tag_override.as_ref()
+    /// Returns an empty slice if no override is set, in which case the
+    /// compatibility tag is derived from the Python distribution.
+    pub fn python_platform_compatibility_tag_overrides(&self) -> &[String] {
+        &self.python_platform_compatibility_tag_overrides
     }
 
-    /// Set the user-defined override for the Python platform compatibility tag.
+    /// Set the user-defined overrides for the Python platform compatibility tag.
     ///
-    /// Pass `Some(tag)` to override the compatibility tag, or `None` to clear the override.
-    /// This can be used to allow newer versions of wheels on Linux or macOS than
-    /// what the Python distributin itself would allow.
-    pub fn set_python_platform_compatibility_tag_override(&mut self, tag: Option<String>) {
-        self.python_platform_compatibility_tag_override = tag;
+    /// Pass one or more tags to override the compatibility tag, or an empty
+    /// `Vec` to clear the override. This can be used to allow newer versions
+    /// of wheels on Linux or macOS than what the Python distribution itself
+    /// would allow. When multiple tags are given, wheels matching any of them
+    /// are accepted, so e.g. `["manylinux_2_28_x86_64", "manylinux2014_x86_64"]`
+    /// accepts packages that only publish wheels for either of the two.
+    pub fn set_python_platform_compatibility_tag_overrides(&mut self, tags: Vec<String>) {
+        self.python_platform_compatibility_tag_overrides = tags;
     }
 
     /// Set the resource handling mode of the policy.

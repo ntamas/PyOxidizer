@@ -113,13 +113,18 @@ pub fn pip_download<'a>(
         format!("{}", target_dir.display()),
         // Only download wheels.
         "--only-binary=:all:".to_string(),
-        // We download files compatible with the distribution we're targeting.
-        format!(
-            "--platform={}",
-            policy.python_platform_compatibility_tag_override().map(|f| f.as_str()).unwrap_or_else(
-                || target_dist.python_platform_compatibility_tag()
-            ),
-        ),
+    ]);
+
+    // We download files compatible with the distribution we're targeting.
+    // pip accepts multiple --platform arguments and takes wheels matching
+    // any of them.
+    let platform_tags = match policy.python_platform_compatibility_tag_overrides() {
+        [] => vec![target_dist.python_platform_compatibility_tag().to_string()],
+        tags => tags.to_vec(),
+    };
+    pip_args.extend(platform_tags.iter().map(|tag| format!("--platform={}", tag)));
+
+    pip_args.extend(vec![
         format!("--python-version={}", target_dist.python_version()),
         format!(
             "--implementation={}",
@@ -444,7 +449,7 @@ mod tests {
             if target_dist.target_triple().ends_with("-darwin") {
                 // For macOS, allow a deployment target of 10.13 because zstandard
                 // does not publish 10.9 wheels any more
-                policy.set_python_platform_compatibility_tag_override(Some("macosx_10_13_x86_64".to_string()));
+                policy.set_python_platform_compatibility_tag_overrides(vec!["macosx_10_13_x86_64".to_string()]);
             }
 
             let resources = pip_download(
@@ -542,7 +547,7 @@ mod tests {
             let mut policy = target_dist.create_packaging_policy()?;
             policy.set_file_scanner_emit_files(true);
             policy.set_file_scanner_classify_files(true);
-            policy.set_python_platform_compatibility_tag_override(Some("macosx_10_13_x86_64".to_string()));
+            policy.set_python_platform_compatibility_tag_overrides(vec!["macosx_10_13_x86_64".to_string()]);
 
             // Use numpy 2.2.1 as a testbed because this is the latest NumPy
             // that provides wheels for Python 3.12 with macOS deployment

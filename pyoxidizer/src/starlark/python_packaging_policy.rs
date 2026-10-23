@@ -15,12 +15,14 @@ use {
         starlark_fun, starlark_module, starlark_parse_param_type, starlark_signature,
         starlark_signature_extraction, starlark_signatures,
         values::{
-            error::{RuntimeError, UnsupportedOperation, ValueError},
+            error::{
+                RuntimeError, UnsupportedOperation, ValueError, INCORRECT_PARAMETER_TYPE_ERROR_CODE,
+            },
             none::NoneType,
             Mutable, TypedValue, Value, ValueResult,
         },
     },
-    starlark_dialect_build_targets::required_type_arg,
+    starlark_dialect_build_targets::{required_list_arg, required_type_arg},
     std::{
         ops::Deref,
         sync::{Arc, Mutex, MutexGuard},
@@ -140,10 +142,12 @@ impl TypedValue for PythonPackagingPolicyValue {
             "preferred_extension_module_variants" => {
                 Value::try_from(inner.preferred_extension_module_variants().clone())?
             }
-            "python_platform_compatibility_tag_override" => match inner.python_platform_compatibility_tag_override() {
-                Some(tag_override) => Value::from(tag_override.to_string()),
-                None => Value::from(NoneType::None),
-            },
+            "python_platform_compatibility_tag_override" => {
+                match inner.python_platform_compatibility_tag_overrides() {
+                    [] => Value::from(NoneType::None),
+                    tags => Value::from(tags.iter().map(|tag| tag.as_str()).collect::<Vec<_>>()),
+                }
+            }
             "resources_location" => Value::from(inner.resources_location().to_string()),
             "resources_location_fallback" => match inner.resources_location_fallback() {
                 Some(location) => Value::from(location.to_string()),
@@ -241,13 +245,25 @@ impl TypedValue for PythonPackagingPolicyValue {
                 inner.set_include_test(value.to_bool());
             }
             "python_platform_compatibility_tag_override" => {
-                if value.get_type() == "NoneType" {
-                    inner.set_python_platform_compatibility_tag_override(None);
-                } else {
-                    inner.set_python_platform_compatibility_tag_override(Some(
-                        value.to_string().as_str().into(),
-                    ));
-                }
+                let tags = match value.get_type() {
+                    "NoneType" => vec![],
+                    "string" => vec![value.to_string()],
+                    "list" => {
+                        required_list_arg(attribute, "string", &value)?;
+                        value.iter()?.iter().map(|v| v.to_string()).collect()
+                    }
+                    t => {
+                        return Err(ValueError::from(RuntimeError {
+                            code: INCORRECT_PARAMETER_TYPE_ERROR_CODE,
+                            message: format!(
+                                "{} expects a string, a list of strings or None; got {}",
+                                attribute, t
+                            ),
+                            label: format!("expected type string, list or None; got {}", t),
+                        }));
+                    }
+                };
+                inner.set_python_platform_compatibility_tag_overrides(tags);
             }
             "resources_location" => {
                 inner.set_resources_location(
@@ -576,6 +592,68 @@ mod tests {
             "policy.bytecode_optimize_level_two = True; policy.bytecode_optimize_level_two",
         )?;
         assert!(value.to_bool());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_python_platform_compatibility_tag_override() -> Result<()> {
+        let mut env = test_evaluation_context_builder()?.into_context()?;
+
+        env.eval("dist = default_python_distribution()")?;
+        env.eval("policy = dist.make_python_packaging_policy()")?;
+
+        let value = env.eval("policy.python_platform_compatibility_tag_override")?;
+        assert_eq!(value.get_type(), "NoneType");
+
+        // A single string is accepted and reported as a one-element list.
+        let value = env.eval(
+            "policy.python_platform_compatibility_tag_override = 'manylinux_2_28_x86_64'; policy.python_platform_compatibility_tag_override",
+        )?;
+        assert_eq!(value.get_type(), "list");
+        assert_eq!(value.to_string(), "[\"manylinux_2_28_x86_64\"]");
+
+        // A list of strings is accepted as-is.
+        let value = env.eval(
+            "policy.python_platform_compatibility_tag_override = ['manylinux_2_28_x86_64', 'manylinux2014_x86_64']; policy.python_platform_compatibility_tag_override",
+        )?;
+        assert_eq!(value.get_type(), "list");
+        assert_eq!(
+            value.to_string(),
+            "[\"manylinux_2_28_x86_64\", \"manylinux2014_x86_64\"]"
+        );
+
+        {
+            let policy_value = env.eval("policy")?;
+            let x = policy_value
+                .downcast_ref::<PythonPackagingPolicyValue>()
+                .unwrap();
+            assert_eq!(
+                x.inner("test")
+                    .unwrap()
+                    .python_platform_compatibility_tag_overrides(),
+                &[
+                    "manylinux_2_28_x86_64".to_string(),
+                    "manylinux2014_x86_64".to_string()
+                ]
+            );
+        }
+
+        // None clears the override.
+        let value = env.eval(
+            "policy.python_platform_compatibility_tag_override = None; policy.python_platform_compatibility_tag_override",
+        )?;
+        assert_eq!(value.get_type(), "NoneType");
+
+        // Other types are rejected.
+        assert!(env
+            .eval("policy.python_platform_compatibility_tag_override = 42")
+            .is_err());
+        assert!(env
+            .eval(
+                "policy.python_platform_compatibility_tag_override = ['manylinux_2_28_x86_64', 42]"
+            )
+            .is_err());
 
         Ok(())
     }
