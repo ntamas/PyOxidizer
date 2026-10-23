@@ -216,6 +216,32 @@
         Keys set on this dict are not reflected in the underlying policy. To set
         a key, call the ``set_preferred_extension_module_variant()`` method.
 
+    .. py:attribute:: python_platform_compatibility_tag_override
+
+        (``list<string>`` or ``None``)
+
+        Platform compatibility tags passed to ``pip download`` (via its
+        ``--platform`` argument) when resolving wheels for the target Python
+        distribution, overriding the tag derived from the distribution (e.g.
+        ``manylinux2014_x86_64`` on Linux or ``macosx_10_9_x86_64`` on macOS).
+
+        Use this when packages you depend on only publish wheels for newer
+        platform tags than the distribution's default, such as
+        ``manylinux_2_28_x86_64`` or a newer macOS deployment target. Wheels
+        matching any of the listed tags are accepted, so list the older tag as
+        well if some of your dependencies still only publish wheels for it::
+
+            policy.python_platform_compatibility_tag_override = [
+                "manylinux_2_28_x86_64",
+                "manylinux2014_x86_64",
+            ]
+
+        A single ``string`` can be assigned as a shorthand for a one-element
+        list. Reading the attribute always yields a list, or ``None`` if no
+        override is set.
+
+        Default is ``None``.
+
 
     .. py:method:: register_resource_callback(f: Callable)
 
