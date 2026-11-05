@@ -100,9 +100,22 @@ SYMBOL_ATTRIBUTES = {
     },
     "OxidizedResourceReader": {
         "contents",
+        "files",
         "is_resource",
         "open_resource",
         "resource_path",
+    },
+    "OxidizedResourceTraversable": {
+        "__rtruediv__",
+        "__truediv__",
+        "is_dir",
+        "is_file",
+        "iterdir",
+        "joinpath",
+        "name",
+        "open",
+        "read_bytes",
+        "read_text",
     },
     "OxidizedZipFinder": {
         "create_module",

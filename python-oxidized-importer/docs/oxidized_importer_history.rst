@@ -16,6 +16,19 @@ Next
 
 (Not yet released)
 
+* :py:class:`OxidizedResourceReader` now implements ``files()``, returning a
+  new :py:class:`OxidizedResourceTraversable` that implements
+  ``importlib.resources.abc.Traversable`` for package resources.
+  Previously, ``importlib.resources`` fell back to its own compatibility
+  wrapper, whose ``read_text()`` does not accept ``errors``. Since Python
+  3.13, ``importlib.resources.read_text()`` always passes ``errors`` to
+  ``Traversable.read_text()``, so every call to it failed with
+  ``TypeError: Traversable.read_text() got an unexpected keyword argument
+  'errors'`` for resources loaded by ``oxidized_importer``. Traversing into
+  sub-directories and child packages via ``joinpath()`` and ``/`` is
+  supported, and ``iterdir()`` now lists resource sub-directories and child
+  packages instead of every resource path in the package.
+
 0.10.0
 ------
 

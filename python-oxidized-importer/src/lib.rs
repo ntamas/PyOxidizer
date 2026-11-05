@@ -44,7 +44,7 @@ use {
         path_entry_finder::OxidizedPathEntryFinder,
         pkg_resources::{register_pkg_resources_with_module, OxidizedPkgResourcesProvider},
         python_resources::OxidizedResource,
-        resource_reader::OxidizedResourceReader,
+        resource_reader::{OxidizedResourceReader, OxidizedResourceTraversable},
     },
     pyo3::{
         exceptions::{PyImportError, PyValueError},
@@ -220,6 +220,7 @@ fn module_init(py: Python, m: &Bound<PyModule>) -> PyResult<()> {
     m.add_class::<OxidizedResource>()?;
     m.add_class::<crate::python_resource_collector::OxidizedResourceCollector>()?;
     m.add_class::<OxidizedResourceReader>()?;
+    m.add_class::<OxidizedResourceTraversable>()?;
     m.add_class::<OxidizedPathEntryFinder>()?;
     m.add_class::<OxidizedPkgResourcesProvider>()?;
     m.add_class::<crate::python_resource_types::PythonModuleSource>()?;

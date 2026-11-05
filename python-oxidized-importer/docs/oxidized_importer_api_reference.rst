@@ -321,6 +321,53 @@ The ``OxidizedResourceReader`` Class
 
    .. py:method:: contents() -> list[str]
 
+   .. py:method:: files() -> OxidizedResourceTraversable
+
+      Obtain a :py:class:`OxidizedResourceTraversable` for the package.
+
+      This is what ``importlib.resources.files()`` returns for packages
+      loaded by :py:class:`OxidizedFinder`.
+
+The ``OxidizedResourceTraversable`` Class
+=========================================
+
+.. py:class:: OxidizedResourceTraversable
+
+   ``importlib.resources.abc.Traversable`` implementer for resources
+   indexed by :py:class:`OxidizedFinder`.
+
+   Instances are obtained from :py:meth:`OxidizedResourceReader.files`
+   (usually via ``importlib.resources.files()``) and are bound to a Python
+   package and a resource path relative to that package. Child packages are
+   exposed as directories of their parent package.
+
+   .. py:attribute:: name
+
+      The base name of the resource, or the leaf name of the package.
+
+   .. py:method:: iterdir() -> Iterator[OxidizedResourceTraversable]
+
+      Yield the resources, resource sub-directories and child packages
+      directly contained in this directory.
+
+   .. py:method:: is_dir() -> bool
+
+   .. py:method:: is_file() -> bool
+
+   .. py:method:: joinpath(*descendants: str) -> OxidizedResourceTraversable
+
+      Each descendant may contain ``/`` separated path components. Also
+      available via the ``/`` operator.
+
+   .. py:method:: open(mode: str = "r", *args, **kwargs)
+
+      Open the resource for reading. ``mode`` must be ``"r"`` or ``"rb"``.
+      In text mode, extra arguments are passed to ``io.TextIOWrapper``.
+
+   .. py:method:: read_bytes() -> bytes
+
+   .. py:method:: read_text(encoding: Optional[str] = None, errors: Optional[str] = None) -> str
+
 The ``OxidizedPathEntryFinder`` Class
 =====================================
 
