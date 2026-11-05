@@ -341,11 +341,24 @@ oxidized_importer-release-prepare commit tag:
   mkdir dist/oxidized_importer
   cp dist/oxidized_importer-artifacts/wheels/*.whl dist/oxidized_importer
 
+  # The wheel version comes from pyproject.toml. Refuse to continue if it does
+  # not match the release, e.g. because the wrong commit was given.
+  for whl in dist/oxidized_importer/*.whl; do
+    if [[ "$(basename ${whl})" != oxidized_importer-{{tag}}-* ]]; then
+      echo "wheel ${whl} does not match version {{tag}}"
+      exit 1
+    fi
+  done
+
   just _create_shasums dist/oxidized_importer
 
+# Upload oxidized_importer release wheels to the private package index.
+#
+# `cargo release -p python-oxidized-importer` creates the release commit and
+# tag. This fork does not create GitHub releases and is not published on
+# pypi.org. The arguments are kept for symmetry with the prepare step.
 oxidized_importer-release-upload commit tag:
-  just _upload_release oxidized_importer 'Oxidized Importer Python Extension' {{commit}} {{tag}}
-  twine upload dist/oxidized_importer/*.whl
+  twine upload --repository {{pypi_repository}} dist/oxidized_importer/*.whl
 
 oxidized_importer-release commit tag:
   just oxidized_importer-release-prepare {{commit}} {{tag}}

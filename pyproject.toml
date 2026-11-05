@@ -4,12 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "oxidized_importer"
-version = "0.9.0.dev1"
+version = "0.11.0.dev0"
 description = "Python importer implemented in Rust"
 authors = [
-    { name = "Gregory Szorc", email = "gregory.szorc@gmail.com" }
+    { name = "Gregory Szorc", email = "gregory.szorc@gmail.com" },
+    { name = "Tamas Nepusz", email = "ntamas@protonmail.ch" },
 ]
-urls = { homepage = "https://github.com/indygreg/PyOxidizer" }
+urls = { homepage = "https://github.com/ntamas/PyOxidizer" }
 readme = "README.md"
 requires-python = ">=3.9"
 classifiers = [

@@ -18,7 +18,14 @@ exactly = 1
 [[package.metadata.release.pre-release-replacements]]
 file = "docs/oxidized_importer_history.rst"
 search = "Next\n----"
-replace = "{{version}}\n------"
+replace = "{{version}}\n-------"
+exactly = 1
+
+# Keep the version of the Python package in sync with the crate.
+[[package.metadata.release.pre-release-replacements]]
+file = "../pyproject.toml"
+search = "version = \"[^\"]+\""
+replace = "version = \"{{version}}\""
 exactly = 1
 
 [[package.metadata.release.pre-release-replacements]]

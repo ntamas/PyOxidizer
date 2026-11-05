@@ -48,6 +48,13 @@ jobs:
             build: "cp313-manylinux_i686"
           - arch: "x86_64"
             build: "cp313-manylinux_x86_64"
+
+          - arch: "aarch64"
+            build: "cp314-manylinux_aarch64"
+          - arch: "i686"
+            build: "cp314-manylinux_i686"
+          - arch: "x86_64"
+            build: "cp314-manylinux_x86_64"
     runs-on: ubuntu-22.04
     env:
       CIBW_ENVIRONMENT: 'PATH="$PATH:$HOME/.cargo/bin"'
@@ -89,6 +96,7 @@ jobs:
           - build: "cp311-macosx_universal2"
           - build: "cp312-macosx_universal2"
           - build: "cp313-macosx_universal2"
+          - build: "cp314-macosx_universal2"
     runs-on: macos-14
     env:
       CIBW_ARCHS: universal2
@@ -125,6 +133,7 @@ jobs:
           - build: "cp311-win_amd64"
           - build: "cp312-win_amd64"
           - build: "cp313-win_amd64"
+          - build: "cp314-win_amd64"
     runs-on: windows-2022
     env:
       CIBW_BUILD_VERBOSITY: "1"

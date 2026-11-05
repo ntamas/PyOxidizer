@@ -25,6 +25,12 @@ means that installing is as simple as::
 
    $ pip3 install oxidized_importer
 
+.. note::
+
+   Releases of the fork maintained at https://github.com/ntamas/PyOxidizer
+   are not published on pypi.org. The package on pypi.org is the last
+   release of the original project.
+
 Compiling from Source
 =====================
 
