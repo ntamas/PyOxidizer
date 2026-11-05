@@ -16,7 +16,7 @@ jobs:
         target:
           - os: 'ubuntu-22.04'
             triple: 'x86_64-unknown-linux-gnu'
-          - os: 'macos-14'
+          - os: 'macos-15'
             triple: 'x86_64-apple-darwin'
           - os: 'windows-2022'
             triple: 'i686-pc-windows-msvc'
@@ -56,7 +56,7 @@ jobs:
 
       # To minimize potential for Python interference, we delay install Python
       # until we need it for python-oxidized-importer/pyembed.
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python_version }}
 
