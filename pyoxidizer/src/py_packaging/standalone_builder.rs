@@ -122,6 +122,22 @@ pub struct StandalonePythonExecutableBuilder {
     windows_runtime_dlls_mode: WindowsRuntimeDllsMode,
 }
 
+/// Whether `oxidized_importer` can load extension modules from memory on a Python version.
+///
+/// The Windows implementation relies on CPython internals that are no longer
+/// available in Python 3.13. See `oxidized_importer_windows_in_memory_extensions.rst`
+/// in the `oxidized_importer` documentation.
+fn importer_supports_in_memory_shared_library_loading(python_major_minor_version: &str) -> bool {
+    let mut parts = python_major_minor_version
+        .split('.')
+        .map(|part| part.parse::<u32>().ok());
+
+    match (parts.next().flatten(), parts.next().flatten()) {
+        (Some(major), Some(minor)) => (major, minor) < (3, 13),
+        _ => false,
+    }
+}
+
 impl StandalonePythonExecutableBuilder {
     #[allow(clippy::too_many_arguments)]
     pub fn from_distribution(
@@ -169,8 +185,21 @@ impl StandalonePythonExecutableBuilder {
             }
         };
 
-        let supports_in_memory_dynamically_linked_extension_loading =
-            target_distribution.supports_in_memory_shared_library_loading();
+        let supports_in_memory_dynamically_linked_extension_loading = target_distribution
+            .supports_in_memory_shared_library_loading()
+            && importer_supports_in_memory_shared_library_loading(
+                &target_distribution.python_major_minor_version(),
+            );
+
+        if target_distribution.supports_in_memory_shared_library_loading()
+            && packaging_policy.allow_in_memory_shared_library_loading()
+            && !supports_in_memory_dynamically_linked_extension_loading
+        {
+            warn!(
+                "extension modules cannot be loaded from memory with Python {}; ignoring allow_in_memory_shared_library_loading",
+                target_distribution.python_major_minor_version()
+            );
+        }
 
         let mut allowed_locations = vec![AbstractResourceLocation::from(
             packaging_policy.resources_location(),
@@ -2744,6 +2773,51 @@ pub mod tests {
                 &EXTENSION_MODULE_SHARED_LIBRARY_ONLY,
                 ConcreteResourceLocation::RelativePath("prefix_policy".to_string()),
             );
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_importer_supports_in_memory_shared_library_loading() {
+        for version in ["3.9", "3.10", "3.11", "3.12"] {
+            assert!(importer_supports_in_memory_shared_library_loading(version));
+        }
+
+        for version in ["3.13", "3.14", "4.0", "", "3", "invalid"] {
+            assert!(!importer_supports_in_memory_shared_library_loading(version));
+        }
+    }
+
+    #[test]
+    fn test_windows_dynamic_extension_in_memory_unsupported_python_version() -> Result<()> {
+        for python_version in ["3.13", "3.14"] {
+            for target_triple in WINDOWS_TARGET_TRIPLES.iter() {
+                let options = StandalonePythonExecutableBuilderOptions {
+                    target_triple: target_triple.to_string(),
+                    distribution_version: Some(python_version.to_string()),
+                    distribution_flavor: DistributionFlavor::StandaloneDynamic,
+                    extension_module_filter: Some(ExtensionModuleFilter::Minimal),
+                    libpython_link_mode: BinaryLibpythonLinkMode::Dynamic,
+                    resources_location: Some(ConcreteResourceLocation::InMemory),
+                    resources_location_fallback: Some(Some(
+                        ConcreteResourceLocation::RelativePath("prefix_policy".to_string()),
+                    )),
+                    allow_in_memory_shared_library_loading: Some(true),
+                    ..StandalonePythonExecutableBuilderOptions::default()
+                };
+
+                let mut builder = options.new_builder()?;
+
+                // In-memory loading is requested but not supported, so the
+                // fallback location is used.
+                builder.add_python_extension_module(&EXTENSION_MODULE_SHARED_LIBRARY_ONLY, None)?;
+                assert_extension_shared_library(
+                    &builder,
+                    &EXTENSION_MODULE_SHARED_LIBRARY_ONLY,
+                    ConcreteResourceLocation::RelativePath("prefix_policy".to_string()),
+                );
+            }
         }
 
         Ok(())

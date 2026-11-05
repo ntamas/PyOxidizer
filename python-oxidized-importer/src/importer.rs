@@ -112,6 +112,10 @@ fn extension_module_shared_library_create_module(
     })
 }
 
+/// Loading extension modules from memory is not implemented for Python 3.13+.
+///
+/// See `docs/oxidized_importer_windows_in_memory_extensions.rst` for why and
+/// for a plan to restore it.
 #[cfg(all(windows, Py_3_13))]
 fn extension_module_shared_library_create_module(
     _resources_state: &PythonResourcesState<u8>,
@@ -119,10 +123,13 @@ fn extension_module_shared_library_create_module(
     _sys_modules: &Bound<PyAny>,
     _spec: &Bound<PyAny>,
     _name_py: &Bound<PyAny>,
-    _name: &str,
+    name: &str,
     _library_data: &[u8],
 ) -> PyResult<Py<PyAny>> {
-    panic!("extension modules cannot be loaded from in-memory resources on Windows with Python 3.13 or later");
+    Err(PyImportError::new_err((
+        "extension modules cannot be loaded from in-memory resources on Windows with Python 3.13 or later",
+        name.to_owned(),
+    )))
 }
 
 #[cfg(unix)]

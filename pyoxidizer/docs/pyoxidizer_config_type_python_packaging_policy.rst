@@ -40,6 +40,10 @@
         true value can be ignored if the target platform doesn't support loading
         shared library from memory.
 
+        Loading extension modules from memory is currently only supported on
+        Windows with Python 3.12 or older. With Python 3.13 or newer, this flag
+        is ignored and a warning is logged.
+
     .. py:attribute:: bytecode_optimize_level_zero
 
         (``bool``)

@@ -28,6 +28,10 @@ Next
   sub-directories and child packages via ``joinpath()`` and ``/`` is
   supported, and ``iterdir()`` now lists resource sub-directories and child
   packages instead of every resource path in the package.
+* Importing an extension module indexed for in-memory loading on Windows
+  with Python 3.13 or newer now raises ``ImportError`` instead of
+  panicking. See :ref:`oxidized_importer_windows_in_memory_extensions`
+  for why this is not supported and how support could be restored.
 
 0.10.0
 ------
@@ -37,7 +41,8 @@ Released 2025-10-05
 * PyO3 upgraded from 0.17 to 0.25.1.
 * Added support for Python versions up to and including 3.12.
 * Disable in-memory extension import for Python 3.13 on Windows until
-  we can make it work again.
+  we can make it work again. See
+  :ref:`oxidized_importer_windows_in_memory_extensions` for details.
 
 0.9.0
 -----

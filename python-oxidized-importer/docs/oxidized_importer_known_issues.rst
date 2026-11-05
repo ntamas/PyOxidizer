@@ -22,11 +22,14 @@ module to filesystem-based loading if not supported.
 to.
 
 :py:class:`OxidizedFinder` supports loading extension modules from memory
-on Windows. But everywhere else, this isn't supported and will result in an
+on Windows with Python 3.12 or older. Everywhere else, including Windows
+with Python 3.13 or newer, this isn't supported and will result in an
 ``ImportError`` if you index an extension module for in-memory loading.
+See :ref:`oxidized_importer_windows_in_memory_extensions` for why.
 
 To work around this deficiency, you'll want to mark extension modules as
-loaded from the filesystem unless you are on Windows. Try something
+loaded from the filesystem unless you are on Windows with Python 3.12 or
+older. Try something
 like this:
 
 .. code-block:: python

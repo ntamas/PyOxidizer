@@ -38,6 +38,7 @@ used with regular Python installs.
    oxidized_importer_freezing_applications
    oxidized_importer_zip_finder
    oxidized_importer_known_issues
+   oxidized_importer_windows_in_memory_extensions
    oxidized_importer_security
    oxidized_importer_api_reference
    oxidized_importer_packed_resources

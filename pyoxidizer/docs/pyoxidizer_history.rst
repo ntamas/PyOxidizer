@@ -48,6 +48,12 @@ Bug Fixes
   sub-directories and child packages via ``joinpath()`` and ``/`` is
   supported, and ``iterdir()`` now lists resource sub-directories and child
   packages instead of every resource path in the package.
+* Extension modules are no longer placed in memory on Windows with Python
+  3.13 or newer when ``PythonPackagingPolicy.allow_in_memory_shared_library_loading``
+  is enabled. ``oxidized_importer`` cannot load them from memory on these
+  versions, so such binaries failed when importing the extension module.
+  A warning is logged and the policy's fallback resources location is
+  used instead.
 
 0.127.0
 -------
