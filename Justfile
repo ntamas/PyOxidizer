@@ -42,14 +42,34 @@ actions-install-sccache-linux:
   chmod +x /home/runner/.cargo/bin/sccache
 
 actions-install-sccache-macos:
+  #!/usr/bin/env bash
+  set -euxo pipefail
+
+  if [ "$(uname -m)" = "arm64" ]; then
+    triple=aarch64-apple-darwin
+    sha256=751453b31048f8ba1e7d646be8d76d64ad0a16ecb17d17edb523b01eda25b7a8
+  else
+    triple=x86_64-apple-darwin
+    sha256=e68aa0e2716e9cceff7912e09d8028df34cd63d8d60cae832a2d5f5c94da1828
+  fi
+
   python3 scripts/secure_download.py \
-    https://github.com/mozilla/sccache/releases/download/v0.3.3/sccache-v0.3.3-x86_64-apple-darwin.tar.gz \
-    e68aa0e2716e9cceff7912e09d8028df34cd63d8d60cae832a2d5f5c94da1828 \
+    https://github.com/mozilla/sccache/releases/download/v0.3.3/sccache-v0.3.3-${triple}.tar.gz \
+    ${sha256} \
     sccache.tar.gz
   tar -xvzf sccache.tar.gz
-  mv sccache-v0.3.3-x86_64-apple-darwin/sccache /Users/runner/.cargo/bin/sccache
+
+  # Runner images may provide rustup via Homebrew, in which case
+  # $CARGO_HOME/bin is neither created nor added to PATH.
+  bin_dir="${CARGO_HOME:-$HOME/.cargo}/bin"
+  mkdir -p "${bin_dir}"
+  mv sccache-v0.3.3-${triple}/sccache "${bin_dir}/sccache"
   rm -rf sccache*
-  chmod +x /Users/runner/.cargo/bin/sccache
+  chmod +x "${bin_dir}/sccache"
+
+  if [ -n "${GITHUB_PATH:-}" ]; then
+    echo "${bin_dir}" >> "${GITHUB_PATH}"
+  fi
 
 actions-install-sccache-windows:
   python3 scripts/secure_download.py \
@@ -142,7 +162,6 @@ actions-build-pyoxy-macos triple python_version:
   #!/usr/bin/env bash
   set -euxo pipefail
 
-  export SDKROOT=/Applications/Xcode_15.0.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX14.0.sdk
   export MACOSX_DEPLOYMENT_TARGET={{macosx_deployment_target}}
   pyoxidizer build --release --target-triple {{triple}} --path pyoxy --var PYTHON_VERSION {{python_version}}
   PYO3_CONFIG_FILE=$(pwd)/pyoxy/build/{{triple}}/release/resources/pyo3-build-config-file.txt cargo build --bin pyoxy --target {{triple}} --release
