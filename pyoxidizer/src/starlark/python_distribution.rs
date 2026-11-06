@@ -9,7 +9,7 @@ use {
         python_interpreter_config::PythonInterpreterConfigValue,
         python_packaging_policy::PythonPackagingPolicyValue,
         python_resource::{add_context_for_value, python_resource_to_value},
-    }, crate::{py_packaging::distribution::{default_distribution_location, BinaryLibpythonLinkMode, DistributionFlavor, PythonDistribution, PythonDistributionLocation}, shell::{with_shell, with_verbose_shell}}, anyhow::{anyhow, Result}, cargolike::style::{GOOD, SKIPPED}, python_packaging::{
+    }, crate::{py_packaging::distribution::{default_distribution_location, BinaryLibpythonLinkMode, DistributionFlavor, PythonDistribution, PythonDistributionLocation}, shell::{with_shell, with_verbose_shell, GOOD, SKIPPED}}, anyhow::{anyhow, Result}, python_packaging::{
         policy::PythonPackagingPolicy, resource::PythonResource,
         resource_collection::PythonResourceAddCollectionContext,
     }, starlark::{

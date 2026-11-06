@@ -5,8 +5,8 @@
 use {
     crate::{
         environment::{default_target_triple, PYOXIDIZER_VERSION},
-        project_building, projectmgmt, shell::with_shell,
-    }, anyhow::{anyhow, Context, Result}, cargolike::Verbosity, clap::{value_parser, Arg, ArgAction, ArgMatches, Command}, std::{
+        project_building, projectmgmt, shell::{with_shell, Verbosity},
+    }, anyhow::{anyhow, Context, Result}, clap::{value_parser, Arg, ArgAction, ArgMatches, Command}, std::{
         collections::HashMap,
         path::{Path, PathBuf},
     }

@@ -1,6 +1,5 @@
 [workspace]
 members = [
-    'cargolike',
     'pyembed-bench',
     'pyembed',
     'pyoxidizer',
