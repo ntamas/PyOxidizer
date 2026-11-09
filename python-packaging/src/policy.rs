@@ -581,13 +581,9 @@ impl PythonPackagingPolicy {
         }
 
         match resource {
-            PythonResource::ModuleSource(module) => {
-                if !self.include_test && module.is_test {
-                    false
-                } else {
-                    self.include_distribution_sources
-                }
-            }
+            // Whether to store the source code is decided separately by
+            // `store_source` in `derive_add_collection_context()`.
+            PythonResource::ModuleSource(module) => self.include_test || !module.is_test,
             PythonResource::ModuleBytecodeRequest(module) => self.include_test || !module.is_test,
             PythonResource::ModuleBytecode(_) => false,
             PythonResource::PackageResource(resource) => {
@@ -742,7 +738,11 @@ impl PythonPackagingPolicy {
 
 #[cfg(test)]
 mod tests {
-    use {super::*, simple_file_manifest::File};
+    use {
+        super::*,
+        crate::resource::PythonModuleSource,
+        simple_file_manifest::{File, FileData},
+    };
 
     #[test]
     fn test_is_dunder_file_allowed() {
@@ -778,5 +778,44 @@ mod tests {
         assert!(add_context.include);
 
         Ok(())
+    }
+
+    #[test]
+    fn test_add_collection_context_module_source() {
+        let module = |is_stdlib, is_test| -> PythonResource {
+            PythonModuleSource {
+                name: "foo".to_string(),
+                source: FileData::Memory(vec![]),
+                is_package: false,
+                cache_tag: "cpython-313".to_string(),
+                is_stdlib,
+                is_test,
+            }
+            .into()
+        };
+
+        for (include_distribution_sources, include_non_distribution_sources) in
+            [(true, true), (true, false), (false, true), (false, false)]
+        {
+            let mut policy = PythonPackagingPolicy::default();
+            policy.set_include_distribution_sources(include_distribution_sources);
+            policy.set_include_non_distribution_sources(include_non_distribution_sources);
+
+            // The source settings decide whether the source code is stored,
+            // not whether the module is included.
+            let add_context = policy.derive_add_collection_context(&module(true, false));
+            assert!(add_context.include);
+            assert_eq!(add_context.store_source, include_distribution_sources);
+
+            let add_context = policy.derive_add_collection_context(&module(false, false));
+            assert!(add_context.include);
+            assert_eq!(add_context.store_source, include_non_distribution_sources);
+        }
+
+        let test_module = module(false, true);
+        let mut policy = PythonPackagingPolicy::default();
+        assert!(!policy.derive_add_collection_context(&test_module).include);
+        policy.set_include_test(true);
+        assert!(policy.derive_add_collection_context(&test_module).include);
     }
 }

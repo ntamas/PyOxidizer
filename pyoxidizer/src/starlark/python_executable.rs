@@ -1215,6 +1215,14 @@ mod tests {
             .iter_resources()
             .all(|(_, r)| r.in_memory_source.is_none()));
 
+        // Disabling sources must not drop the modules themselves.
+        let os = inner
+            .iter_resources()
+            .find(|(name, _)| *name == "os")
+            .map(|(_, r)| r)
+            .expect("os module should be packaged");
+        assert!(os.in_memory_bytecode.is_some());
+
         Ok(())
     }
 

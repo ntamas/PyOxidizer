@@ -45,6 +45,16 @@ New Features
   every other affected module, and in GitHub Actions it is also emitted as an
   annotation on the job.
 
+Bug Fixes
+^^^^^^^^^
+
+* Setting :py:attr:`PythonPackagingPolicy.include_distribution_sources` to
+  ``False`` no longer sets ``add_include`` to ``False`` on every
+  :py:class:`PythonModuleSource`. Previously this excluded all Python modules
+  from the build, including bytecode, whether or not they came from the
+  Python distribution. Now the setting only controls whether the source code
+  of standard library modules is stored, as documented.
+
 0.128.0
 -------
 
