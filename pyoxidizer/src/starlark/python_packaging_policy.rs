@@ -29,6 +29,29 @@ use {
     },
 };
 
+/// Convert a Starlark value to a list of strings for a list attribute.
+///
+/// `None` is converted to an empty list.
+fn string_list_attr(attribute: &str, value: &Value) -> Result<Vec<String>, ValueError> {
+    match value.get_type() {
+        "NoneType" => Ok(vec![]),
+        "list" => {
+            required_list_arg(attribute, "string", value)?;
+            Ok(value.iter()?.iter().map(|v| v.to_string()).collect())
+        }
+        t => Err(ValueError::from(RuntimeError {
+            code: INCORRECT_PARAMETER_TYPE_ERROR_CODE,
+            message: format!("{} expects a list of strings or None; got {}", attribute, t),
+            label: format!("expected type list or None; got {}", t),
+        })),
+    }
+}
+
+/// Convert a list of strings to a Starlark list.
+fn string_list_value(values: &[String]) -> Value {
+    Value::from(values.iter().map(|v| v.as_str()).collect::<Vec<_>>())
+}
+
 #[derive(Debug, Clone)]
 pub struct PythonPackagingPolicyValue {
     inner: Arc<Mutex<PythonPackagingPolicy>>,
@@ -128,16 +151,17 @@ impl TypedValue for PythonPackagingPolicyValue {
             "bytecode_optimize_level_zero" => Value::from(inner.bytecode_optimize_level_zero()),
             "bytecode_optimize_level_one" => Value::from(inner.bytecode_optimize_level_one()),
             "bytecode_optimize_level_two" => Value::from(inner.bytecode_optimize_level_two()),
-            "dunder_file_allowed_packages" => Value::from(
-                inner
-                    .dunder_file_allowed_packages()
-                    .iter()
-                    .map(|package| package.as_str())
-                    .collect::<Vec<_>>(),
-            ),
+            "dunder_file_allowed_packages" => {
+                string_list_value(inner.dunder_file_allowed_packages())
+            }
+            "excluded_packages" => string_list_value(inner.excluded_packages()),
             "extension_module_filter" => Value::from(inner.extension_module_filter().as_ref()),
             "file_scanner_classify_files" => Value::from(inner.file_scanner_classify_files()),
             "file_scanner_emit_files" => Value::from(inner.file_scanner_emit_files()),
+            "filesystem_packages" => string_list_value(inner.filesystem_packages()),
+            "filesystem_packages_location" => {
+                Value::from(inner.filesystem_packages_location().to_string())
+            }
             "include_distribution_sources" => Value::from(inner.include_distribution_sources()),
             "include_distribution_resources" => Value::from(inner.include_distribution_resources()),
             "include_classified_resources" => Value::from(inner.include_classified_resources()),
@@ -160,6 +184,7 @@ impl TypedValue for PythonPackagingPolicyValue {
                 Some(location) => Value::from(location.to_string()),
                 None => Value::from(NoneType::None),
             },
+            "test_package_names" => string_list_value(inner.test_package_names()),
             attr => {
                 return Err(ValueError::OperationNotSupported {
                     op: UnsupportedOperation::GetAttr(attr.to_string()),
@@ -181,9 +206,12 @@ impl TypedValue for PythonPackagingPolicyValue {
                 | "bytecode_optimize_level_one"
                 | "bytecode_optimize_level_two"
                 | "dunder_file_allowed_packages"
+                | "excluded_packages"
                 | "extension_module_filter"
                 | "file_scanner_classify_files"
                 | "file_scanner_emit_files"
+                | "filesystem_packages"
+                | "filesystem_packages_location"
                 | "include_distribution_sources"
                 | "include_distribution_resources"
                 | "include_classified_resources"
@@ -194,6 +222,7 @@ impl TypedValue for PythonPackagingPolicyValue {
                 | "python_platform_compatibility_tag_override"
                 | "resources_location"
                 | "resources_location_fallback"
+                | "test_package_names"
         ))
     }
 
@@ -247,24 +276,36 @@ impl TypedValue for PythonPackagingPolicyValue {
                 inner.set_include_file_resources(value.to_bool());
             }
             "dunder_file_allowed_packages" => {
-                let packages = match value.get_type() {
-                    "NoneType" => vec![],
-                    "list" => {
-                        required_list_arg(attribute, "string", &value)?;
-                        value.iter()?.iter().map(|v| v.to_string()).collect()
-                    }
-                    t => {
-                        return Err(ValueError::from(RuntimeError {
-                            code: INCORRECT_PARAMETER_TYPE_ERROR_CODE,
-                            message: format!(
-                                "{} expects a list of strings or None; got {}",
-                                attribute, t
-                            ),
-                            label: format!("expected type list or None; got {}", t),
-                        }));
-                    }
-                };
-                inner.set_dunder_file_allowed_packages(packages);
+                inner.set_dunder_file_allowed_packages(string_list_attr(attribute, &value)?);
+            }
+            "excluded_packages" => {
+                inner.set_excluded_packages(string_list_attr(attribute, &value)?);
+            }
+            "filesystem_packages" => {
+                inner.set_filesystem_packages(string_list_attr(attribute, &value)?);
+            }
+            "filesystem_packages_location" => {
+                let label = format!("{}.{} = {}", Self::TYPE, attribute, value);
+                let location = ConcreteResourceLocation::try_from(value.to_string().as_str())
+                    .map_err(|e| {
+                        ValueError::from(RuntimeError {
+                            code: "PYOXIDIZER_BUILD",
+                            message: e,
+                            label: label.clone(),
+                        })
+                    })?;
+                inner
+                    .set_filesystem_packages_location(location)
+                    .map_err(|e| {
+                        ValueError::from(RuntimeError {
+                            code: "PYOXIDIZER_BUILD",
+                            message: e.to_string(),
+                            label,
+                        })
+                    })?;
+            }
+            "test_package_names" => {
+                inner.set_test_package_names(string_list_attr(attribute, &value)?);
             }
             "include_non_distribution_sources" => {
                 inner.set_include_non_distribution_sources(value.to_bool());
@@ -724,6 +765,65 @@ mod tests {
             .is_err());
         assert!(env
             .eval("policy.dunder_file_allowed_packages = ['foo', 42]")
+            .is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_package_list_attributes() -> Result<()> {
+        let mut env = test_evaluation_context_builder()?.into_context()?;
+
+        env.eval("dist = default_python_distribution()")?;
+        env.eval("policy = dist.make_python_packaging_policy()")?;
+
+        for attribute in [
+            "excluded_packages",
+            "filesystem_packages",
+            "test_package_names",
+        ] {
+            let value = env.eval(&format!("policy.{}", attribute))?;
+            assert_eq!(value.get_type(), "list");
+            assert_eq!(value.length().unwrap(), 0);
+
+            let value = env.eval(&format!(
+                "policy.{0} = ['foo', 'bar.baz']; policy.{0}",
+                attribute
+            ))?;
+            assert_eq!(value.to_string(), "[\"foo\", \"bar.baz\"]");
+
+            let value = env.eval(&format!("policy.{0} = None; policy.{0}", attribute))?;
+            assert_eq!(value.length().unwrap(), 0);
+
+            assert!(env.eval(&format!("policy.{} = 'foo'", attribute)).is_err());
+            assert!(env
+                .eval(&format!("policy.{} = ['foo', 42]", attribute))
+                .is_err());
+        }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_filesystem_packages_location() -> Result<()> {
+        let mut env = test_evaluation_context_builder()?.into_context()?;
+
+        env.eval("dist = default_python_distribution()")?;
+        env.eval("policy = dist.make_python_packaging_policy()")?;
+
+        let value = env.eval("policy.filesystem_packages_location")?;
+        assert_eq!(value.to_string(), "filesystem-relative:lib");
+
+        let value = env.eval(
+            "policy.filesystem_packages_location = 'filesystem-relative:modules'; policy.filesystem_packages_location",
+        )?;
+        assert_eq!(value.to_string(), "filesystem-relative:modules");
+
+        assert!(env
+            .eval("policy.filesystem_packages_location = 'in-memory'")
+            .is_err());
+        assert!(env
+            .eval("policy.filesystem_packages_location = 'foo'")
             .is_err());
 
         Ok(())

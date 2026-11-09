@@ -84,6 +84,24 @@
 
         Default is an empty list.
 
+    .. py:attribute:: excluded_packages
+
+        (``list<string>``)
+
+        Packages whose resources are left out of the build.
+
+        Each entry covers the named package or module and everything below
+        it, including the distribution metadata of a distribution with the
+        same name. For example, ``["foo"]`` covers ``foo`` and ``foo.bar`` but
+        not ``foobar``.
+
+        Extension modules are not affected, because PyOxidizer currently adds
+        them regardless of their ``add_include`` attribute.
+
+        Assigning ``None`` clears the list.
+
+        Default is an empty list.
+
     .. py:attribute:: extension_module_filter
 
         (``string``)
@@ -156,6 +174,39 @@
 
         Default is ``False``.
 
+    .. py:attribute:: filesystem_packages
+
+        (``list<string>``)
+
+        Packages whose resources are placed on the filesystem.
+
+        Use this for packages that do not work when imported from memory,
+        e.g. because they need ``__file__`` or their own source code. The
+        resources of these packages are placed at
+        :py:attr:`PythonPackagingPolicy.filesystem_packages_location`, without
+        a fallback location. The source code of their modules is always
+        stored, regardless of
+        :py:attr:`PythonPackagingPolicy.include_non_distribution_sources`.
+
+        Each entry covers the named package or module and everything below
+        it, including the distribution metadata of a distribution with the
+        same name. For example, ``["foo"]`` covers ``foo`` and ``foo.bar`` but
+        not ``foobar``.
+
+        Assigning ``None`` clears the list.
+
+        Default is an empty list.
+
+    .. py:attribute:: filesystem_packages_location
+
+        (``string``)
+
+        The location of the resources of
+        :py:attr:`PythonPackagingPolicy.filesystem_packages`. It must be a
+        ``filesystem-relative:<prefix>`` location.
+
+        Default is ``filesystem-relative:lib``.
+
     .. py:attribute:: include_classified_resources
 
         (``bool``)
@@ -206,7 +257,10 @@
         Whether to add Python resources related to tests.
 
         Not all files associated with tests may be properly flagged as such.
-        This is a best effort setting.
+        This is a best effort setting. By default only the test packages of
+        the standard library are flagged. Use
+        :py:attr:`PythonPackagingPolicy.test_package_names` to flag the tests
+        of other packages.
 
         Default is ``False``.
 
@@ -266,6 +320,31 @@
         override is set.
 
         Default is ``None``.
+
+    .. py:attribute:: test_package_names
+
+        (``list<string>``)
+
+        Package names that mark resources as tests.
+
+        A resource is a test if any package in its name has one of these
+        names. For example, ``["tests"]`` marks ``foo.tests``,
+        ``foo.tests.test_bar`` and the package resources in ``foo.tests``.
+        Only package names count: a module that is not a package is never a
+        test by its own name. This keeps runtime modules such as
+        ``jinja2.tests`` or ``werkzeug.test``. When the list is not empty,
+        ``conftest`` modules are also tests.
+
+        Resources marked here are handled like the standard library test
+        packages: they are left out unless
+        :py:attr:`PythonPackagingPolicy.include_test` is ``True``.
+
+        A typical value is
+        ``["test", "tests", "_test", "_tests", "benchmarks"]``.
+
+        Assigning ``None`` clears the list.
+
+        Default is an empty list.
 
 
     .. py:method:: register_resource_callback(f: Callable)

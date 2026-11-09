@@ -44,6 +44,15 @@ New Features
   their counts is printed instead of a warning. Otherwise the warning lists
   every other affected module, and in GitHub Actions it is also emitted as an
   annotation on the job.
+* New :py:attr:`PythonPackagingPolicy.excluded_packages` attribute. It lists
+  packages whose resources are left out of the build.
+* New :py:attr:`PythonPackagingPolicy.test_package_names` attribute. It marks
+  the resources of packages with these names as tests, which extends
+  :py:attr:`PythonPackagingPolicy.include_test` beyond the standard library.
+* New :py:attr:`PythonPackagingPolicy.filesystem_packages` and
+  :py:attr:`PythonPackagingPolicy.filesystem_packages_location` attributes.
+  The resources of the listed packages are placed on the filesystem, with
+  the source code of their modules.
 
 Bug Fixes
 ^^^^^^^^^

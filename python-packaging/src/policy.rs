@@ -17,7 +17,7 @@ use {
         resource::{PythonExtensionModule, PythonExtensionModuleVariants, PythonResource},
         resource_collection::PythonResourceAddCollectionContext,
     },
-    anyhow::Result,
+    anyhow::{anyhow, Result},
     std::collections::{HashMap, HashSet},
 };
 
@@ -192,6 +192,23 @@ pub struct PythonPackagingPolicy {
     /// Modules in these packages that refer to `__file__` do not trigger a
     /// warning when building.
     dunder_file_allowed_packages: Vec<String>,
+
+    /// Packages whose resources are left out of the build.
+    excluded_packages: Vec<String>,
+
+    /// Package names that mark resources as tests.
+    ///
+    /// Resources in a package with one of these names, or in any package
+    /// below it, are treated as tests. When the list is not empty, `conftest`
+    /// modules are treated as tests too.
+    test_package_names: Vec<String>,
+
+    /// Packages whose resources are placed on the filesystem.
+    filesystem_packages: Vec<String>,
+
+    /// Path prefix for the resources of `filesystem_packages`, relative to
+    /// the built binary.
+    filesystem_packages_prefix: String,
 }
 
 impl Default for PythonPackagingPolicy {
@@ -218,6 +235,10 @@ impl Default for PythonPackagingPolicy {
             no_bytecode_modules: HashSet::new(),
             python_platform_compatibility_tag_overrides: vec![],
             dunder_file_allowed_packages: vec![],
+            excluded_packages: vec![],
+            test_package_names: vec![],
+            filesystem_packages: vec![],
+            filesystem_packages_prefix: "lib".to_string(),
         }
     }
 }
@@ -442,6 +463,100 @@ impl PythonPackagingPolicy {
         })
     }
 
+    /// Get the packages whose resources are left out of the build.
+    pub fn excluded_packages(&self) -> &[String] {
+        &self.excluded_packages
+    }
+
+    /// Set the packages whose resources are left out of the build.
+    ///
+    /// Each entry covers the named package or module and everything below it.
+    pub fn set_excluded_packages(&mut self, packages: Vec<String>) {
+        self.excluded_packages = packages;
+    }
+
+    /// Get the package names that mark resources as tests.
+    pub fn test_package_names(&self) -> &[String] {
+        &self.test_package_names
+    }
+
+    /// Set the package names that mark resources as tests.
+    ///
+    /// For example, `["tests"]` marks `foo.tests` and `foo.tests.test_bar`
+    /// as tests. A module that is not a package does not count by its own
+    /// name, which keeps runtime modules like `jinja2.tests`.
+    pub fn set_test_package_names(&mut self, names: Vec<String>) {
+        self.test_package_names = names;
+    }
+
+    /// Get the packages whose resources are placed on the filesystem.
+    pub fn filesystem_packages(&self) -> &[String] {
+        &self.filesystem_packages
+    }
+
+    /// Set the packages whose resources are placed on the filesystem.
+    ///
+    /// Each entry covers the named package or module and everything below it.
+    /// The resources of these packages are placed at
+    /// `filesystem_packages_location()` and the source code of their modules
+    /// is always stored.
+    pub fn set_filesystem_packages(&mut self, packages: Vec<String>) {
+        self.filesystem_packages = packages;
+    }
+
+    /// Get the location of the resources in `filesystem_packages()`.
+    pub fn filesystem_packages_location(&self) -> ConcreteResourceLocation {
+        ConcreteResourceLocation::RelativePath(self.filesystem_packages_prefix.clone())
+    }
+
+    /// Set the location of the resources in `filesystem_packages()`.
+    ///
+    /// The location must be relative to the filesystem.
+    pub fn set_filesystem_packages_location(
+        &mut self,
+        location: ConcreteResourceLocation,
+    ) -> Result<()> {
+        match location {
+            ConcreteResourceLocation::RelativePath(prefix) => {
+                self.filesystem_packages_prefix = prefix;
+                Ok(())
+            }
+            ConcreteResourceLocation::InMemory => Err(anyhow!(
+                "the location of filesystem packages must be filesystem-relative"
+            )),
+        }
+    }
+
+    /// Whether a resource is a test according to `test_package_names`.
+    fn is_named_test(&self, resource: &PythonResource) -> bool {
+        if self.test_package_names.is_empty() {
+            return false;
+        }
+
+        let (name, is_package) = match resource {
+            PythonResource::ModuleSource(m) => (m.name.as_str(), m.is_package),
+            PythonResource::ModuleBytecode(m) => (m.name.as_str(), m.is_package),
+            PythonResource::ModuleBytecodeRequest(m) => (m.name.as_str(), m.is_package),
+            PythonResource::PackageResource(r) => (r.leaf_package.as_str(), true),
+            PythonResource::ExtensionModule(em) => (em.name.as_str(), em.is_package),
+            _ => return false,
+        };
+
+        let mut parts = name.split('.').collect::<Vec<_>>();
+        if !is_package {
+            if parts.last() == Some(&"conftest") {
+                return true;
+            }
+            // Only package names mark tests. A plain module with a test-like
+            // name can be needed at runtime, like `jinja2.tests`.
+            parts.pop();
+        }
+
+        parts
+            .iter()
+            .any(|part| self.test_package_names.iter().any(|name| name == part))
+    }
+
     /// Set the resource handling mode of the policy.
     ///
     /// This is a convenience function for mapping a `ResourceHandlingMode`
@@ -502,11 +617,15 @@ impl PythonPackagingPolicy {
         &self,
         resource: &PythonResource,
     ) -> PythonResourceAddCollectionContext {
-        let include = self.filter_python_resource(resource);
+        let include = self.filter_python_resource(resource)
+            && !resource.is_in_packages(&self.excluded_packages);
+        let on_filesystem = resource.is_in_packages(&self.filesystem_packages);
 
         let store_source = match resource {
             PythonResource::ModuleSource(ref module) => {
-                if module.is_stdlib {
+                if on_filesystem {
+                    true
+                } else if module.is_stdlib {
                     self.include_distribution_sources
                 } else {
                     self.include_non_distribution_sources
@@ -515,8 +634,16 @@ impl PythonPackagingPolicy {
             _ => false,
         };
 
-        let location = self.resources_location.clone();
-        let location_fallback = self.resources_location_fallback.clone();
+        // Filesystem packages need no fallback location. A fallback in memory
+        // would even be an error for extension modules.
+        let (location, location_fallback) = if on_filesystem {
+            (self.filesystem_packages_location(), None)
+        } else {
+            (
+                self.resources_location.clone(),
+                self.resources_location_fallback.clone(),
+            )
+        };
 
         let optimize_level_zero = match resource {
             PythonResource::ModuleSource(module) => {
@@ -580,21 +707,23 @@ impl PythonPackagingPolicy {
             }
         }
 
+        let is_named_test = self.is_named_test(resource);
+
         match resource {
             // Whether to store the source code is decided separately by
             // `store_source` in `derive_add_collection_context()`.
-            PythonResource::ModuleSource(module) => self.include_test || !module.is_test,
-            PythonResource::ModuleBytecodeRequest(module) => self.include_test || !module.is_test,
+            PythonResource::ModuleSource(module) => {
+                self.include_test || !(module.is_test || is_named_test)
+            }
+            PythonResource::ModuleBytecodeRequest(module) => {
+                self.include_test || !(module.is_test || is_named_test)
+            }
             PythonResource::ModuleBytecode(_) => false,
             PythonResource::PackageResource(resource) => {
-                if resource.is_stdlib {
-                    if self.include_distribution_resources {
-                        self.include_test || !resource.is_test
-                    } else {
-                        false
-                    }
+                if resource.is_stdlib && !self.include_distribution_resources {
+                    false
                 } else {
-                    true
+                    self.include_test || !(resource.is_test || is_named_test)
                 }
             }
             PythonResource::PackageDistributionResource(_) => true,
@@ -740,7 +869,10 @@ impl PythonPackagingPolicy {
 mod tests {
     use {
         super::*,
-        crate::resource::PythonModuleSource,
+        crate::resource::{
+            PythonModuleSource, PythonPackageDistributionResource,
+            PythonPackageDistributionResourceFlavor, PythonPackageResource,
+        },
         simple_file_manifest::{File, FileData},
     };
 
@@ -817,5 +949,158 @@ mod tests {
         assert!(!policy.derive_add_collection_context(&test_module).include);
         policy.set_include_test(true);
         assert!(policy.derive_add_collection_context(&test_module).include);
+    }
+
+    fn module_source(name: &str, is_package: bool) -> PythonResource<'static> {
+        PythonModuleSource {
+            name: name.to_string(),
+            source: FileData::Memory(vec![]),
+            is_package,
+            cache_tag: "cpython-313".to_string(),
+            is_stdlib: false,
+            is_test: false,
+        }
+        .into()
+    }
+
+    fn package_resource(package: &str, name: &str) -> PythonResource<'static> {
+        PythonPackageResource {
+            leaf_package: package.to_string(),
+            relative_name: name.to_string(),
+            data: FileData::Memory(vec![]),
+            is_stdlib: false,
+            is_test: false,
+        }
+        .into()
+    }
+
+    fn distribution_resource(package: &str, name: &str) -> PythonResource<'static> {
+        PythonPackageDistributionResource {
+            location: PythonPackageDistributionResourceFlavor::DistInfo,
+            package: package.to_string(),
+            version: "1.0".to_string(),
+            name: name.to_string(),
+            data: FileData::Memory(vec![]),
+        }
+        .into()
+    }
+
+    fn strings(values: &[&str]) -> Vec<String> {
+        values.iter().map(|value| value.to_string()).collect()
+    }
+
+    #[test]
+    fn test_excluded_packages() {
+        let mut policy = PythonPackagingPolicy::default();
+        policy.set_excluded_packages(strings(&["foo", "bar.baz"]));
+
+        let included = |resource: PythonResource| -> bool {
+            policy.derive_add_collection_context(&resource).include
+        };
+
+        assert!(!included(module_source("foo", true)));
+        assert!(!included(module_source("foo.sub", false)));
+        assert!(!included(package_resource("foo.sub", "data.txt")));
+        assert!(!included(distribution_resource("foo", "METADATA")));
+        assert!(!included(module_source("bar.baz.qux", false)));
+        assert!(included(module_source("foobar", false)));
+        assert!(included(module_source("bar", true)));
+        assert!(included(module_source("bar.bazqux", false)));
+        assert!(included(package_resource("bar", "data.txt")));
+    }
+
+    #[test]
+    fn test_test_package_names() {
+        let mut policy = PythonPackagingPolicy::default();
+
+        let included = |policy: &PythonPackagingPolicy, resource: PythonResource| -> bool {
+            policy.derive_add_collection_context(&resource).include
+        };
+
+        // Nothing is classified by name when the list is empty.
+        assert!(included(&policy, module_source("foo.tests", true)));
+        assert!(included(&policy, module_source("foo.conftest", false)));
+
+        policy.set_test_package_names(strings(&["tests", "_tests"]));
+
+        assert!(!included(&policy, module_source("tests", true)));
+        assert!(!included(&policy, module_source("foo.tests", true)));
+        assert!(!included(
+            &policy,
+            module_source("foo.tests.test_bar", false)
+        ));
+        assert!(!included(&policy, module_source("foo._tests.sub", true)));
+        assert!(!included(
+            &policy,
+            package_resource("foo.tests", "data.json")
+        ));
+        assert!(!included(&policy, module_source("foo.conftest", false)));
+
+        // Plain modules with a test-like name are kept.
+        assert!(included(&policy, module_source("jinja2.tests", false)));
+        assert!(included(&policy, module_source("foo.testing", true)));
+        assert!(included(&policy, package_resource("foo", "tests")));
+        assert!(included(
+            &policy,
+            distribution_resource("tests", "METADATA")
+        ));
+
+        policy.set_include_test(true);
+        assert!(included(
+            &policy,
+            module_source("foo.tests.test_bar", false)
+        ));
+        assert!(included(
+            &policy,
+            package_resource("foo.tests", "data.json")
+        ));
+    }
+
+    #[test]
+    fn test_filesystem_packages() -> Result<()> {
+        let mut policy = PythonPackagingPolicy::default();
+        policy.set_include_non_distribution_sources(false);
+        policy.set_resources_location_fallback(Some(ConcreteResourceLocation::InMemory));
+        policy.set_filesystem_packages(strings(&["foo"]));
+
+        assert_eq!(
+            policy.filesystem_packages_location(),
+            ConcreteResourceLocation::RelativePath("lib".to_string())
+        );
+        policy.set_filesystem_packages_location(ConcreteResourceLocation::RelativePath(
+            "modules".to_string(),
+        ))?;
+        assert!(policy
+            .set_filesystem_packages_location(ConcreteResourceLocation::InMemory)
+            .is_err());
+
+        for resource in [
+            module_source("foo", true),
+            module_source("foo.sub", false),
+            package_resource("foo.sub", "data.txt"),
+            distribution_resource("foo", "METADATA"),
+        ] {
+            let add_context = policy.derive_add_collection_context(&resource);
+            assert!(add_context.include);
+            assert_eq!(
+                add_context.location,
+                ConcreteResourceLocation::RelativePath("modules".to_string())
+            );
+            assert_eq!(add_context.location_fallback, None);
+        }
+
+        // Sources are stored for filesystem packages only.
+        let add_context = policy.derive_add_collection_context(&module_source("foo.sub", false));
+        assert!(add_context.store_source);
+
+        let add_context = policy.derive_add_collection_context(&module_source("foobar", false));
+        assert!(!add_context.store_source);
+        assert_eq!(add_context.location, ConcreteResourceLocation::InMemory);
+        assert_eq!(
+            add_context.location_fallback,
+            Some(ConcreteResourceLocation::InMemory)
+        );
+
+        Ok(())
     }
 }
