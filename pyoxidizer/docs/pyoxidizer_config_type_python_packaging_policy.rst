@@ -63,6 +63,27 @@
 
         Whether to add Python bytecode at optimization level 2.
 
+    .. py:attribute:: dunder_file_allowed_packages
+
+        (``list<string>``)
+
+        Packages whose modules are known to work without ``__file__``.
+
+        When building, PyOxidizer looks for embedded modules that refer to
+        ``__file__``, which is not set for modules imported from memory.
+        Modules in the standard library and modules in the packages listed
+        here only produce a note. Any other module referring to ``__file__``
+        produces a warning that lists the affected modules. In GitHub Actions,
+        the warning is also emitted as an annotation on the job.
+
+        Each entry covers the named package or module and all modules below
+        it. For example, ``["foo"]`` covers ``foo`` and ``foo.bar`` but not
+        ``foobar``.
+
+        Assigning ``None`` clears the list.
+
+        Default is an empty list.
+
     .. py:attribute:: extension_module_filter
 
         (``string``)

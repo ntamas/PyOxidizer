@@ -442,6 +442,97 @@ impl StandalonePythonExecutableBuilder {
     }
 }
 
+impl StandalonePythonExecutableBuilder {
+    /// Reports embedded modules that refer to `__file__`.
+    ///
+    /// PyOxidizer does not set `__file__`. Standard library modules referring
+    /// to it cannot be changed, and modules in allowed packages are known to
+    /// handle its absence. If all affected modules fall into these groups, only
+    /// a note is printed. Otherwise a warning lists the remaining modules and
+    /// is also emitted as a GitHub Actions annotation.
+    fn report_dunder_file_modules(&self) -> Result<()> {
+        let mut stdlib = vec![];
+        let mut allowed = vec![];
+        let mut other = vec![];
+
+        for (name, is_stdlib) in self.resources_collector.find_dunder_file()? {
+            if is_stdlib {
+                stdlib.push(name);
+            } else if self.packaging_policy.is_dunder_file_allowed(&name) {
+                allowed.push(name);
+            } else {
+                other.push(name);
+            }
+        }
+
+        if stdlib.is_empty() && allowed.is_empty() && other.is_empty() {
+            return Ok(());
+        }
+
+        fn count(n: usize, kind: &str) -> String {
+            format!(
+                "{} {}{}",
+                n,
+                kind,
+                if n == 1 { "module" } else { "modules" }
+            )
+        }
+
+        let ignored = [
+            (stdlib.len(), "standard library "),
+            (allowed.len(), "allowed "),
+        ]
+        .into_iter()
+        .filter(|(n, _)| *n > 0)
+        .map(|(n, kind)| count(n, kind))
+        .collect::<Vec<_>>()
+        .join(" and ");
+
+        with_shell(|log| -> Result<()> {
+            if other.is_empty() {
+                log.note(format!("__file__ was encountered in {}", ignored))?;
+            } else {
+                let summary = format!(
+                    "__file__ was encountered in {} outside the standard library and \
+                     PythonPackagingPolicy.dunder_file_allowed_packages",
+                    count(other.len(), "")
+                );
+
+                log.warn(format!("{}: {}", summary, other.join(", ")))?;
+                log.github_warning(
+                    "__file__ in embedded modules",
+                    format!("{}:\n{}", summary, other.join("\n")),
+                )?;
+                if !ignored.is_empty() {
+                    log.note(format!("__file__ was also encountered in {}", ignored))?;
+                }
+                log.note(
+                    "PyOxidizer does not set __file__ and this may create problems at run-time",
+                )?;
+                log.note("add packages that work without __file__ to PythonPackagingPolicy.dunder_file_allowed_packages")?;
+                log.note("see https://github.com/indygreg/PyOxidizer/issues/69 for more")?;
+            }
+
+            log.verbose(|log| {
+                if !stdlib.is_empty() {
+                    log.note(format!(
+                        "standard library modules referring to __file__: {}",
+                        stdlib.join(", ")
+                    ))?;
+                }
+                if !allowed.is_empty() {
+                    log.note(format!(
+                        "allowed modules referring to __file__: {}",
+                        allowed.join(", ")
+                    ))?;
+                }
+
+                Ok(())
+            })
+        })
+    }
+}
+
 impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
     fn clone_trait(&self) -> Arc<dyn PythonBinaryBuilder> {
         Arc::new(self.clone())
@@ -943,35 +1034,7 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
         env: &Environment,
         opt_level: &str,
     ) -> Result<EmbeddedPythonContext<'_>> {
-        let modules_with_dunder_file = self.resources_collector.find_dunder_file()?;
-        let num_modules = modules_with_dunder_file.len();
-
-        if num_modules > 0 {
-            with_shell(|log| -> Result<()> {
-                if num_modules == 1 {
-                    log.warn("__file__ was encountered in 1 embedded module")?;
-                } else {
-                    log.warn(format!(
-                        "__file__ was encountered in {} embedded modules",
-                        num_modules
-                    ))?;
-                }
-
-                log.verbose(|log| {
-                    let mut examples = modules_with_dunder_file.iter().take(5).cloned().collect::<Vec<String>>();
-                    
-                    if modules_with_dunder_file.len() > 5 {
-                        examples.push("...".to_string());
-                    }
-                    
-                    log.warn(examples.join(", "))?;
-                    log.note("PyOxidizer does not set __file__ and this may create problems at run-time")?;
-                    log.note("See https://github.com/indygreg/PyOxidizer/issues/69 for more")?;
-    
-                    Ok(())
-                })
-            })?;
-        }
+        self.report_dunder_file_modules()?;
 
         let compiled_resources = {
             let temp_dir = env.temporary_directory("pyoxidizer-bytecode-compile")?;

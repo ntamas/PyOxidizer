@@ -124,6 +124,26 @@ impl Shell {
         }
     }
 
+    /// Emits a warning annotation when running in GitHub Actions.
+    ///
+    /// GitHub shows the annotation in the summary of the workflow run, attached
+    /// to the job that emitted it. Nothing is printed outside GitHub Actions.
+    pub fn github_warning<T, U>(&mut self, title: T, message: U) -> ShellResult<()>
+    where
+        T: fmt::Display,
+        U: fmt::Display,
+    {
+        if std::env::var_os("GITHUB_ACTIONS").is_some_and(|value| value == "true") {
+            writeln!(
+                std::io::stdout().lock(),
+                "{}",
+                github_workflow_command("warning", &title.to_string(), &message.to_string())
+            )?;
+        }
+
+        Ok(())
+    }
+
     /// Whether colored output should be written to stdout.
     pub fn out_supports_color(&self) -> bool {
         anstream::AutoStream::choice(&std::io::stdout()) != ColorChoice::Never
@@ -155,6 +175,27 @@ fn print_stderr(
     Ok(())
 }
 
+/// Formats a GitHub Actions workflow command with a title.
+fn github_workflow_command(command: &str, title: &str, message: &str) -> String {
+    fn escape_data(value: &str) -> String {
+        value
+            .replace('%', "%25")
+            .replace('\r', "%0D")
+            .replace('\n', "%0A")
+    }
+
+    fn escape_property(value: &str) -> String {
+        escape_data(value).replace(':', "%3A").replace(',', "%2C")
+    }
+
+    format!(
+        "::{} title={}::{}",
+        command,
+        escape_property(title),
+        escape_data(message)
+    )
+}
+
 static SHELL: LazyLock<Arc<Mutex<Shell>>> = LazyLock::new(|| Arc::new(Mutex::new(Shell::new())));
 
 pub fn with_shell<F, T>(f: F) -> T
@@ -184,6 +225,14 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn github_workflow_command_escaping() {
+        assert_eq!(
+            github_workflow_command("warning", "a: b, c", "100% done\nnext line\r"),
+            "::warning title=a%3A b%2C c::100%25 done%0Anext line%0D"
+        );
+    }
 
     #[test]
     fn verbosity_callbacks() -> ShellResult<()> {

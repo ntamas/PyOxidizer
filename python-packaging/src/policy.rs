@@ -186,6 +186,12 @@ pub struct PythonPackagingPolicy {
     /// tags can be specified, in which case wheels matching any of them
     /// are accepted.
     python_platform_compatibility_tag_overrides: Vec<String>,
+
+    /// Packages whose modules are known to handle a missing `__file__`.
+    ///
+    /// Modules in these packages that refer to `__file__` do not trigger a
+    /// warning when building.
+    dunder_file_allowed_packages: Vec<String>,
 }
 
 impl Default for PythonPackagingPolicy {
@@ -211,6 +217,7 @@ impl Default for PythonPackagingPolicy {
             bytecode_optimize_level_two: false,
             no_bytecode_modules: HashSet::new(),
             python_platform_compatibility_tag_overrides: vec![],
+            dunder_file_allowed_packages: vec![],
         }
     }
 }
@@ -410,6 +417,29 @@ impl PythonPackagingPolicy {
     /// accepts packages that only publish wheels for either of the two.
     pub fn set_python_platform_compatibility_tag_overrides(&mut self, tags: Vec<String>) {
         self.python_platform_compatibility_tag_overrides = tags;
+    }
+
+    /// Get the packages whose modules may refer to `__file__` without a warning.
+    pub fn dunder_file_allowed_packages(&self) -> &[String] {
+        &self.dunder_file_allowed_packages
+    }
+
+    /// Set the packages whose modules may refer to `__file__` without a warning.
+    pub fn set_dunder_file_allowed_packages(&mut self, packages: Vec<String>) {
+        self.dunder_file_allowed_packages = packages;
+    }
+
+    /// Whether a module may refer to `__file__` without a warning.
+    ///
+    /// A module is allowed if it is one of the allowed packages or a module
+    /// within one of them.
+    pub fn is_dunder_file_allowed(&self, module: &str) -> bool {
+        self.dunder_file_allowed_packages.iter().any(|package| {
+            module == package
+                || module
+                    .strip_prefix(package.as_str())
+                    .is_some_and(|rest| rest.starts_with('.'))
+        })
     }
 
     /// Set the resource handling mode of the policy.
@@ -713,6 +743,23 @@ impl PythonPackagingPolicy {
 #[cfg(test)]
 mod tests {
     use {super::*, simple_file_manifest::File};
+
+    #[test]
+    fn test_is_dunder_file_allowed() {
+        let mut policy = PythonPackagingPolicy::default();
+        assert!(!policy.is_dunder_file_allowed("foo"));
+
+        policy.set_dunder_file_allowed_packages(vec!["foo".to_string(), "bar.baz".to_string()]);
+
+        assert!(policy.is_dunder_file_allowed("foo"));
+        assert!(policy.is_dunder_file_allowed("foo.sub"));
+        assert!(policy.is_dunder_file_allowed("foo.sub.module"));
+        assert!(!policy.is_dunder_file_allowed("foobar"));
+        assert!(!policy.is_dunder_file_allowed("bar"));
+        assert!(policy.is_dunder_file_allowed("bar.baz"));
+        assert!(policy.is_dunder_file_allowed("bar.baz.qux"));
+        assert!(!policy.is_dunder_file_allowed("bar.bazqux"));
+    }
 
     #[test]
     fn test_add_collection_context_file() -> Result<()> {

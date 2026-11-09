@@ -89,6 +89,8 @@ pub struct PrePackagedResource {
     pub file_executable: bool,
     pub file_data_embedded: Option<FileData>,
     pub file_data_utf8_relative_path: Option<(PathBuf, FileData)>,
+    /// Whether the Python module belongs to the Python standard library.
+    pub is_stdlib: bool,
 }
 
 impl PrePackagedResource {
@@ -866,6 +868,7 @@ impl PythonResourceCollector {
 
         entry.is_module = true;
         entry.is_package = module.is_package;
+        entry.is_stdlib = module.is_stdlib;
 
         match location {
             ConcreteResourceLocation::InMemory => {
@@ -970,6 +973,7 @@ impl PythonResourceCollector {
 
         entry.is_module = true;
         entry.is_package = module.is_package;
+        entry.is_stdlib = module.is_stdlib;
 
         // TODO having to resolve the FileData here is a bit unfortunate.
         // We could invent a better type to allow the I/O to remain lazy.
@@ -1086,6 +1090,7 @@ impl PythonResourceCollector {
 
         entry.is_module = true;
         entry.is_package = module.is_package;
+        entry.is_stdlib = module.is_stdlib;
 
         let bytecode = PythonModuleBytecodeProvider::FromSource(module.source.clone());
 
@@ -1823,14 +1828,15 @@ impl PythonResourceCollector {
     /// Searches for Python sources for references to __file__.
     ///
     /// __file__ usage can be problematic for in-memory modules. This method searches
-    /// for its occurrences and returns module names having it present.
-    pub fn find_dunder_file(&self) -> Result<BTreeSet<String>> {
-        let mut res = BTreeSet::new();
+    /// for its occurrences and returns the names of the modules having it present,
+    /// mapped to whether the module belongs to the Python standard library.
+    pub fn find_dunder_file(&self) -> Result<BTreeMap<String, bool>> {
+        let mut res = BTreeMap::new();
 
         for (name, module) in &self.resources {
             if let Some(location) = &module.in_memory_source {
                 if has_dunder_file(&location.resolve_content()?)? {
-                    res.insert(name.clone());
+                    res.insert(name.clone(), module.is_stdlib);
                 }
             }
 
@@ -1838,7 +1844,7 @@ impl PythonResourceCollector {
                 &module.in_memory_bytecode
             {
                 if has_dunder_file(&location.resolve_content()?)? {
-                    res.insert(name.clone());
+                    res.insert(name.clone(), module.is_stdlib);
                 }
             }
 
@@ -1846,7 +1852,7 @@ impl PythonResourceCollector {
                 &module.in_memory_bytecode_opt1
             {
                 if has_dunder_file(&location.resolve_content()?)? {
-                    res.insert(name.clone());
+                    res.insert(name.clone(), module.is_stdlib);
                 }
             }
 
@@ -1854,7 +1860,7 @@ impl PythonResourceCollector {
                 &module.in_memory_bytecode_opt2
             {
                 if has_dunder_file(&location.resolve_content()?)? {
-                    res.insert(name.clone());
+                    res.insert(name.clone(), module.is_stdlib);
                 }
             }
         }
@@ -4693,7 +4699,7 @@ mod tests {
             &ConcreteResourceLocation::InMemory,
         )?;
         assert_eq!(r.find_dunder_file()?.len(), 1);
-        assert!(r.find_dunder_file()?.contains("baz"));
+        assert_eq!(r.find_dunder_file()?.get("baz"), Some(&false));
 
         r.add_python_module_bytecode_from_source(
             &PythonModuleBytecodeFromSource {
@@ -4708,7 +4714,21 @@ mod tests {
             &ConcreteResourceLocation::InMemory,
         )?;
         assert_eq!(r.find_dunder_file()?.len(), 2);
-        assert!(r.find_dunder_file()?.contains("bytecode"));
+        assert_eq!(r.find_dunder_file()?.get("bytecode"), Some(&false));
+
+        r.add_python_module_source(
+            &PythonModuleSource {
+                name: "stdlib_module".to_string(),
+                source: FileData::Memory(Vec::from("print(__file__)")),
+                is_package: false,
+                cache_tag: DEFAULT_CACHE_TAG.to_string(),
+                is_stdlib: true,
+                is_test: false,
+            },
+            &ConcreteResourceLocation::InMemory,
+        )?;
+        assert_eq!(r.find_dunder_file()?.len(), 3);
+        assert_eq!(r.find_dunder_file()?.get("stdlib_module"), Some(&true));
 
         Ok(())
     }

@@ -128,6 +128,13 @@ impl TypedValue for PythonPackagingPolicyValue {
             "bytecode_optimize_level_zero" => Value::from(inner.bytecode_optimize_level_zero()),
             "bytecode_optimize_level_one" => Value::from(inner.bytecode_optimize_level_one()),
             "bytecode_optimize_level_two" => Value::from(inner.bytecode_optimize_level_two()),
+            "dunder_file_allowed_packages" => Value::from(
+                inner
+                    .dunder_file_allowed_packages()
+                    .iter()
+                    .map(|package| package.as_str())
+                    .collect::<Vec<_>>(),
+            ),
             "extension_module_filter" => Value::from(inner.extension_module_filter().as_ref()),
             "file_scanner_classify_files" => Value::from(inner.file_scanner_classify_files()),
             "file_scanner_emit_files" => Value::from(inner.file_scanner_emit_files()),
@@ -173,6 +180,7 @@ impl TypedValue for PythonPackagingPolicyValue {
                 | "bytecode_optimize_level_zero"
                 | "bytecode_optimize_level_one"
                 | "bytecode_optimize_level_two"
+                | "dunder_file_allowed_packages"
                 | "extension_module_filter"
                 | "file_scanner_classify_files"
                 | "file_scanner_emit_files"
@@ -237,6 +245,26 @@ impl TypedValue for PythonPackagingPolicyValue {
             }
             "include_file_resources" => {
                 inner.set_include_file_resources(value.to_bool());
+            }
+            "dunder_file_allowed_packages" => {
+                let packages = match value.get_type() {
+                    "NoneType" => vec![],
+                    "list" => {
+                        required_list_arg(attribute, "string", &value)?;
+                        value.iter()?.iter().map(|v| v.to_string()).collect()
+                    }
+                    t => {
+                        return Err(ValueError::from(RuntimeError {
+                            code: INCORRECT_PARAMETER_TYPE_ERROR_CODE,
+                            message: format!(
+                                "{} expects a list of strings or None; got {}",
+                                attribute, t
+                            ),
+                            label: format!("expected type list or None; got {}", t),
+                        }));
+                    }
+                };
+                inner.set_dunder_file_allowed_packages(packages);
             }
             "include_non_distribution_sources" => {
                 inner.set_include_non_distribution_sources(value.to_bool());
@@ -653,6 +681,49 @@ mod tests {
             .eval(
                 "policy.python_platform_compatibility_tag_override = ['manylinux_2_28_x86_64', 42]"
             )
+            .is_err());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_dunder_file_allowed_packages() -> Result<()> {
+        let mut env = test_evaluation_context_builder()?.into_context()?;
+
+        env.eval("dist = default_python_distribution()")?;
+        env.eval("policy = dist.make_python_packaging_policy()")?;
+
+        let value = env.eval("policy.dunder_file_allowed_packages")?;
+        assert_eq!(value.get_type(), "list");
+        assert_eq!(value.length().unwrap(), 0);
+
+        let value = env.eval(
+            "policy.dunder_file_allowed_packages = ['foo', 'bar.baz']; policy.dunder_file_allowed_packages",
+        )?;
+        assert_eq!(value.to_string(), "[\"foo\", \"bar.baz\"]");
+
+        {
+            let policy_value = env.eval("policy")?;
+            let x = policy_value
+                .downcast_ref::<PythonPackagingPolicyValue>()
+                .unwrap();
+            let inner = x.inner("test").unwrap();
+            assert!(inner.is_dunder_file_allowed("foo.module"));
+            assert!(!inner.is_dunder_file_allowed("bar"));
+        }
+
+        // None clears the list.
+        let value = env.eval(
+            "policy.dunder_file_allowed_packages = None; policy.dunder_file_allowed_packages",
+        )?;
+        assert_eq!(value.length().unwrap(), 0);
+
+        // Other types are rejected.
+        assert!(env
+            .eval("policy.dunder_file_allowed_packages = 'foo'")
+            .is_err());
+        assert!(env
+            .eval("policy.dunder_file_allowed_packages = ['foo', 42]")
             .is_err());
 
         Ok(())

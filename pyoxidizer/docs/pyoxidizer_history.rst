@@ -33,6 +33,18 @@ Next
 
 (Not yet released)
 
+New Features
+^^^^^^^^^^^^
+
+* The ``__file__`` warning printed when building now distinguishes between
+  standard library modules and other modules. A new
+  :py:attr:`PythonPackagingPolicy.dunder_file_allowed_packages` attribute
+  lists packages known to work without ``__file__``. If only standard library
+  modules and modules in allowed packages refer to ``__file__``, a note with
+  their counts is printed instead of a warning. Otherwise the warning lists
+  every other affected module, and in GitHub Actions it is also emitted as an
+  annotation on the job.
+
 0.128.0
 -------
 

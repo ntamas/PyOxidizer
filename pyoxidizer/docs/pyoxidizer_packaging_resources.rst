@@ -155,6 +155,13 @@ Python modules imported from memory do not have the ``__file__`` attribute
 set. This can cause compatibility issues if Python code is relying on the
 existence of this module. See :ref:`no_file` for more.
 
+When building, PyOxidizer warns about embedded modules that refer to
+``__file__``. Standard library modules are only counted in a note, since
+nothing can be done about them. If you have checked that a package works
+without ``__file__``, add it to
+:py:attr:`PythonPackagingPolicy.dunder_file_allowed_packages` to turn the
+warning for its modules into a note as well.
+
 Filesystem-Relative
 -------------------
 
