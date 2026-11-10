@@ -63,6 +63,15 @@ New Features
 Bug Fixes
 ^^^^^^^^^
 
+* Shared libraries (``.dll``, ``.dylib``, ``.so`` and versioned ``.so.N``
+  files) stored as :py:class:`PythonPackageResource` or :py:class:`File`
+  resources are no longer embedded in memory, where nothing can load them.
+  They are placed at
+  :py:attr:`PythonPackagingPolicy.resources_location_fallback` instead if it
+  is a ``filesystem-relative`` location. Otherwise a warning is printed.
+  Previously, libraries bundled in wheels, such as ``numpy/.dylibs`` or
+  ``libusb_package``, had to be moved to the filesystem by a resource
+  callback.
 * Setting :py:attr:`PythonPackagingPolicy.include_distribution_sources` to
   ``False`` no longer sets ``add_include`` to ``False`` on every
   :py:class:`PythonModuleSource`. Previously this excluded all Python modules

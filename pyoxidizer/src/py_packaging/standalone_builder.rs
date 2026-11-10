@@ -30,8 +30,8 @@ use {
         location::{AbstractResourceLocation, ConcreteResourceLocation},
         policy::PythonPackagingPolicy,
         resource::{
-            PythonExtensionModule, PythonModuleSource, PythonPackageDistributionResource,
-            PythonPackageResource, PythonResource,
+            is_shared_library_filename, PythonExtensionModule, PythonModuleSource,
+            PythonPackageDistributionResource, PythonPackageResource, PythonResource,
         },
         resource_collection::{
             AddResourceAction, PrePackagedResource, PythonResourceAddCollectionContext,
@@ -443,6 +443,35 @@ impl StandalonePythonExecutableBuilder {
 }
 
 impl StandalonePythonExecutableBuilder {
+    /// Moves a shared library from memory to the fallback location.
+    ///
+    /// Shared libraries stored as resources must exist as files to be loaded,
+    /// whether by `ctypes` or by the dynamic linker on behalf of an extension
+    /// module. If the resource would be stored in memory, it goes to the
+    /// fallback location instead when that is on the filesystem. Otherwise a
+    /// warning is logged.
+    fn place_shared_library_on_filesystem(
+        name: &str,
+        add_context: &mut PythonResourceAddCollectionContext,
+    ) {
+        if !add_context.include || add_context.location != ConcreteResourceLocation::InMemory {
+            return;
+        }
+
+        match &add_context.location_fallback {
+            Some(fallback @ ConcreteResourceLocation::RelativePath(_)) => {
+                add_context.location = fallback.clone();
+                add_context.location_fallback = None;
+            }
+            _ => {
+                warn!(
+                    "shared library {} is embedded in memory, where it cannot be loaded; set a filesystem-relative resources_location_fallback or add_location",
+                    name
+                );
+            }
+        }
+    }
+
     /// Reports embedded modules that read `__file__`.
     ///
     /// PyOxidizer does not set `__file__`. Standard library modules referring
@@ -907,10 +936,14 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
         resource: &PythonPackageResource,
         add_context: Option<PythonResourceAddCollectionContext>,
     ) -> Result<Vec<AddResourceAction>> {
-        let add_context = add_context.unwrap_or_else(|| {
+        let mut add_context = add_context.unwrap_or_else(|| {
             self.packaging_policy
                 .derive_add_collection_context(&resource.into())
         });
+
+        if resource.is_shared_library() {
+            Self::place_shared_library_on_filesystem(&resource.symbolic_name(), &mut add_context);
+        }
 
         self.resources_collector
             .add_python_package_resource_with_context(resource, &add_context)
@@ -976,10 +1009,14 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
         file: &File,
         add_context: Option<PythonResourceAddCollectionContext>,
     ) -> Result<Vec<AddResourceAction>> {
-        let add_context = add_context.unwrap_or_else(|| {
+        let mut add_context = add_context.unwrap_or_else(|| {
             self.packaging_policy
                 .derive_add_collection_context(&file.into())
         });
+
+        if is_shared_library_filename(&file.path_string()) {
+            Self::place_shared_library_on_filesystem(&file.path_string(), &mut add_context);
+        }
 
         self.resources_collector
             .add_file_data_with_context(file, &add_context)
@@ -1280,6 +1317,7 @@ pub mod tests {
         pub resources_location: Option<ConcreteResourceLocation>,
         pub resources_location_fallback: Option<Option<ConcreteResourceLocation>>,
         pub allow_in_memory_shared_library_loading: Option<bool>,
+        pub allow_files: Option<bool>,
         pub config: PyembedPythonInterpreterConfig,
     }
 
@@ -1296,6 +1334,7 @@ pub mod tests {
                 resources_location: None,
                 resources_location_fallback: None,
                 allow_in_memory_shared_library_loading: None,
+                allow_files: None,
                 config: PyembedPythonInterpreterConfig::default(),
             }
         }
@@ -1338,6 +1377,9 @@ pub mod tests {
             }
             if let Some(value) = &self.allow_in_memory_shared_library_loading {
                 policy.set_allow_in_memory_shared_library_loading(*value);
+            }
+            if let Some(value) = self.allow_files {
+                policy.set_allow_files(value);
             }
 
             let mut builder = StandalonePythonExecutableBuilder::from_distribution(
@@ -1873,6 +1915,104 @@ pub mod tests {
                 ConcreteResourceLocation::RelativePath("prefix_policy".to_string()),
             );
         }
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_shared_library_resources_placed_on_filesystem() -> Result<()> {
+        let options = StandalonePythonExecutableBuilderOptions {
+            extension_module_filter: Some(ExtensionModuleFilter::Minimal),
+            resources_location: Some(ConcreteResourceLocation::InMemory),
+            resources_location_fallback: Some(Some(ConcreteResourceLocation::RelativePath(
+                "lib".to_string(),
+            ))),
+            allow_files: Some(true),
+            ..StandalonePythonExecutableBuilderOptions::default()
+        };
+
+        let mut builder = options.new_builder()?;
+
+        let package_resource = |relative_name: &str| PythonPackageResource {
+            leaf_package: "foo".to_string(),
+            relative_name: relative_name.to_string(),
+            data: FileData::Memory(vec![42]),
+            is_stdlib: false,
+            is_test: false,
+        };
+
+        for relative_name in ["libbar.so.1", ".dylibs/libbaz.dylib", "data.txt"] {
+            builder.add_python_package_resource(&package_resource(relative_name), None)?;
+        }
+        for path in ["foo.libs/qux.dll", "foo.libs/readme.txt"] {
+            let file = File::new(path, vec![42]);
+            let mut add_context = builder
+                .python_packaging_policy()
+                .derive_add_collection_context(&(&file).into());
+            add_context.include = true;
+            builder.add_file_data(&file, Some(add_context))?;
+        }
+
+        let resources = builder
+            .iter_resources()
+            .map(|(name, r)| (name.clone(), r.clone()))
+            .collect::<HashMap<_, _>>();
+
+        let foo = &resources["foo"];
+        let in_memory = foo.in_memory_resources.as_ref().unwrap();
+        let on_disk = foo.relative_path_package_resources.as_ref().unwrap();
+        assert_eq!(in_memory.keys().collect::<Vec<_>>(), vec!["data.txt"]);
+        assert_eq!(
+            on_disk.keys().collect::<Vec<_>>(),
+            vec![".dylibs/libbaz.dylib", "libbar.so.1"]
+        );
+
+        let dll = &resources["foo.libs/qux.dll"];
+        assert!(dll.file_data_embedded.is_none());
+        assert_eq!(
+            dll.file_data_utf8_relative_path.as_ref().unwrap().0,
+            PathBuf::from("lib/foo.libs/qux.dll")
+        );
+
+        let readme = &resources["foo.libs/readme.txt"];
+        assert!(readme.file_data_embedded.is_some());
+        assert!(readme.file_data_utf8_relative_path.is_none());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_shared_library_resources_without_fallback_stay_in_memory() -> Result<()> {
+        let options = StandalonePythonExecutableBuilderOptions {
+            extension_module_filter: Some(ExtensionModuleFilter::Minimal),
+            resources_location: Some(ConcreteResourceLocation::InMemory),
+            resources_location_fallback: Some(None),
+            ..StandalonePythonExecutableBuilderOptions::default()
+        };
+
+        let mut builder = options.new_builder()?;
+
+        builder.add_python_package_resource(
+            &PythonPackageResource {
+                leaf_package: "foo".to_string(),
+                relative_name: "libbar.dylib".to_string(),
+                data: FileData::Memory(vec![42]),
+                is_stdlib: false,
+                is_test: false,
+            },
+            None,
+        )?;
+
+        let foo = builder
+            .iter_resources()
+            .find(|(name, _)| *name == "foo")
+            .map(|(_, r)| r.clone())
+            .unwrap();
+        assert!(foo
+            .in_memory_resources
+            .unwrap()
+            .contains_key("libbar.dylib"));
+        assert!(foo.relative_path_package_resources.is_none());
 
         Ok(())
     }

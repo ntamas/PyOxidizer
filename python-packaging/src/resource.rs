@@ -379,9 +379,41 @@ pub struct PythonPackageResource {
     pub is_test: bool,
 }
 
+/// Whether a file name or path looks like a shared library.
+///
+/// Matches `.dll`, `.dylib` and `.so` files in any letter case, as well as
+/// versioned names like `libfoo.so.1.2`.
+pub fn is_shared_library_filename(name: &str) -> bool {
+    let basename = name.rsplit(['/', '\\']).next().unwrap_or(name);
+    let basename = basename.to_ascii_lowercase();
+
+    if [".dll", ".dylib", ".so"]
+        .iter()
+        .any(|suffix| basename.ends_with(suffix))
+    {
+        return true;
+    }
+
+    match basename.split_once(".so.") {
+        Some((stem, version)) => {
+            !stem.is_empty()
+                && !version.is_empty()
+                && version
+                    .split('.')
+                    .all(|part| !part.is_empty() && part.chars().all(|c| c.is_ascii_digit()))
+        }
+        None => false,
+    }
+}
+
 impl PythonPackageResource {
     pub fn description(&self) -> String {
         format!("Python package resource {}", self.symbolic_name())
+    }
+
+    /// Whether this resource looks like a shared library.
+    pub fn is_shared_library(&self) -> bool {
+        is_shared_library_filename(&self.relative_name)
     }
 
     pub fn to_memory(&self) -> Result<Self> {
@@ -1049,5 +1081,35 @@ mod tests {
                 .join("foo_bar-1.0.egg-info")
                 .join("resource.txt")
         );
+    }
+
+    #[test]
+    fn test_is_shared_library_filename() {
+        for name in [
+            "libusb-1.0.dylib",
+            "numpy.libs/libscipy_openblas64_-63c857e7.dll",
+            "FOO.DLL",
+            ".dylibs/libgfortran.5.dylib",
+            "libfoo.so",
+            "libfoo.so.1",
+            "libfoo-a1b2c3.so.1.2.3",
+            "dir\\bar.dll",
+        ] {
+            assert!(is_shared_library_filename(name), "{}", name);
+        }
+
+        for name in [
+            "foo.py",
+            "data.json",
+            "libfoo.so.txt",
+            "libfoo.so.",
+            "libfoo.so.1a",
+            "notes.solution",
+            "foo.dll.txt",
+            ".so.1",
+            "foo.pyd",
+        ] {
+            assert!(!is_shared_library_filename(name), "{}", name);
+        }
     }
 }

@@ -279,6 +279,11 @@
         The fallback location that resources should be added to if
         ``resources_location`` fails.
 
+        Shared libraries stored as package resources or files are placed
+        here when ``resources_location`` is ``in-memory`` and this is a
+        ``filesystem-relative`` location, since they cannot be loaded from
+        memory. See :ref:`packaging_extension_modules` for details.
+
         Default is ``None``.
 
     .. py:attribute:: preferred_extension_module_variants
