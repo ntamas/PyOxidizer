@@ -443,19 +443,19 @@ impl StandalonePythonExecutableBuilder {
 }
 
 impl StandalonePythonExecutableBuilder {
-    /// Reports embedded modules that refer to `__file__`.
+    /// Reports embedded modules that read `__file__`.
     ///
     /// PyOxidizer does not set `__file__`. Standard library modules referring
     /// to it cannot be changed, and modules in allowed packages are known to
     /// handle its absence. If all affected modules fall into these groups, only
     /// a note is printed. Otherwise a warning lists the remaining modules and
     /// is also emitted as a GitHub Actions annotation.
-    fn report_dunder_file_modules(&self) -> Result<()> {
+    fn report_dunder_file_modules(&self, compiler: &mut BytecodeCompiler) -> Result<()> {
         let mut stdlib = vec![];
         let mut allowed = vec![];
         let mut other = vec![];
 
-        for (name, is_stdlib) in self.resources_collector.find_dunder_file()? {
+        for (name, is_stdlib) in self.resources_collector.find_dunder_file(compiler)? {
             if is_stdlib {
                 stdlib.push(name);
             } else if self.packaging_policy.is_dunder_file_allowed(&name) {
@@ -1034,11 +1034,10 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
         env: &Environment,
         opt_level: &str,
     ) -> Result<EmbeddedPythonContext<'_>> {
-        self.report_dunder_file_modules()?;
-
         let compiled_resources = {
             let temp_dir = env.temporary_directory("pyoxidizer-bytecode-compile")?;
             let mut compiler = BytecodeCompiler::new(self.host_python_exe_path(), temp_dir.path())?;
+            self.report_dunder_file_modules(&mut compiler)?;
             let resources = self.resources_collector.compile_resources(&mut compiler)?;
 
             temp_dir.close().context("closing temporary directory")?;

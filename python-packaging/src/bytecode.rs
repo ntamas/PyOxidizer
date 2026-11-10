@@ -9,7 +9,7 @@
 /*! Work with Python bytecode. */
 
 use {
-    super::resource::BytecodeOptimizationLevel,
+    super::{python_source::has_dunder_file, resource::BytecodeOptimizationLevel},
     anyhow::{anyhow, Context, Result},
     byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt},
     std::{
@@ -34,6 +34,14 @@ pub trait PythonBytecodeCompiler {
         optimize: BytecodeOptimizationLevel,
         output_mode: CompileMode,
     ) -> Result<Vec<u8>>;
+
+    /// Determine whether Python source code reads `__file__`.
+    ///
+    /// The default implementation looks for `__file__` anywhere in the source,
+    /// including comments and string literals.
+    fn reads_dunder_file(&mut self, source: &[u8], _filename: &str) -> Result<bool> {
+        has_dunder_file(source)
+    }
 }
 
 /// An entity to perform Python bytecode compilation.
@@ -163,56 +171,73 @@ impl PythonBytecodeCompiler for BytecodeCompiler {
         stdin.write_all(source).context("writing source code")?;
         stdin.flush().context("flushing")?;
 
-        let mut code_s = String::new();
-        reader
-            .read_line(&mut code_s)
-            .context("reading result code")?;
-        let code_s = code_s.trim_end();
-        let code = code_s.parse::<u8>().unwrap();
+        read_response(&mut reader, "compile", "compiling error")
+    }
 
-        match code {
-            0 => {
-                let mut len_s = String::new();
-                reader
-                    .read_line(&mut len_s)
-                    .context("reading output size line")?;
+    /// Compiles the source and inspects the resulting code objects.
+    ///
+    /// Only instructions that read a name or attribute called `__file__` count.
+    /// Comments, string literals and assignments to `__file__` are ignored.
+    fn reads_dunder_file(&mut self, source: &[u8], filename: &str) -> Result<bool> {
+        let stdin = self.command.stdin.as_mut().expect("failed to get stdin");
+        let stdout = self.command.stdout.as_mut().expect("failed to get stdout");
 
-                let len_s = len_s.trim_end();
-                let bytecode_len = len_s.parse::<u64>().unwrap();
+        let mut reader = BufReader::new(stdout);
 
-                let mut bytecode: Vec<u8> = Vec::new();
-                reader
-                    .take(bytecode_len)
-                    .read_to_end(&mut bytecode)
-                    .context("reading bytecode result")?;
+        stdin
+            .write_all(b"reads_dunder_file\n")
+            .context("writing reads_dunder_file command")?;
+        stdin
+            .write_all(format!("{}\n{}\n", filename.len(), source.len()).as_bytes())
+            .context("writing filename and source code lengths")?;
+        stdin
+            .write_all(filename.as_bytes())
+            .context("writing filename")?;
+        stdin.write_all(source).context("writing source code")?;
+        stdin.flush().context("flushing")?;
 
-                Ok(bytecode)
-            }
-            1 => {
-                let mut len_s = String::new();
-                reader
-                    .read_line(&mut len_s)
-                    .context("reading error string length line")?;
+        Ok(read_response(&mut reader, "reads_dunder_file", "checking for __file__")? == b"1")
+    }
+}
 
-                let len_s = len_s.trim_end();
-                let error_len = len_s.parse::<u64>().unwrap();
+/// Reads the response of the bytecode compiler process to a command.
+///
+/// Returns the payload of a successful response. Errors reported by the
+/// process start with `error_prefix`.
+fn read_response(reader: &mut impl BufRead, command: &str, error_prefix: &str) -> Result<Vec<u8>> {
+    let mut code_s = String::new();
+    reader
+        .read_line(&mut code_s)
+        .context("reading result code")?;
+    let code = code_s.trim_end();
 
-                let mut error_data = vec![];
-                reader
-                    .take(error_len)
-                    .read_to_end(&mut error_data)
-                    .context("reading error message")?;
+    let mut len_s = String::new();
+    reader
+        .read_line(&mut len_s)
+        .context("reading payload size line")?;
+    let len = len_s
+        .trim_end()
+        .parse::<u64>()
+        .with_context(|| format!("parsing payload size {:?}", len_s))?;
 
-                Err(anyhow!(
-                    "compiling error: {}",
-                    String::from_utf8(error_data)?
-                ))
-            }
-            _ => Err(anyhow!(
-                "unexpected result code from compile command: {}",
-                code
-            )),
-        }
+    let mut payload = vec![];
+    reader
+        .take(len)
+        .read_to_end(&mut payload)
+        .context("reading payload")?;
+
+    match code {
+        "0" => Ok(payload),
+        "1" => Err(anyhow!(
+            "{}: {}",
+            error_prefix,
+            String::from_utf8_lossy(&payload)
+        )),
+        _ => Err(anyhow!(
+            "unexpected result code from {} command: {}",
+            command,
+            code
+        )),
     }
 }
 

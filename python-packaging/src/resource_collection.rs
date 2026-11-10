@@ -1825,42 +1825,40 @@ impl PythonResourceCollector {
         }
     }
 
-    /// Searches for Python sources for references to __file__.
+    /// Searches in-memory Python modules for code that reads `__file__`.
     ///
-    /// __file__ usage can be problematic for in-memory modules. This method searches
-    /// for its occurrences and returns the names of the modules having it present,
-    /// mapped to whether the module belongs to the Python standard library.
-    pub fn find_dunder_file(&self) -> Result<BTreeMap<String, bool>> {
+    /// __file__ is not set for in-memory modules. This method returns the names
+    /// of the in-memory modules whose code reads it, mapped to whether the
+    /// module belongs to the Python standard library.
+    ///
+    /// Sources that mention `__file__` are passed to the compiler for a closer
+    /// look. If the compiler fails, the module is reported anyway.
+    pub fn find_dunder_file(
+        &self,
+        compiler: &mut dyn PythonBytecodeCompiler,
+    ) -> Result<BTreeMap<String, bool>> {
         let mut res = BTreeMap::new();
 
         for (name, module) in &self.resources {
-            if let Some(location) = &module.in_memory_source {
-                if has_dunder_file(&location.resolve_content()?)? {
-                    res.insert(name.clone(), module.is_stdlib);
-                }
-            }
+            let bytecode_sources = [
+                &module.in_memory_bytecode,
+                &module.in_memory_bytecode_opt1,
+                &module.in_memory_bytecode_opt2,
+            ]
+            .into_iter()
+            .filter_map(|provider| match provider {
+                Some(PythonModuleBytecodeProvider::FromSource(location)) => Some(location),
+                _ => None,
+            });
 
-            if let Some(PythonModuleBytecodeProvider::FromSource(location)) =
-                &module.in_memory_bytecode
-            {
-                if has_dunder_file(&location.resolve_content()?)? {
-                    res.insert(name.clone(), module.is_stdlib);
-                }
-            }
+            for location in module.in_memory_source.iter().chain(bytecode_sources) {
+                let source = location.resolve_content()?;
 
-            if let Some(PythonModuleBytecodeProvider::FromSource(location)) =
-                &module.in_memory_bytecode_opt1
-            {
-                if has_dunder_file(&location.resolve_content()?)? {
+                if has_dunder_file(&source)?
+                    && compiler.reads_dunder_file(&source, name).unwrap_or(true)
+                {
                     res.insert(name.clone(), module.is_stdlib);
-                }
-            }
-
-            if let Some(PythonModuleBytecodeProvider::FromSource(location)) =
-                &module.in_memory_bytecode_opt2
-            {
-                if has_dunder_file(&location.resolve_content()?)? {
-                    res.insert(name.clone(), module.is_stdlib);
+                    break;
                 }
             }
         }
@@ -4666,13 +4664,14 @@ mod tests {
 
     #[test]
     fn test_find_dunder_file() -> Result<()> {
+        let mut compiler = FakeBytecodeCompiler { magic_number: 42 };
         let mut r = PythonResourceCollector::new(
             vec![AbstractResourceLocation::InMemory],
             vec![],
             false,
             false,
         );
-        assert_eq!(r.find_dunder_file()?.len(), 0);
+        assert_eq!(r.find_dunder_file(&mut compiler)?.len(), 0);
 
         r.add_python_module_source(
             &PythonModuleSource {
@@ -4685,7 +4684,7 @@ mod tests {
             },
             &ConcreteResourceLocation::InMemory,
         )?;
-        assert_eq!(r.find_dunder_file()?.len(), 0);
+        assert_eq!(r.find_dunder_file(&mut compiler)?.len(), 0);
 
         r.add_python_module_source(
             &PythonModuleSource {
@@ -4698,8 +4697,8 @@ mod tests {
             },
             &ConcreteResourceLocation::InMemory,
         )?;
-        assert_eq!(r.find_dunder_file()?.len(), 1);
-        assert_eq!(r.find_dunder_file()?.get("baz"), Some(&false));
+        assert_eq!(r.find_dunder_file(&mut compiler)?.len(), 1);
+        assert_eq!(r.find_dunder_file(&mut compiler)?.get("baz"), Some(&false));
 
         r.add_python_module_bytecode_from_source(
             &PythonModuleBytecodeFromSource {
@@ -4713,8 +4712,11 @@ mod tests {
             },
             &ConcreteResourceLocation::InMemory,
         )?;
-        assert_eq!(r.find_dunder_file()?.len(), 2);
-        assert_eq!(r.find_dunder_file()?.get("bytecode"), Some(&false));
+        assert_eq!(r.find_dunder_file(&mut compiler)?.len(), 2);
+        assert_eq!(
+            r.find_dunder_file(&mut compiler)?.get("bytecode"),
+            Some(&false)
+        );
 
         r.add_python_module_source(
             &PythonModuleSource {
@@ -4727,8 +4729,11 @@ mod tests {
             },
             &ConcreteResourceLocation::InMemory,
         )?;
-        assert_eq!(r.find_dunder_file()?.len(), 3);
-        assert_eq!(r.find_dunder_file()?.get("stdlib_module"), Some(&true));
+        assert_eq!(r.find_dunder_file(&mut compiler)?.len(), 3);
+        assert_eq!(
+            r.find_dunder_file(&mut compiler)?.get("stdlib_module"),
+            Some(&true)
+        );
 
         Ok(())
     }

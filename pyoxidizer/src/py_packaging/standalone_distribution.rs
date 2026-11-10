@@ -1984,6 +1984,57 @@ pub mod tests {
     }
 
     #[test]
+    fn compiler_reads_dunder_file() -> Result<()> {
+        let env = get_env()?;
+        let dist = get_default_distribution(None)?;
+
+        let temp_dir = env.temporary_directory("pyoxidizer-test")?;
+        let mut compiler = BytecodeCompiler::new(dist.python_exe_path(), temp_dir.path())?;
+
+        for (source, expected) in [
+            ("# x = __file__\n", false),
+            ("\"\"\"Usage: __file__ input\"\"\"\n", false),
+            ("ns = {\"__file__\": 1}\nns[\"__file__\"]\n", false),
+            ("import sys\ngetattr(sys, \"__file__\", None)\n", false),
+            (
+                "import types\nm = types.ModuleType('m')\nm.__file__ = 'x'\n",
+                false,
+            ),
+            ("print(__file__)\n", true),
+            ("import os\nos.__file__\n", true),
+            ("f\"{__file__}\"\n", true),
+            (
+                "def f():\n    def g():\n        return __file__\n    return g\n",
+                true,
+            ),
+            (
+                "class A:\n    def f(self):\n        return self.__file__\n",
+                true,
+            ),
+        ] {
+            assert_eq!(
+                compiler.reads_dunder_file(source.as_bytes(), "foo.py")?,
+                expected,
+                "{:?}",
+                source
+            );
+        }
+
+        let err = compiler
+            .reads_dunder_file(b"__file__ (", "foo.py")
+            .unwrap_err();
+        assert!(err.to_string().starts_with("checking for __file__: "));
+
+        // The process keeps working after an error.
+        assert!(compiler.reads_dunder_file(b"__file__\n", "foo.py")?);
+
+        drop(compiler);
+        temp_dir.close()?;
+
+        Ok(())
+    }
+
+    #[test]
     fn apple_sdk_info() -> Result<()> {
         for dist in get_all_standalone_distributions()? {
             if dist.target_triple().contains("-apple-") {

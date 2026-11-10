@@ -69,10 +69,10 @@
 
         Packages whose modules are known to work without ``__file__``.
 
-        When building, PyOxidizer looks for embedded modules that refer to
+        When building, PyOxidizer looks for embedded modules whose code reads
         ``__file__``, which is not set for modules imported from memory.
         Modules in the standard library and modules in the packages listed
-        here only produce a note. Any other module referring to ``__file__``
+        here only produce a note. Any other module reading ``__file__``
         produces a warning that lists the affected modules. In GitHub Actions,
         the warning is also emitted as an annotation on the job.
 

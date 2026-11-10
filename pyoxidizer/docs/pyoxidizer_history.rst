@@ -44,6 +44,12 @@ New Features
   their counts is printed instead of a warning. Otherwise the warning lists
   every other affected module, and in GitHub Actions it is also emitted as an
   annotation on the job.
+* The ``__file__`` check now compiles each candidate module with the target
+  Python interpreter and inspects the bytecode. Only code that reads a name
+  or attribute called ``__file__`` is reported. Mentions in comments and
+  string literals, such as ``getattr(module, "__file__", None)``, and
+  assignments to ``__file__`` are ignored. Previously any occurrence of
+  ``__file__`` in the source was reported.
 * New :py:attr:`PythonPackagingPolicy.excluded_packages` attribute. It lists
   packages whose resources are left out of the build.
 * New :py:attr:`PythonPackagingPolicy.test_package_names` attribute. It marks
