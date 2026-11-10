@@ -315,7 +315,10 @@ The ``OxidizedResourceReader`` Class
 
    .. py:method:: open_resource(resource: str)
 
-   .. py:method:: resource_path(resource: str)
+   .. py:method:: resource_path(resource: str) -> str
+
+      Obtain the filesystem path of a resource stored next to the binary.
+      Raises ``FileNotFoundError`` for resources that only exist in memory.
 
    .. py:method:: is_resource(name: str) -> bool
 
@@ -341,11 +344,16 @@ The ``OxidizedResourceTraversable`` Class
    package and a resource path relative to that package. Child packages are
    exposed as directories of their parent package.
 
+   Resources stored on the filesystem are returned as ``pathlib.Path``
+   instances by :py:meth:`iterdir` and :py:meth:`joinpath`. With a real path,
+   ``importlib.resources.as_file()`` hands out the installed file instead of
+   copying it to a temporary file.
+
    .. py:attribute:: name
 
       The base name of the resource, or the leaf name of the package.
 
-   .. py:method:: iterdir() -> Iterator[OxidizedResourceTraversable]
+   .. py:method:: iterdir() -> Iterator[OxidizedResourceTraversable | pathlib.Path]
 
       Yield the resources, resource sub-directories and child packages
       directly contained in this directory.
@@ -354,7 +362,7 @@ The ``OxidizedResourceTraversable`` Class
 
    .. py:method:: is_file() -> bool
 
-   .. py:method:: joinpath(*descendants: str) -> OxidizedResourceTraversable
+   .. py:method:: joinpath(*descendants: str) -> OxidizedResourceTraversable | pathlib.Path
 
       Each descendant may contain ``/`` separated path components. Also
       available via the ``/`` operator.

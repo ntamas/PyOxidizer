@@ -28,6 +28,16 @@ Next
   sub-directories and child packages via ``joinpath()`` and ``/`` is
   supported, and ``iterdir()`` now lists resource sub-directories and child
   packages instead of every resource path in the package.
+* Package resources stored in a filesystem-relative location are now
+  returned as ``pathlib.Path`` instances by
+  :py:meth:`OxidizedResourceTraversable.joinpath`, the ``/`` operator and
+  :py:meth:`OxidizedResourceTraversable.iterdir`.
+  ``importlib.resources.as_file()`` used to copy such resources to a
+  temporary file. Code that loads a bundled shared library this way, such
+  as ``libusb_package``, received a new temporary copy on every start. It
+  now gets the installed file.
+  :py:meth:`OxidizedResourceReader.resource_path` returns the path of these
+  resources instead of always raising ``FileNotFoundError``.
 * Importing an extension module indexed for in-memory loading on Windows
   with Python 3.13 or newer now raises ``ImportError`` instead of
   panicking. See :ref:`oxidized_importer_windows_in_memory_extensions`

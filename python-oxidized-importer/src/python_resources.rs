@@ -853,6 +853,18 @@ impl<'a> PythonResourcesState<'a, u8> {
         Ok(None)
     }
 
+    /// Obtain the filesystem path of a package resource stored next to the binary.
+    ///
+    /// Returns `None` if the resource is unknown or is only available in memory.
+    pub fn package_resource_path(&self, package: &str, resource_name: &str) -> Option<PathBuf> {
+        self.resources
+            .get(package)?
+            .relative_path_package_resources
+            .as_ref()?
+            .get(resource_name)
+            .map(|path| self.origin.join(path))
+    }
+
     /// Determines whether a specific package + name pair is a known Python package resource.
     pub fn is_package_resource(&self, package: &str, resource_name: &str) -> bool {
         if let Some(entry) = self.resources.get(package) {

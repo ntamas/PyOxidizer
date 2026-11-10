@@ -11,7 +11,7 @@ use {
         prelude::*,
         types::{PyDict, PyIterator, PyList, PyTuple},
     },
-    std::sync::Arc,
+    std::{ffi::OsString, path::PathBuf, sync::Arc},
 };
 
 /// Implements in-memory reading of resource data.
@@ -50,11 +50,14 @@ impl OxidizedResourceReader {
     ///
     /// If the resource does not concretely exist on the file system, raise
     /// FileNotFoundError.
-    #[allow(unused)]
-    fn resource_path(&self, resource: &Bound<PyAny>) -> PyResult<()> {
-        Err(PyFileNotFoundError::new_err(
-            "in-memory resources do not have filesystem paths",
-        ))
+    fn resource_path(&self, resource: &str) -> PyResult<OsString> {
+        self.state
+            .get_resources_state()
+            .package_resource_path(&self.package, resource)
+            .map(PathBuf::into_os_string)
+            .ok_or_else(|| {
+                PyFileNotFoundError::new_err("resource does not exist on the filesystem")
+            })
     }
 
     /// Returns True if the named name is considered a resource. FileNotFoundError
@@ -106,6 +109,10 @@ impl OxidizedResourceReader {
 /// Instances are bound to a Python package and a resource path relative to
 /// that package. The empty path denotes the package itself. Child packages
 /// are treated as directories of their parent package.
+///
+/// Resources stored on the filesystem are returned as `pathlib.Path`
+/// instances instead. `importlib.resources.as_file()` uses those directly
+/// instead of copying the resource to a temporary file.
 #[pyclass(module = "oxidized_importer")]
 pub(crate) struct OxidizedResourceTraversable {
     state: Arc<ImporterState>,
@@ -163,6 +170,24 @@ impl OxidizedResourceTraversable {
         }
 
         result
+    }
+
+    /// Convert into the Python object to hand out for this resource.
+    ///
+    /// This is a `pathlib.Path` for a resource stored on the filesystem and
+    /// the instance itself otherwise.
+    fn into_python<'p>(self, py: Python<'p>) -> PyResult<Bound<'p, PyAny>> {
+        if !self.path.is_empty() {
+            if let Some(path) = self
+                .state
+                .get_resources_state()
+                .package_resource_path(&self.package, &self.path)
+            {
+                return py.import("pathlib")?.getattr("Path")?.call1((path,));
+            }
+        }
+
+        Ok(Bound::new(py, self)?.into_any())
     }
 
     /// Open the resource as a binary file-like object.
@@ -230,7 +255,7 @@ impl OxidizedResourceTraversable {
 
         let children = names
             .iter()
-            .map(|name| Bound::new(py, self.child(name)))
+            .map(|name| self.child(name).into_python(py))
             .collect::<PyResult<Vec<_>>>()?;
 
         PyList::new(py, children)?.try_iter()
@@ -287,19 +312,23 @@ impl OxidizedResourceTraversable {
 
     /// Return Traversable resolved with any descendants applied.
     #[pyo3(signature = (*descendants))]
-    fn joinpath(&self, descendants: &Bound<PyTuple>) -> PyResult<Self> {
+    fn joinpath<'p>(
+        &self,
+        py: Python<'p>,
+        descendants: &Bound<'p, PyTuple>,
+    ) -> PyResult<Bound<'p, PyAny>> {
         let mut result = self.descendant("");
 
         for descendant in descendants.iter() {
             result = result.descendant(&descendant.extract::<String>()?);
         }
 
-        Ok(result)
+        result.into_python(py)
     }
 
     /// Return Traversable child in self.
-    fn __truediv__(&self, child: &str) -> Self {
-        self.descendant(child)
+    fn __truediv__<'p>(&self, py: Python<'p>, child: &str) -> PyResult<Bound<'p, PyAny>> {
+        self.descendant(child).into_python(py)
     }
 
     /// mode may be 'r' or 'rb' to open as text or binary. Return a handle

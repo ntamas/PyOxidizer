@@ -15,6 +15,7 @@ from oxidized_importer import (
     OxidizedResourceCollector,
     OxidizedResourceReader,
     OxidizedResourceTraversable,
+    PythonPackageResource,
     find_resources_in_path,
 )
 
@@ -244,6 +245,84 @@ class TestImporterResourceReading(unittest.TestCase):
 
         with importlib.resources.as_file(files / "resource.txt") as path:
             self.assertEqual(path.read_bytes(), b"caf\xc3\xa9")
+
+    def _make_filesystem_resources_package(self):
+        """Creates a package whose resources are stored on the filesystem.
+
+        Returns the finder and the directory the resources are installed in.
+        """
+        p = self._make_package("oxidized_fs")
+
+        with (p / "resource.txt").open("wb") as fh:
+            fh.write(b"on disk")
+
+        (p / "child0").mkdir()
+        with (p / "child0" / "a.txt").open("wb") as fh:
+            fh.write(b"a")
+
+        collector = OxidizedResourceCollector(
+            allowed_locations=["in-memory", "filesystem-relative"]
+        )
+        for r in find_resources_in_path(self.td):
+            if isinstance(r, PythonPackageResource):
+                collector.add_filesystem_relative("lib", r)
+            else:
+                collector.add_in_memory(r)
+
+        resources, file_installs = collector.oxidize()
+
+        origin = self.td / "install"
+        for path, data, _executable in file_installs:
+            dest = origin / path
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(data)
+
+        f = OxidizedFinder(relative_path_origin=str(origin))
+        f.add_resources(resources)
+
+        return f, origin / "lib" / "oxidized_fs"
+
+    def test_filesystem_resources(self):
+        f, resource_dir = self._make_filesystem_resources_package()
+
+        r = f.get_resource_reader("oxidized_fs")
+        self.assertEqual(
+            r.resource_path("resource.txt"), str(resource_dir / "resource.txt")
+        )
+        with self.assertRaises(FileNotFoundError):
+            r.resource_path("missing")
+
+        root = r.files()
+        self.assertIsInstance(root, OxidizedResourceTraversable)
+
+        # Resources on the filesystem are real paths.
+        resource = root / "resource.txt"
+        self.assertIsInstance(resource, pathlib.Path)
+        self.assertEqual(resource, resource_dir / "resource.txt")
+        self.assertEqual(resource.read_bytes(), b"on disk")
+        self.assertEqual(
+            root.joinpath("child0", "a.txt"), resource_dir / "child0" / "a.txt"
+        )
+
+        # Directories remain traversables of the package.
+        child0 = root / "child0"
+        self.assertIsInstance(child0, OxidizedResourceTraversable)
+        self.assertEqual(list(child0.iterdir()), [resource_dir / "child0" / "a.txt"])
+
+        entries = {p.name: p for p in root.iterdir()}
+        self.assertEqual(sorted(entries), ["child0", "resource.txt"])
+        self.assertIsInstance(entries["child0"], OxidizedResourceTraversable)
+        self.assertEqual(entries["resource.txt"], resource_dir / "resource.txt")
+
+    def test_filesystem_resources_as_file(self):
+        f, resource_dir = self._make_filesystem_resources_package()
+        self._install_finder(f, "oxidized_fs")
+
+        files = importlib.resources.files("oxidized_fs")
+
+        # as_file() hands out the installed file instead of a temporary copy.
+        with importlib.resources.as_file(files / "resource.txt") as path:
+            self.assertEqual(path, resource_dir / "resource.txt")
 
 
 if __name__ == "__main__":
