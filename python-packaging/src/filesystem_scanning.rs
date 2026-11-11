@@ -1506,11 +1506,17 @@ mod tests {
         let files =
             PythonResourceIterator::new(tp, DEFAULT_CACHE_TAG, &DEFAULT_SUFFIXES, true, true)?
                 .filter_map(|r| match r {
-                    Ok(PythonResource::File(f)) => Some(f.path_string()),
+                    Ok(PythonResource::File(f)) => Some(f.path().to_path_buf()),
                     _ => None,
                 })
                 .collect::<Vec<_>>();
-        assert_eq!(files, vec!["foo/__init__.py", "foo.libs/libbar.so"]);
+        assert_eq!(
+            files,
+            vec![
+                PathBuf::from("foo").join("__init__.py"),
+                PathBuf::from("foo.libs").join("libbar.so")
+            ]
+        );
 
         Ok(())
     }
