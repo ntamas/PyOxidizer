@@ -250,6 +250,8 @@
         Whether to add source code for Python modules not in the Python
         distribution.
 
+        Default is ``True``.
+
     .. py:attribute:: include_test
 
         (``bool``)
