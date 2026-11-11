@@ -14,7 +14,10 @@ use {
     crate::{
         licensing::{LicenseFlavor, SAFE_SYSTEM_LIBRARIES},
         location::ConcreteResourceLocation,
-        resource::{PythonExtensionModule, PythonExtensionModuleVariants, PythonResource},
+        resource::{
+            is_in_bundled_libraries_directory, PythonExtensionModule,
+            PythonExtensionModuleVariants, PythonResource,
+        },
         resource_collection::PythonResourceAddCollectionContext,
     },
     anyhow::{anyhow, Result},
@@ -695,8 +698,12 @@ impl PythonPackagingPolicy {
     /// Returns true if the resource should be included, false otherwise.
     fn filter_python_resource(&self, resource: &PythonResource) -> bool {
         match resource {
-            PythonResource::File(_) => {
-                if !self.include_file_resources {
+            // Extension modules need the shared libraries bundled by
+            // auditwheel or delvewheel.
+            PythonResource::File(file) => {
+                if !self.include_file_resources
+                    && !is_in_bundled_libraries_directory(&file.path_string())
+                {
                     return false;
                 }
             }
@@ -949,6 +956,30 @@ mod tests {
         assert!(!policy.derive_add_collection_context(&test_module).include);
         policy.set_include_test(true);
         assert!(policy.derive_add_collection_context(&test_module).include);
+    }
+
+    #[test]
+    fn test_add_collection_context_bundled_libraries() {
+        let policy = PythonPackagingPolicy::default();
+        assert!(!policy.include_file_resources());
+
+        let file = |path| -> PythonResource { File::new(path, vec![42]).into() };
+
+        assert!(
+            policy
+                .derive_add_collection_context(&file("numpy.libs/libfoo.so"))
+                .include
+        );
+        assert!(
+            policy
+                .derive_add_collection_context(&file("numpy.libs/.load-order-numpy-2.2.6"))
+                .include
+        );
+        assert!(
+            !policy
+                .derive_add_collection_context(&file("numpy/libfoo.so"))
+                .include
+        );
     }
 
     fn module_source(name: &str, is_package: bool) -> PythonResource<'static> {

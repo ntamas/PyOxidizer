@@ -19,9 +19,10 @@ use {
         module_util::{packages_from_module_name, resolve_path_for_module},
         python_source::has_dunder_file,
         resource::{
-            BytecodeOptimizationLevel, PythonExtensionModule, PythonModuleBytecode,
-            PythonModuleBytecodeFromSource, PythonModuleSource, PythonPackageDistributionResource,
-            PythonPackageResource, PythonResource, SharedLibrary,
+            is_in_bundled_libraries_directory, BytecodeOptimizationLevel, PythonExtensionModule,
+            PythonModuleBytecode, PythonModuleBytecodeFromSource, PythonModuleSource,
+            PythonPackageDistributionResource, PythonPackageResource, PythonResource,
+            SharedLibrary,
         },
     },
     anyhow::{anyhow, Context, Result},
@@ -1659,7 +1660,9 @@ impl PythonResourceCollector {
         file: &File,
         location: &ConcreteResourceLocation,
     ) -> Result<Vec<AddResourceAction>> {
-        if !self.allow_files {
+        // Bundled shared libraries are needed by extension modules. They are
+        // accepted even if untyped files are not.
+        if !self.allow_files && !is_in_bundled_libraries_directory(&file.path_string()) {
             return Err(anyhow!(
                 "untyped files are now allowed on this resource collector"
             ));

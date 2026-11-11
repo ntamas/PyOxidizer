@@ -72,6 +72,13 @@ Bug Fixes
   Previously, libraries bundled in wheels, such as ``numpy/.dylibs`` or
   ``libusb_package``, had to be moved to the filesystem by a resource
   callback.
+* Files in ``<name>.libs`` directories, where auditwheel and delvewheel put
+  the shared libraries of a wheel, are no longer dropped. They are added as
+  :py:class:`File` resources even if
+  :py:attr:`PythonPackagingPolicy.allow_files` is ``False``, and they are
+  placed on the filesystem like other shared libraries. Previously, files
+  in ``numpy.libs`` and similar directories were silently left out unless
+  file resources were enabled.
 * Setting :py:attr:`PythonPackagingPolicy.include_distribution_sources` to
   ``False`` no longer sets ``add_include`` to ``False`` on every
   :py:class:`PythonModuleSource`. Previously this excluded all Python modules

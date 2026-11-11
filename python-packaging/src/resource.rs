@@ -406,6 +406,20 @@ pub fn is_shared_library_filename(name: &str) -> bool {
     }
 }
 
+/// Whether a path lies in a directory of bundled shared libraries.
+///
+/// auditwheel and delvewheel copy the shared libraries of a wheel into a
+/// `<name>.libs` directory next to the package. Any directory whose name ends
+/// in `.libs` counts, except a directory named just `.libs`.
+pub fn is_in_bundled_libraries_directory(path: &str) -> bool {
+    let mut components = path.split(['/', '\\']).collect::<Vec<_>>();
+    components.pop();
+
+    components
+        .iter()
+        .any(|component| component.len() > ".libs".len() && component.ends_with(".libs"))
+}
+
 impl PythonPackageResource {
     pub fn description(&self) -> String {
         format!("Python package resource {}", self.symbolic_name())
@@ -1110,6 +1124,28 @@ mod tests {
             "foo.pyd",
         ] {
             assert!(!is_shared_library_filename(name), "{}", name);
+        }
+    }
+
+    #[test]
+    fn test_is_in_bundled_libraries_directory() {
+        for path in [
+            "numpy.libs/libscipy_openblas64_-63c857e7.so",
+            "numpy.libs/.load-order-numpy-2.2.6",
+            "numpy.libs\\msvcp140-23ebcc0b37c8e3d074511f362feac48b.dll",
+            "foo/bar.libs/baz/qux.dll",
+        ] {
+            assert!(is_in_bundled_libraries_directory(path), "{}", path);
+        }
+
+        for path in [
+            "numpy.libs",
+            "numpy/.dylibs/libgfortran.5.dylib",
+            ".libs/libfoo.so",
+            "foo/libs/bar.so",
+            "foo.libsx/bar.so",
+        ] {
+            assert!(!is_in_bundled_libraries_directory(path), "{}", path);
         }
     }
 }

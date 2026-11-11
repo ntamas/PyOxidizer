@@ -30,8 +30,9 @@ use {
         location::{AbstractResourceLocation, ConcreteResourceLocation},
         policy::PythonPackagingPolicy,
         resource::{
-            is_shared_library_filename, PythonExtensionModule, PythonModuleSource,
-            PythonPackageDistributionResource, PythonPackageResource, PythonResource,
+            is_in_bundled_libraries_directory, is_shared_library_filename, PythonExtensionModule,
+            PythonModuleSource, PythonPackageDistributionResource, PythonPackageResource,
+            PythonResource,
         },
         resource_collection::{
             AddResourceAction, PrePackagedResource, PythonResourceAddCollectionContext,
@@ -450,6 +451,10 @@ impl StandalonePythonExecutableBuilder {
     /// module. If the resource would be stored in memory, it goes to the
     /// fallback location instead when that is on the filesystem. Otherwise a
     /// warning is logged.
+    ///
+    /// Every file in a `.libs` directory is treated as a shared library. Such
+    /// directories also hold files that the loader code of the package reads,
+    /// e.g. the `.load-order-*` file of delvewheel.
     fn place_shared_library_on_filesystem(
         name: &str,
         add_context: &mut PythonResourceAddCollectionContext,
@@ -941,7 +946,9 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
                 .derive_add_collection_context(&resource.into())
         });
 
-        if resource.is_shared_library() {
+        if resource.is_shared_library()
+            || is_in_bundled_libraries_directory(&resource.relative_name)
+        {
             Self::place_shared_library_on_filesystem(&resource.symbolic_name(), &mut add_context);
         }
 
@@ -1014,8 +1021,10 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
                 .derive_add_collection_context(&file.into())
         });
 
-        if is_shared_library_filename(&file.path_string()) {
-            Self::place_shared_library_on_filesystem(&file.path_string(), &mut add_context);
+        let path = file.path_string();
+
+        if is_shared_library_filename(&path) || is_in_bundled_libraries_directory(&path) {
+            Self::place_shared_library_on_filesystem(&path, &mut add_context);
         }
 
         self.resources_collector
@@ -1317,7 +1326,6 @@ pub mod tests {
         pub resources_location: Option<ConcreteResourceLocation>,
         pub resources_location_fallback: Option<Option<ConcreteResourceLocation>>,
         pub allow_in_memory_shared_library_loading: Option<bool>,
-        pub allow_files: Option<bool>,
         pub config: PyembedPythonInterpreterConfig,
     }
 
@@ -1334,7 +1342,6 @@ pub mod tests {
                 resources_location: None,
                 resources_location_fallback: None,
                 allow_in_memory_shared_library_loading: None,
-                allow_files: None,
                 config: PyembedPythonInterpreterConfig::default(),
             }
         }
@@ -1377,9 +1384,6 @@ pub mod tests {
             }
             if let Some(value) = &self.allow_in_memory_shared_library_loading {
                 policy.set_allow_in_memory_shared_library_loading(*value);
-            }
-            if let Some(value) = self.allow_files {
-                policy.set_allow_files(value);
             }
 
             let mut builder = StandalonePythonExecutableBuilder::from_distribution(
@@ -1927,11 +1931,11 @@ pub mod tests {
             resources_location_fallback: Some(Some(ConcreteResourceLocation::RelativePath(
                 "lib".to_string(),
             ))),
-            allow_files: Some(true),
             ..StandalonePythonExecutableBuilderOptions::default()
         };
 
         let mut builder = options.new_builder()?;
+        assert!(!builder.python_packaging_policy().allow_files());
 
         let package_resource = |relative_name: &str| PythonPackageResource {
             leaf_package: "foo".to_string(),
@@ -1941,16 +1945,23 @@ pub mod tests {
             is_test: false,
         };
 
-        for relative_name in ["libbar.so.1", ".dylibs/libbaz.dylib", "data.txt"] {
+        for relative_name in [
+            "libbar.so.1",
+            ".dylibs/libbaz.dylib",
+            "bar.libs/data.txt",
+            "data.txt",
+        ] {
             builder.add_python_package_resource(&package_resource(relative_name), None)?;
         }
-        for path in ["foo.libs/qux.dll", "foo.libs/readme.txt"] {
-            let file = File::new(path, vec![42]);
-            let mut add_context = builder
-                .python_packaging_policy()
-                .derive_add_collection_context(&(&file).into());
-            add_context.include = true;
-            builder.add_file_data(&file, Some(add_context))?;
+
+        // Files in a `.libs` directory are added even though untyped files
+        // are not allowed. Other files are left out.
+        for path in [
+            "foo.libs/qux.dll",
+            "foo.libs/.load-order-foo-1.0",
+            "other/readme.txt",
+        ] {
+            builder.add_file_data(&File::new(path, vec![42]), None)?;
         }
 
         let resources = builder
@@ -1964,19 +1975,19 @@ pub mod tests {
         assert_eq!(in_memory.keys().collect::<Vec<_>>(), vec!["data.txt"]);
         assert_eq!(
             on_disk.keys().collect::<Vec<_>>(),
-            vec![".dylibs/libbaz.dylib", "libbar.so.1"]
+            vec![".dylibs/libbaz.dylib", "bar.libs/data.txt", "libbar.so.1"]
         );
 
-        let dll = &resources["foo.libs/qux.dll"];
-        assert!(dll.file_data_embedded.is_none());
-        assert_eq!(
-            dll.file_data_utf8_relative_path.as_ref().unwrap().0,
-            PathBuf::from("lib/foo.libs/qux.dll")
-        );
+        for path in ["foo.libs/qux.dll", "foo.libs/.load-order-foo-1.0"] {
+            let file = &resources[path];
+            assert!(file.file_data_embedded.is_none());
+            assert_eq!(
+                file.file_data_utf8_relative_path.as_ref().unwrap().0,
+                PathBuf::from("lib").join(path)
+            );
+        }
 
-        let readme = &resources["foo.libs/readme.txt"];
-        assert!(readme.file_data_embedded.is_some());
-        assert!(readme.file_data_utf8_relative_path.is_none());
+        assert!(!resources.contains_key("other/readme.txt"));
 
         Ok(())
     }

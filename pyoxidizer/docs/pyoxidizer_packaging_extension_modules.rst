@@ -176,8 +176,18 @@ it is placed at
 :py:attr:`PythonPackagingPolicy.resources_location_fallback` instead,
 provided that the fallback is a ``filesystem-relative`` location. Without
 such a fallback, the resource stays in memory and a warning is printed.
-This happens after resource callbacks run, so ``add_location`` in a
-callback still shows ``in-memory`` for these resources.
+This happens after resource callbacks run. ``add_location`` in a callback
+still shows ``in-memory`` for these resources.
+
+auditwheel (Linux) and delvewheel (Windows) copy the shared libraries of a
+wheel into a ``<name>.libs`` directory next to the package, e.g.
+``numpy.libs``. Every file in a directory whose name ends in ``.libs`` is
+treated as a shared library. This includes files that are not libraries
+themselves, such as the ``.load-order-*`` file of delvewheel. A ``.libs``
+directory outside any package is not part of a Python package. Its files
+are emitted as :py:class:`File` resources and are included even if
+:py:attr:`PythonPackagingPolicy.allow_files` and
+:py:attr:`PythonPackagingPolicy.include_file_resources` are ``False``.
 
 .. _packaging_extension_modules_no_source_builds:
 

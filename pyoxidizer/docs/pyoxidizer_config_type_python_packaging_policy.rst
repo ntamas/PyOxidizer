@@ -24,6 +24,9 @@
         If true, :py:class:`File` instances can be added to resource
         collectors.
 
+        Files in a ``<name>.libs`` directory of bundled shared libraries can
+        always be added. See :ref:`packaging_extension_modules`.
+
     .. py:attribute:: allow_in_memory_shared_library_loading
 
         (``bool``)
@@ -240,6 +243,9 @@
 
         Whether :py:class:`File` resources have their ``add_include`` attribute
         set to ``True`` by default.
+
+        Files in a ``<name>.libs`` directory of bundled shared libraries are
+        always included by default.
 
         Default is ``False``.
 

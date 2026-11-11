@@ -15,10 +15,10 @@ use {
         module_util::{is_package_from_path, PythonModuleSuffixes},
         package_metadata::PythonPackageMetadata,
         resource::{
-            BytecodeOptimizationLevel, PythonEggFile, PythonExtensionModule, PythonModuleBytecode,
-            PythonModuleSource, PythonPackageDistributionResource,
-            PythonPackageDistributionResourceFlavor, PythonPackageResource, PythonPathExtension,
-            PythonResource,
+            is_in_bundled_libraries_directory, BytecodeOptimizationLevel, PythonEggFile,
+            PythonExtensionModule, PythonModuleBytecode, PythonModuleSource,
+            PythonPackageDistributionResource, PythonPackageDistributionResourceFlavor,
+            PythonPackageResource, PythonPathExtension, PythonResource,
         },
     },
     anyhow::{Context, Result},
@@ -655,8 +655,25 @@ impl<'a> Iterator for PythonResourceIterator<'a> {
                     (None, None)
                 };
 
-            // Resources without a resolved package are not legal.
+            // Resources without a resolved package are not legal. Bundled
+            // shared libraries are the exception, because extension modules
+            // need them. They are emitted as files even when files are not
+            // requested. If files are requested, every path was emitted as a
+            // file already.
             if leaf_package.is_none() {
+                let relative_path = resource.relative_path.to_string_lossy();
+
+                if !self.emit_files && is_in_bundled_libraries_directory(&relative_path) {
+                    return Some(Ok(File::new(
+                        resource.relative_path.clone(),
+                        FileEntry::new_from_data(
+                            self.resolve_file_data(&resource.full_path),
+                            self.resolve_is_executable(&resource.full_path),
+                        ),
+                    )
+                    .into()));
+                }
+
                 continue;
             }
 
@@ -1448,6 +1465,52 @@ mod tests {
             }
             .into()
         );
+
+        Ok(())
+    }
+
+    /// Files in a `.libs` directory next to a package are emitted as files.
+    #[test]
+    fn test_bundled_libraries_directory() -> Result<()> {
+        let td = tempfile::Builder::new()
+            .prefix("python-packaging-test")
+            .tempdir()?;
+        let tp = td.path();
+
+        let package_dir = tp.join("foo");
+        let libs_dir = tp.join("foo.libs");
+        create_dir_all(&package_dir)?;
+        create_dir_all(&libs_dir)?;
+        write(package_dir.join("__init__.py"), "")?;
+        write(libs_dir.join("libbar.so"), "bar")?;
+
+        let resources =
+            PythonResourceIterator::new(tp, DEFAULT_CACHE_TAG, &DEFAULT_SUFFIXES, false, true)?
+                .collect::<Result<Vec<_>>>()?;
+        assert!(resources.contains(
+            &File::new(
+                "foo.libs/libbar.so",
+                FileEntry::new_from_path(libs_dir.join("libbar.so"), false)
+            )
+            .into()
+        ));
+        assert_eq!(
+            resources
+                .iter()
+                .filter(|r| matches!(r, PythonResource::File(_)))
+                .count(),
+            1
+        );
+
+        // With files requested, the library is emitted once.
+        let files =
+            PythonResourceIterator::new(tp, DEFAULT_CACHE_TAG, &DEFAULT_SUFFIXES, true, true)?
+                .filter_map(|r| match r {
+                    Ok(PythonResource::File(f)) => Some(f.path_string()),
+                    _ => None,
+                })
+                .collect::<Vec<_>>();
+        assert_eq!(files, vec!["foo/__init__.py", "foo.libs/libbar.so"]);
 
         Ok(())
     }
