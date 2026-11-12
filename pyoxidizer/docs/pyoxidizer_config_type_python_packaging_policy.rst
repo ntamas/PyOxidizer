@@ -371,6 +371,11 @@
         mutate resources upon creation so they can globally influence how those
         resources are packaged.
 
+        The callback receives every type of resource, including
+        :py:class:`File` resources for bundled shared libraries in
+        ``<name>.libs`` directories. See :ref:`packaging_resource_callback` for
+        the attributes that differ between resource types.
+
     .. py:method:: set_preferred_extension_module_variant(extension: str, variant: str)
 
         This method will set a preferred Python extension module variant to

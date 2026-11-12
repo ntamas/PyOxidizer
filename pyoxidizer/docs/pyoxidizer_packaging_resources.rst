@@ -328,6 +328,13 @@ is otherwise made available to other Starlark code. This means that
 these callbacks provide a hook point where resources can be modified as
 soon as they are created.
 
+Callbacks receive every type of resource. This includes :py:class:`File`
+resources for the files in ``<name>.libs`` directories of wheels, even if
+:py:attr:`PythonPackagingPolicy.allow_files` is ``False``. A
+:py:class:`File` has a ``path`` attribute instead of ``name`` and has no
+``add_source`` or ``add_bytecode_*`` attributes. Check ``type(resource)``
+before reading attributes that only some resource types have.
+
 ``register_resource_callback()`` can be called multiple times to register
 multiple callbacks. Registered functions will be called in order of
 registration.
