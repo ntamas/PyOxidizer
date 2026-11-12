@@ -65,10 +65,11 @@ Backwards Compatibility Notes
   :py:attr:`PythonPackagingPolicy.allow_files` is ``False``. Files in
   ``<name>.libs`` directories of wheels are now always emitted as
   :py:class:`File` resources (see below). A :py:class:`File` has a ``path``
-  attribute but no ``name``, ``package`` or ``add_source``. Callbacks that
-  read these attributes without checking the type of the resource fail with
-  an error such as ``Cannot .name on type File``. Check ``type(resource)``
-  or use ``getattr()`` and ``hasattr()`` to handle these resources.
+  attribute but no ``name`` or ``package``. Callbacks that read these
+  attributes without checking the type of the resource fail with an error
+  such as ``Cannot .name on type File``. Check ``type(resource)`` or use
+  ``getattr()`` and ``hasattr()`` to handle these resources. 0.130.0 adds
+  ``name`` to :py:class:`File`.
 
 New Features
 ^^^^^^^^^^^^
