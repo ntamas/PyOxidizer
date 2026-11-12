@@ -29,6 +29,7 @@ use {
         },
         location::{AbstractResourceLocation, ConcreteResourceLocation},
         policy::PythonPackagingPolicy,
+        python_source::has_delvewheel_patch,
         resource::{
             is_in_bundled_libraries_directory, is_shared_library_filename, PythonExtensionModule,
             PythonModuleSource, PythonPackageDistributionResource, PythonPackageResource,
@@ -459,21 +460,57 @@ impl StandalonePythonExecutableBuilder {
         name: &str,
         add_context: &mut PythonResourceAddCollectionContext,
     ) {
-        if !add_context.include || add_context.location != ConcreteResourceLocation::InMemory {
+        if add_context.include && !Self::move_to_filesystem_fallback(add_context) {
+            warn!(
+                "shared library {} is embedded in memory, where it cannot be loaded; set a filesystem-relative resources_location_fallback or add_location",
+                name
+            );
+        }
+    }
+
+    /// Moves a module patched by delvewheel from memory to the fallback location.
+    ///
+    /// delvewheel adds a function to the `__init__.py` of a package that puts
+    /// the `<name>.libs` directory of the package on the DLL search path. The
+    /// function locates the directory using `__file__`, which is only set for
+    /// modules whose source is stored on the filesystem. The source of the
+    /// module is always stored. If the module would be stored in memory, it
+    /// goes to the fallback location instead when that is on the filesystem.
+    /// Otherwise a warning is logged.
+    fn place_delvewheel_module_on_filesystem(
+        name: &str,
+        add_context: &mut PythonResourceAddCollectionContext,
+    ) {
+        if !add_context.include {
             return;
+        }
+
+        add_context.store_source = true;
+
+        if !Self::move_to_filesystem_fallback(add_context) {
+            warn!(
+                "module {} is embedded in memory, where __file__ is not set, but its delvewheel patch reads __file__; set a filesystem-relative resources_location_fallback or add_location",
+                name
+            );
+        }
+    }
+
+    /// Moves a resource from memory to the fallback location.
+    ///
+    /// Returns false if the resource stays in memory because the fallback
+    /// location is not on the filesystem.
+    fn move_to_filesystem_fallback(add_context: &mut PythonResourceAddCollectionContext) -> bool {
+        if add_context.location != ConcreteResourceLocation::InMemory {
+            return true;
         }
 
         match &add_context.location_fallback {
             Some(fallback @ ConcreteResourceLocation::RelativePath(_)) => {
                 add_context.location = fallback.clone();
                 add_context.location_fallback = None;
+                true
             }
-            _ => {
-                warn!(
-                    "shared library {} is embedded in memory, where it cannot be loaded; set a filesystem-relative resources_location_fallback or add_location",
-                    name
-                );
-            }
+            _ => false,
         }
     }
 
@@ -927,10 +964,14 @@ impl PythonBinaryBuilder for StandalonePythonExecutableBuilder {
         module: &PythonModuleSource,
         add_context: Option<PythonResourceAddCollectionContext>,
     ) -> Result<Vec<AddResourceAction>> {
-        let add_context = add_context.unwrap_or_else(|| {
+        let mut add_context = add_context.unwrap_or_else(|| {
             self.packaging_policy
                 .derive_add_collection_context(&module.into())
         });
+
+        if has_delvewheel_patch(&module.source.resolve_content()?) {
+            Self::place_delvewheel_module_on_filesystem(&module.name, &mut add_context);
+        }
 
         self.resources_collector
             .add_python_module_source_with_context(module, &add_context)
@@ -2024,6 +2065,95 @@ pub mod tests {
             .unwrap()
             .contains_key("libbar.dylib"));
         assert!(foo.relative_path_package_resources.is_none());
+
+        Ok(())
+    }
+
+    fn delvewheel_test_modules() -> Vec<PythonModuleSource> {
+        [
+            (
+                "patched",
+                "def _delvewheel_patch_1_11_2():\n    import os\n\n\n_delvewheel_patch_1_11_2()\n",
+            ),
+            ("plain", "import os\n"),
+        ]
+        .into_iter()
+        .map(|(name, source)| PythonModuleSource {
+            name: name.to_string(),
+            source: FileData::Memory(source.as_bytes().to_vec()),
+            is_package: true,
+            cache_tag: "cpython-313".to_string(),
+            is_stdlib: false,
+            is_test: false,
+        })
+        .collect()
+    }
+
+    #[test]
+    fn test_delvewheel_modules_placed_on_filesystem() -> Result<()> {
+        let options = StandalonePythonExecutableBuilderOptions {
+            extension_module_filter: Some(ExtensionModuleFilter::Minimal),
+            resources_location: Some(ConcreteResourceLocation::InMemory),
+            resources_location_fallback: Some(Some(ConcreteResourceLocation::RelativePath(
+                "lib".to_string(),
+            ))),
+            ..StandalonePythonExecutableBuilderOptions::default()
+        };
+
+        let mut builder = options.new_builder()?;
+
+        // Like a resource callback that sets add_source to False.
+        for module in delvewheel_test_modules() {
+            let mut add_context = builder
+                .python_packaging_policy()
+                .derive_add_collection_context(&(&module).into());
+            add_context.store_source = false;
+            builder.add_python_module_source(&module, Some(add_context))?;
+        }
+
+        let resources = builder
+            .iter_resources()
+            .map(|(name, r)| (name.clone(), r.clone()))
+            .collect::<HashMap<_, _>>();
+
+        // The patched module is stored on the filesystem with its source,
+        // which gives it a __file__.
+        let patched = &resources["patched"];
+        assert!(patched.in_memory_source.is_none());
+        assert_eq!(
+            patched.relative_path_module_source.as_ref().unwrap().0,
+            "lib"
+        );
+
+        let plain = &resources["plain"];
+        assert!(plain.relative_path_module_source.is_none());
+        assert!(plain.in_memory_source.is_none());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_delvewheel_modules_without_fallback_stay_in_memory() -> Result<()> {
+        let options = StandalonePythonExecutableBuilderOptions {
+            extension_module_filter: Some(ExtensionModuleFilter::Minimal),
+            resources_location: Some(ConcreteResourceLocation::InMemory),
+            resources_location_fallback: Some(None),
+            ..StandalonePythonExecutableBuilderOptions::default()
+        };
+
+        let mut builder = options.new_builder()?;
+
+        for module in delvewheel_test_modules() {
+            builder.add_python_module_source(&module, None)?;
+        }
+
+        let patched = builder
+            .iter_resources()
+            .find(|(name, _)| *name == "patched")
+            .map(|(_, r)| r.clone())
+            .unwrap();
+        assert!(patched.in_memory_source.is_some());
+        assert!(patched.relative_path_module_source.is_none());
 
         Ok(())
     }

@@ -189,6 +189,18 @@ are emitted as :py:class:`File` resources and are included even if
 :py:attr:`PythonPackagingPolicy.allow_files` and
 :py:attr:`PythonPackagingPolicy.include_file_resources` are ``False``.
 
+delvewheel also adds a function named ``_delvewheel_patch_<version>`` (or
+``_delvewheel_init_patch_<version>`` in older releases) to the
+``__init__.py`` of the package. The function puts the ``<name>.libs``
+directory on the DLL search path and finds it using ``__file__``, which is
+only set for modules whose source is stored on the filesystem. PyOxidizer
+detects modules containing this function. Their source is always stored,
+and if they would be embedded in memory, they are placed at
+:py:attr:`PythonPackagingPolicy.resources_location_fallback` instead,
+provided that the fallback is a ``filesystem-relative`` location. The other
+modules of the package are not affected. Without such a fallback, the
+module stays in memory and a warning is printed.
+
 .. _packaging_extension_modules_no_source_builds:
 
 Extension Modules Are Not Compiled as Built-ins

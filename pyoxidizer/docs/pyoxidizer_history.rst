@@ -40,6 +40,13 @@ New Features
   resource passed to a resource callback now has a ``name``. Callbacks no
   longer need to handle :py:class:`File` resources separately when matching
   resources by name.
+* Modules patched by delvewheel, such as ``numpy/__init__.py`` in the Windows
+  wheels of NumPy, are placed on the filesystem with their source. The patch
+  reads ``__file__`` to find the bundled DLLs, and ``__file__`` is not set
+  for modules embedded in memory. The module is placed at
+  :py:attr:`PythonPackagingPolicy.resources_location_fallback` if it is a
+  ``filesystem-relative`` location. Otherwise a warning is printed. The
+  other modules of the package can stay in memory.
 
 0.129.0
 -------
