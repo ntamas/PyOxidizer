@@ -12,6 +12,16 @@
     Instances can be constructed by calling methods that emit resources
     with a :py:class:`PythonPackagingPolicy` having
     :py:attr:`PythonPackagingPolicy.file_scanner_emit_files` set to ``True``.
+    Files in ``<name>.libs`` directories of wheels are always emitted as
+    instances of this type.
+
+    .. py:attribute:: name
+
+        (``string``)
+
+        Alias of :py:attr:`path`. Every resource type has a ``name``
+        attribute, and resource callbacks can read it without checking the
+        type of the resource.
 
     .. py:attribute:: path
 

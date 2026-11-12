@@ -330,10 +330,11 @@ soon as they are created.
 
 Callbacks receive every type of resource. This includes :py:class:`File`
 resources for the files in ``<name>.libs`` directories of wheels, even if
-:py:attr:`PythonPackagingPolicy.allow_files` is ``False``. A
-:py:class:`File` has a ``path`` attribute instead of ``name`` and has no
-``add_source`` or ``add_bytecode_*`` attributes. Check ``type(resource)``
-before reading attributes that only some resource types have.
+:py:attr:`PythonPackagingPolicy.allow_files` is ``False``. Every resource
+has a ``name`` attribute. For a :py:class:`File`, ``name`` is its path.
+Other attributes, such as ``package``, ``add_source`` or
+``add_bytecode_*``, exist only on some resource types. Check
+``type(resource)`` or use ``hasattr()`` before reading them.
 
 ``register_resource_callback()`` can be called multiple times to register
 multiple callbacks. Registered functions will be called in order of

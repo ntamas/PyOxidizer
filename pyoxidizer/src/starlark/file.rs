@@ -99,7 +99,9 @@ impl TypedValue for FileValue {
         let inner = self.inner(&format!("File.{}", attribute))?;
 
         let v = match attribute {
-            "path" => Value::from(inner.file.path_string()),
+            // `name` is an alias of `path`. Every other resource type has a
+            // `name`, and resource callbacks can rely on it.
+            "name" | "path" => Value::from(inner.file.path_string()),
             "is_executable" => Value::from(inner.file.entry().is_executable()),
             attr => {
                 drop(inner);
@@ -121,7 +123,7 @@ impl TypedValue for FileValue {
 
     fn has_attr(&self, attribute: &str) -> Result<bool, ValueError> {
         Ok(match attribute {
-            "path" => true,
+            "name" | "path" => true,
             "is_executable" => true,
             attr => self.add_collection_context_attrs().contains(&attr),
         })
@@ -129,5 +131,20 @@ impl TypedValue for FileValue {
 
     fn set_attr(&mut self, attribute: &str, value: Value) -> Result<(), ValueError> {
         self.set_attr_add_collection_context(attribute, value)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_name_is_alias_of_path() {
+        let value = FileValue::new(File::new("foo.libs/bar.dll", vec![42]));
+
+        for attr in ["name", "path"] {
+            assert!(value.has_attr(attr).unwrap());
+            assert_eq!(value.get_attr(attr).unwrap().to_str(), "foo.libs/bar.dll");
+        }
     }
 }

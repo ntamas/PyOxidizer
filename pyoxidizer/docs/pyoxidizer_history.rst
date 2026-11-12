@@ -33,6 +33,14 @@ Next
 
 (Not yet released)
 
+New Features
+^^^^^^^^^^^^
+
+* :py:class:`File` has a ``name`` attribute, an alias of ``path``. Every
+  resource passed to a resource callback now has a ``name``. Callbacks no
+  longer need to handle :py:class:`File` resources separately when matching
+  resources by name.
+
 0.129.0
 -------
 
