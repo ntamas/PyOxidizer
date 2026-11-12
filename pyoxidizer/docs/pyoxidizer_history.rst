@@ -33,6 +33,11 @@ Next
 
 (Not yet released)
 
+0.129.0
+-------
+
+Released 2026-11-12
+
 New Features
 ^^^^^^^^^^^^
 
