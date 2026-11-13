@@ -19,14 +19,11 @@ rcgen = "0.12.1"
 time = "0.3.41"
 yasna = "0.5.2"
 
-[dependencies.tugger-common]
-version = "0.11.0"
-path = "../tugger-common"
-
 [target.'cfg(target_family = "windows")'.dependencies.tugger-windows]
 version = "0.11.0"
 path = "../tugger-windows"
 
 [dev-dependencies]
+tugger-common = { version = "0.11.0", path = "../tugger-common" }
 der-parser = "10.0.0"
 x509-parser = "0.17.0"
