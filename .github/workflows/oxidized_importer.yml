@@ -80,7 +80,7 @@ jobs:
           python3 -m cibuildwheel --output-dir wheelhouse .
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheel-${{ matrix.py.build }}
           path: |
@@ -117,7 +117,7 @@ jobs:
           python3 -m cibuildwheel --output-dir wheelhouse .
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheel-${{ matrix.py.build }}
           path: |
@@ -151,7 +151,7 @@ jobs:
           python -m cibuildwheel --output-dir wheelhouse .
 
       - name: Upload wheels
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wheel-${{ matrix.py.build }}
           path: |
@@ -161,7 +161,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs: [wheel_linux, wheel_windows, wheel_macos]
     steps:
-      - uses: actions/upload-artifact/merge@v4
+      - uses: actions/upload-artifact/merge@v7
         with:
           name: wheels
           pattern: "wheel-*"

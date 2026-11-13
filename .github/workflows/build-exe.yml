@@ -83,15 +83,18 @@ jobs:
           rust_toolchain: stable
           rust_target: ${{ matrix.target.triple }}
 
-      - uses: actions-rs/install@v0.1
+      - uses: taiki-e/install-action@v2
         if: matrix.target.cross
         with:
-          crate: cross
-          version: latest
+          tool: cross
 
-      - uses: ilammy/setup-nasm@v1
+      # needed for compiling aws-lc-sys@0.28.0 on i686-pc-windows-msvc
+      - name: Install NASM
         if: matrix.target.triple == 'i686-pc-windows-msvc'
-        # needed for compiling aws-lc-sys@0.28.0 on i686-pc-windows-msvc
+        shell: pwsh
+        run: |
+          choco install nasm --no-progress -y
+          Add-Content -Path $env:GITHUB_PATH -Value "C:\Program Files\NASM"
 
       - name: Build
         shell: bash
@@ -130,14 +133,14 @@ jobs:
 
       - name: Upload (non-Windows)
         if: runner.os != 'Windows'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: exe-${{ inputs.bin }}-${{ matrix.target.triple }}
           path: upload/${{ inputs.bin }}
 
       - name: Upload (Windows)
         if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: exe-${{ inputs.bin }}-${{ matrix.target.triple }}
           path: upload/${{ inputs.bin }}.exe
@@ -154,13 +157,13 @@ jobs:
       - uses: ./.github/actions/install-just
 
       - name: Download aarch64 executable
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: exe-${{ inputs.bin }}-aarch64-apple-darwin
           path: ${{ inputs.bin }}-aarch64
 
       - name: Download x86-64 executable
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: exe-${{ inputs.bin }}-x86_64-apple-darwin
           path: ${{ inputs.bin }}-x86-64
@@ -170,7 +173,7 @@ jobs:
           just actions-macos-universal ${{ inputs.bin }}
 
       - name: Upload Universal Executable
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: exe-${{ inputs.bin }}-macos-universal
           path: uploads/${{ inputs.bin }}
