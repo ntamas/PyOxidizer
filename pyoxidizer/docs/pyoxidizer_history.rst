@@ -33,6 +33,19 @@ Next
 
 (Not yet released)
 
+Bug Fixes
+^^^^^^^^^
+
+* A package whose code is stored on the filesystem no longer gets an empty
+  module in memory when some of its submodules are stored in memory. The
+  importer prefers code in memory, and the package was imported as an empty
+  module. In 0.130.0 this broke NumPy on Windows. Its ``__init__.py`` is
+  placed on the filesystem because of its delvewheel patch, and the rest of
+  the package stays in memory.
+* ``OxidizedFinder`` can import modules whose only code is bytecode on the
+  filesystem when the interpreter runs with optimization level 1 or 2.
+  Before, these modules could only be imported at optimization level 0.
+
 0.130.0
 -------
 

@@ -442,8 +442,25 @@ pub fn populate_parent_packages(
         })
         .collect::<Vec<(String, PrePackagedResource)>>();
 
+    // Packages whose own code is stored on the filesystem. The importer
+    // prefers in-memory bytecode over code on the filesystem. Bytecode
+    // materialized in memory for these packages would replace their code
+    // with an empty module.
+    let packages_on_filesystem = original_resources
+        .iter()
+        .filter(|(_, r)| {
+            r.relative_path_module_source.is_some()
+                || r.relative_path_bytecode.is_some()
+                || r.relative_path_bytecode_opt1.is_some()
+                || r.relative_path_bytecode_opt2.is_some()
+        })
+        .map(|(name, _)| name.clone())
+        .collect::<BTreeSet<_>>();
+
     for (name, original) in original_resources {
         for package in packages_from_module_name(&name) {
+            let on_filesystem = packages_on_filesystem.contains(&package);
+
             let entry = resources
                 .entry(package.clone())
                 .or_insert_with(|| PrePackagedResource {
@@ -459,8 +476,12 @@ pub fn populate_parent_packages(
             // what. If the original resource has a variant of bytecode in a
             // location, we materialize that variant on parents. We take
             // the source from the parent resource, if present. Otherwise
-            // defaulting to empty.
-            if original.in_memory_bytecode.is_some() && entry.in_memory_bytecode.is_none() {
+            // defaulting to empty. Parents with code on the filesystem get
+            // no in-memory bytecode.
+            if !on_filesystem
+                && original.in_memory_bytecode.is_some()
+                && entry.in_memory_bytecode.is_none()
+            {
                 entry.in_memory_bytecode = Some(PythonModuleBytecodeProvider::FromSource(
                     if let Some(source) = &entry.in_memory_source {
                         source.clone()
@@ -469,7 +490,9 @@ pub fn populate_parent_packages(
                     },
                 ));
             }
-            if original.in_memory_bytecode_opt1.is_some() && entry.in_memory_bytecode_opt1.is_none()
+            if !on_filesystem
+                && original.in_memory_bytecode_opt1.is_some()
+                && entry.in_memory_bytecode_opt1.is_none()
             {
                 entry.in_memory_bytecode_opt1 = Some(PythonModuleBytecodeProvider::FromSource(
                     if let Some(source) = &entry.in_memory_source {
@@ -479,7 +502,9 @@ pub fn populate_parent_packages(
                     },
                 ));
             }
-            if original.in_memory_bytecode_opt2.is_some() && entry.in_memory_bytecode_opt2.is_none()
+            if !on_filesystem
+                && original.in_memory_bytecode_opt2.is_some()
+                && entry.in_memory_bytecode_opt2.is_none()
             {
                 entry.in_memory_bytecode_opt2 = Some(PythonModuleBytecodeProvider::FromSource(
                     if let Some(source) = &entry.in_memory_source {
@@ -545,8 +570,9 @@ pub fn populate_parent_packages(
                     .get_or_insert_with(|| (prefix.clone(), FileData::Memory(vec![])));
             }
 
-            // Ditto for in-memory source.
-            if original.in_memory_source.is_some() {
+            // Ditto for in-memory source, which also takes precedence over
+            // source on the filesystem.
+            if !on_filesystem && original.in_memory_source.is_some() {
                 entry
                     .in_memory_source
                     .get_or_insert(FileData::Memory(vec![]));
@@ -2894,6 +2920,44 @@ mod tests {
                 ..PrePackagedResource::default()
             })
         );
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_populate_parent_packages_parent_on_filesystem() -> Result<()> {
+        let parent = PrePackagedResource {
+            is_module: true,
+            name: "root".to_string(),
+            is_package: true,
+            relative_path_module_source: Some(("prefix".to_string(), FileData::Memory(vec![42]))),
+            relative_path_bytecode_opt1: Some((
+                "prefix".to_string(),
+                "tag".to_string(),
+                PythonModuleBytecodeProvider::FromSource(FileData::Memory(vec![42])),
+            )),
+            ..PrePackagedResource::default()
+        };
+
+        let mut h = BTreeMap::new();
+        h.insert("root".to_string(), parent.clone());
+        h.insert(
+            "root.child".to_string(),
+            PrePackagedResource {
+                is_module: true,
+                name: "root.child".to_string(),
+                in_memory_source: Some(FileData::Memory(vec![43])),
+                in_memory_bytecode_opt1: Some(PythonModuleBytecodeProvider::FromSource(
+                    FileData::Memory(vec![43]),
+                )),
+                ..PrePackagedResource::default()
+            },
+        );
+
+        populate_parent_packages(&mut h)?;
+
+        assert_eq!(h.len(), 2);
+        assert_eq!(h.get("root"), Some(&parent));
 
         Ok(())
     }

@@ -48,10 +48,12 @@ where
                 entry.in_memory_bytecode.is_some() || entry.relative_path_module_bytecode.is_some()
             }
             BytecodeOptimizationLevel::One => {
-                entry.in_memory_bytecode_opt1.is_some() || entry.in_memory_bytecode_opt1.is_some()
+                entry.in_memory_bytecode_opt1.is_some()
+                    || entry.relative_path_module_bytecode_opt1.is_some()
             }
             BytecodeOptimizationLevel::Two => {
-                entry.in_memory_bytecode_opt2.is_some() || entry.in_memory_bytecode_opt2.is_some()
+                entry.in_memory_bytecode_opt2.is_some()
+                    || entry.relative_path_module_bytecode_opt2.is_some()
             }
         }
 }
