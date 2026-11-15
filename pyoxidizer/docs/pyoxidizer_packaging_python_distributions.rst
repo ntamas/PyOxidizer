@@ -28,143 +28,145 @@ Here are the built-in Python distributions:
 +---------+---------+--------------------+------------------------------+
 | Source  | Version | Flavor             | Build Target                 |
 +=========+=========+====================+==============================+
-| CPython | 3.10.22 | standalone_dynamic | aarch64-unknown-linux-gnu    |
+| CPython | 3.11.18 | standalone_dynamic | aarch64-unknown-linux-gnu    |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.10.22 | standalone_dynamic | x86_64-unknown-linux-gnu     |
+| CPython | 3.11.18 | standalone_dynamic | x86_64-unknown-linux-gnu     |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.10.22 | standalone_dynamic | x86_64_v2-unknown-linux-gnu  |
+| CPython | 3.11.18 | standalone_dynamic | x86_64_v2-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.10.22 | standalone_dynamic | x86_64_v3-unknown-linux-gnu  |
+| CPython | 3.11.18 | standalone_dynamic | x86_64_v3-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.10.22 | standalone_dynamic | x86_64_v4-unknown-linux-gnu  |
+| CPython | 3.11.18 | standalone_dynamic | x86_64_v4-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.11.17 | standalone_dynamic | aarch64-unknown-linux-gnu    |
+| CPython | 3.12.16 | standalone_dynamic | aarch64-unknown-linux-gnu    |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.11.17 | standalone_dynamic | x86_64-unknown-linux-gnu     |
+| CPython | 3.12.16 | standalone_dynamic | x86_64-unknown-linux-gnu     |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.11.17 | standalone_dynamic | x86_64_v2-unknown-linux-gnu  |
+| CPython | 3.12.16 | standalone_dynamic | x86_64_v2-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.11.17 | standalone_dynamic | x86_64_v3-unknown-linux-gnu  |
+| CPython | 3.12.16 | standalone_dynamic | x86_64_v3-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.11.17 | standalone_dynamic | x86_64_v4-unknown-linux-gnu  |
+| CPython | 3.12.16 | standalone_dynamic | x86_64_v4-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.12.15 | standalone_dynamic | aarch64-unknown-linux-gnu    |
+| CPython | 3.13.18 | standalone_dynamic | aarch64-unknown-linux-gnu    |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.12.15 | standalone_dynamic | x86_64-unknown-linux-gnu     |
+| CPython | 3.13.18 | standalone_dynamic | x86_64-unknown-linux-gnu     |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.12.15 | standalone_dynamic | x86_64_v2-unknown-linux-gnu  |
+| CPython | 3.13.18 | standalone_dynamic | x86_64_v2-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.12.15 | standalone_dynamic | x86_64_v3-unknown-linux-gnu  |
+| CPython | 3.13.18 | standalone_dynamic | x86_64_v3-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.12.15 | standalone_dynamic | x86_64_v4-unknown-linux-gnu  |
+| CPython | 3.13.18 | standalone_dynamic | x86_64_v4-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.13.16 | standalone_dynamic | aarch64-unknown-linux-gnu    |
+| CPython | 3.14.10 | standalone_dynamic | aarch64-unknown-linux-gnu    |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.13.16 | standalone_dynamic | x86_64-unknown-linux-gnu     |
+| CPython | 3.14.10 | standalone_dynamic | x86_64-unknown-linux-gnu     |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.13.16 | standalone_dynamic | x86_64_v2-unknown-linux-gnu  |
+| CPython | 3.14.10 | standalone_dynamic | x86_64_v2-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.13.16 | standalone_dynamic | x86_64_v3-unknown-linux-gnu  |
+| CPython | 3.14.10 | standalone_dynamic | x86_64_v3-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.13.16 | standalone_dynamic | x86_64_v4-unknown-linux-gnu  |
+| CPython | 3.14.10 | standalone_dynamic | x86_64_v4-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.14.8  | standalone_dynamic | aarch64-unknown-linux-gnu    |
+| CPython | 3.15.2  | standalone_dynamic | aarch64-unknown-linux-gnu    |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.14.8  | standalone_dynamic | x86_64-unknown-linux-gnu     |
+| CPython | 3.15.2  | standalone_dynamic | x86_64-unknown-linux-gnu     |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.14.8  | standalone_dynamic | x86_64_v2-unknown-linux-gnu  |
+| CPython | 3.15.2  | standalone_dynamic | x86_64_v2-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.14.8  | standalone_dynamic | x86_64_v3-unknown-linux-gnu  |
+| CPython | 3.15.2  | standalone_dynamic | x86_64_v3-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.14.8  | standalone_dynamic | x86_64_v4-unknown-linux-gnu  |
+| CPython | 3.15.2  | standalone_dynamic | x86_64_v4-unknown-linux-gnu  |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.10.22 | standalone_static  | aarch64-unknown-linux-musl   |
+| CPython | 3.11.18 | standalone_static  | aarch64-unknown-linux-musl   |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.10.22 | standalone_static  | x86_64-unknown-linux-musl    |
+| CPython | 3.11.18 | standalone_static  | x86_64-unknown-linux-musl    |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.10.22 | standalone_static  | x86_64_v2-unknown-linux-musl |
+| CPython | 3.11.18 | standalone_static  | x86_64_v2-unknown-linux-musl |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.10.22 | standalone_static  | x86_64_v3-unknown-linux-musl |
+| CPython | 3.11.18 | standalone_static  | x86_64_v3-unknown-linux-musl |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.11.17 | standalone_static  | aarch64-unknown-linux-musl   |
+| CPython | 3.12.16 | standalone_static  | aarch64-unknown-linux-musl   |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.11.17 | standalone_static  | x86_64-unknown-linux-musl    |
+| CPython | 3.12.16 | standalone_static  | x86_64-unknown-linux-musl    |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.11.17 | standalone_static  | x86_64_v2-unknown-linux-musl |
+| CPython | 3.12.16 | standalone_static  | x86_64_v2-unknown-linux-musl |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.11.17 | standalone_static  | x86_64_v3-unknown-linux-musl |
+| CPython | 3.12.16 | standalone_static  | x86_64_v3-unknown-linux-musl |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.12.15 | standalone_static  | aarch64-unknown-linux-musl   |
+| CPython | 3.13.18 | standalone_static  | aarch64-unknown-linux-musl   |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.12.15 | standalone_static  | x86_64-unknown-linux-musl    |
+| CPython | 3.13.18 | standalone_static  | x86_64-unknown-linux-musl    |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.12.15 | standalone_static  | x86_64_v2-unknown-linux-musl |
+| CPython | 3.13.18 | standalone_static  | x86_64_v2-unknown-linux-musl |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.12.15 | standalone_static  | x86_64_v3-unknown-linux-musl |
+| CPython | 3.13.18 | standalone_static  | x86_64_v3-unknown-linux-musl |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.13.16 | standalone_static  | aarch64-unknown-linux-musl   |
+| CPython | 3.14.10 | standalone_static  | aarch64-unknown-linux-musl   |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.13.16 | standalone_static  | x86_64-unknown-linux-musl    |
+| CPython | 3.14.10 | standalone_static  | x86_64-unknown-linux-musl    |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.13.16 | standalone_static  | x86_64_v2-unknown-linux-musl |
+| CPython | 3.14.10 | standalone_static  | x86_64_v2-unknown-linux-musl |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.13.16 | standalone_static  | x86_64_v3-unknown-linux-musl |
+| CPython | 3.14.10 | standalone_static  | x86_64_v3-unknown-linux-musl |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.14.8  | standalone_static  | aarch64-unknown-linux-musl   |
+| CPython | 3.15.2  | standalone_static  | aarch64-unknown-linux-musl   |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.14.8  | standalone_static  | x86_64-unknown-linux-musl    |
+| CPython | 3.15.2  | standalone_static  | x86_64-unknown-linux-musl    |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.14.8  | standalone_static  | x86_64_v2-unknown-linux-musl |
+| CPython | 3.15.2  | standalone_static  | x86_64_v2-unknown-linux-musl |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.14.8  | standalone_static  | x86_64_v3-unknown-linux-musl |
+| CPython | 3.15.2  | standalone_static  | x86_64_v3-unknown-linux-musl |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.10.22 | standalone_dynamic | i686-pc-windows-msvc         |
+| CPython | 3.11.18 | standalone_dynamic | aarch64-pc-windows-msvc      |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.10.22 | standalone_dynamic | x86_64-pc-windows-msvc       |
+| CPython | 3.11.18 | standalone_dynamic | i686-pc-windows-msvc         |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.11.17 | standalone_dynamic | aarch64-pc-windows-msvc      |
+| CPython | 3.11.18 | standalone_dynamic | x86_64-pc-windows-msvc       |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.11.17 | standalone_dynamic | i686-pc-windows-msvc         |
+| CPython | 3.12.16 | standalone_dynamic | aarch64-pc-windows-msvc      |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.11.17 | standalone_dynamic | x86_64-pc-windows-msvc       |
+| CPython | 3.12.16 | standalone_dynamic | i686-pc-windows-msvc         |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.12.15 | standalone_dynamic | aarch64-pc-windows-msvc      |
+| CPython | 3.12.16 | standalone_dynamic | x86_64-pc-windows-msvc       |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.12.15 | standalone_dynamic | i686-pc-windows-msvc         |
+| CPython | 3.13.18 | standalone_dynamic | aarch64-pc-windows-msvc      |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.12.15 | standalone_dynamic | x86_64-pc-windows-msvc       |
+| CPython | 3.13.18 | standalone_dynamic | i686-pc-windows-msvc         |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.13.16 | standalone_dynamic | aarch64-pc-windows-msvc      |
+| CPython | 3.13.18 | standalone_dynamic | x86_64-pc-windows-msvc       |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.13.16 | standalone_dynamic | i686-pc-windows-msvc         |
+| CPython | 3.14.10 | standalone_dynamic | aarch64-pc-windows-msvc      |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.13.16 | standalone_dynamic | x86_64-pc-windows-msvc       |
+| CPython | 3.14.10 | standalone_dynamic | i686-pc-windows-msvc         |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.14.8  | standalone_dynamic | aarch64-pc-windows-msvc      |
+| CPython | 3.14.10 | standalone_dynamic | x86_64-pc-windows-msvc       |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.14.8  | standalone_dynamic | i686-pc-windows-msvc         |
+| CPython | 3.15.2  | standalone_dynamic | aarch64-pc-windows-msvc      |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.14.8  | standalone_dynamic | x86_64-pc-windows-msvc       |
+| CPython | 3.15.2  | standalone_dynamic | i686-pc-windows-msvc         |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.10.22 | standalone_dynamic | aarch64-apple-darwin         |
+| CPython | 3.15.2  | standalone_dynamic | x86_64-pc-windows-msvc       |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.10.22 | standalone_dynamic | x86_64-apple-darwin          |
+| CPython | 3.11.18 | standalone_dynamic | aarch64-apple-darwin         |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.11.17 | standalone_dynamic | aarch64-apple-darwin         |
+| CPython | 3.11.18 | standalone_dynamic | x86_64-apple-darwin          |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.11.17 | standalone_dynamic | x86_64-apple-darwin          |
+| CPython | 3.12.16 | standalone_dynamic | aarch64-apple-darwin         |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.12.15 | standalone_dynamic | aarch64-apple-darwin         |
+| CPython | 3.12.16 | standalone_dynamic | x86_64-apple-darwin          |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.12.15 | standalone_dynamic | x86_64-apple-darwin          |
+| CPython | 3.13.18 | standalone_dynamic | aarch64-apple-darwin         |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.13.16 | standalone_dynamic | aarch64-apple-darwin         |
+| CPython | 3.13.18 | standalone_dynamic | x86_64-apple-darwin          |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.13.16 | standalone_dynamic | x86_64-apple-darwin          |
+| CPython | 3.14.10 | standalone_dynamic | aarch64-apple-darwin         |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.14.8  | standalone_dynamic | aarch64-apple-darwin         |
+| CPython | 3.14.10 | standalone_dynamic | x86_64-apple-darwin          |
 +---------+---------+--------------------+------------------------------+
-| CPython | 3.14.8  | standalone_dynamic | x86_64-apple-darwin          |
+| CPython | 3.15.2  | standalone_dynamic | aarch64-apple-darwin         |
++---------+---------+--------------------+------------------------------+
+| CPython | 3.15.2  | standalone_dynamic | x86_64-apple-darwin          |
 +---------+---------+--------------------+------------------------------+
 
 All of these distributions are provided by the
@@ -176,8 +178,7 @@ Here is what those target triple values translate to:
 ``aarch64-apple-darwin``
    64-bit ARM compiled for macOS.
 ``aarch64-pc-windows-msvc``
-   64-bit ARM Windows using the Microsoft Visual C++ Compiler. Only
-   available for Python 3.11 and newer.
+   64-bit ARM Windows using the Microsoft Visual C++ Compiler.
 ``aarch64-unknown-linux-gnu``
    64-bit ARM targeting Linux, with a dependency on GNU libc (glibc /
    ``libc.so``).
@@ -211,9 +212,9 @@ Here is what those target triple values translate to:
 Python Version Compatibility
 ============================
 
-PyOxidizer is capable of working with Python 3.10, 3.11, 3.12, 3.13 and 3.14.
+PyOxidizer is capable of working with Python 3.11, 3.12, 3.13, 3.14 and 3.15.
 
-Python 3.10 is the default Python version because it has been around
+Python 3.11 is the default Python version because it has been around
 for a while and is relatively stable.
 
 PyOxidizer's tests are run primarily against the default Python
@@ -225,8 +226,8 @@ subtle bugs.
 Choosing a Python Distribution
 ==============================
 
-The Python 3.10 distributions are the default and are better tested
-than the other Python distributions. 3.9 was the default in
+The Python 3.11 distributions are the default and are better tested
+than the other Python distributions. 3.10 was the default in
 previous releases and is known to work.
 
 The ``standalone_dynamic`` distributions behave much more similarly

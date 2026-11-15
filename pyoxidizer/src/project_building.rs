@@ -756,27 +756,6 @@ mod tests {
     }
 
     #[test]
-    fn test_empty_project_python_310() -> Result<()> {
-        let env = get_env()?;
-        let options = StandalonePythonExecutableBuilderOptions {
-            distribution_version: Some("3.10".to_string()),
-            ..Default::default()
-        };
-        let pre_built = options.new_builder()?;
-
-        build_python_executable(
-            &env,
-            "myapp",
-            pre_built.as_ref(),
-            default_target_triple(),
-            "0",
-            false,
-        )?;
-
-        Ok(())
-    }
-
-    #[test]
     fn test_empty_project_python_311() -> Result<()> {
         let env = get_env()?;
         let options = StandalonePythonExecutableBuilderOptions {
@@ -844,6 +823,27 @@ mod tests {
         let env = get_env()?;
         let options = StandalonePythonExecutableBuilderOptions {
             distribution_version: Some("3.14".to_string()),
+            ..Default::default()
+        };
+        let pre_built = options.new_builder()?;
+
+        build_python_executable(
+            &env,
+            "myapp",
+            pre_built.as_ref(),
+            default_target_triple(),
+            "0",
+            false,
+        )?;
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_empty_project_python_315() -> Result<()> {
+        let env = get_env()?;
+        let options = StandalonePythonExecutableBuilderOptions {
+            distribution_version: Some("3.15".to_string()),
             ..Default::default()
         };
         let pre_built = options.new_builder()?;

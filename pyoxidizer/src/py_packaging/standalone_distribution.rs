@@ -2025,6 +2025,35 @@ pub mod tests {
         Ok(())
     }
 
+    /// The JIT objects of Python 3.15 are among the core object files.
+    #[test]
+    fn test_jit_objects() -> Result<()> {
+        let dists = get_all_standalone_distributions_matching(|record| {
+            record.python_major_minor_version == "3.15"
+                && !record.target_triple.contains("-windows-")
+        })?;
+        assert!(!dists.is_empty());
+
+        for dist in dists {
+            let jit_objs = dist
+                .config_vars
+                .get("JIT_OBJS")
+                .map(|objs| objs.split_whitespace().collect::<Vec<_>>())
+                .unwrap_or_default();
+
+            for name in jit_objs {
+                let path = dist
+                    .objs_core
+                    .values()
+                    .find(|path| path.file_name() == Some(OsStr::new(name)))
+                    .unwrap_or_else(|| panic!("{} lacks {}", dist.target_triple, name));
+                assert!(path.exists(), "{}", path.display());
+            }
+        }
+
+        Ok(())
+    }
+
     #[test]
     fn test_tcl_files() -> Result<()> {
         for dist in get_all_standalone_distributions()? {

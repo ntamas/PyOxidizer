@@ -33,6 +33,21 @@ Next
 
 (Not yet released)
 
+Backwards Compatibility Notes
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+* Support for Python 3.10 has been removed, as python-build-standalone no
+  longer publishes distributions for it.
+* The default Python version is now 3.11 instead of 3.10.
+
+New Features
+^^^^^^^^^^^^
+
+* Support for Python 3.15 has been added.
+* Default Python distributions upgraded from python-build-standalone
+  20261003 to 20261110. This brings CPython 3.11.18, 3.12.16, 3.13.18,
+  3.14.10 and 3.15.2.
+
 Bug Fixes
 ^^^^^^^^^
 

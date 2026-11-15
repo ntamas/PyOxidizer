@@ -119,7 +119,7 @@
 ``default_python_distribution()``
 =================================
 
-.. py:function:: default_python_distribution(flavor: str = "standalone", build_target: str = BUILD_TARGET, python_version: str = "3.10") -> PythonDistribution
+.. py:function:: default_python_distribution(flavor: str = "standalone", build_target: str = BUILD_TARGET, python_version: str = "3.11") -> PythonDistribution
 
     Resolves the default :py:class:`PythonDistribution`.
 
@@ -138,12 +138,11 @@
        ``X.Y`` *major.minor* string denoting the Python release version
        to use.
 
-       Supported values are ``3.10``, ``3.11``, ``3.12``, ``3.13`` and
-       ``3.14``. Not every version is available for every build target:
-       ``aarch64-pc-windows-msvc`` distributions start at ``3.11``.
+       Supported values are ``3.11``, ``3.12``, ``3.13``, ``3.14`` and
+       ``3.15``.
 
-       If not specified, ``3.10`` is used. If the build target has no
-       ``3.10`` distribution, the oldest available version is used instead.
+       If not specified, ``3.11`` is used. If the build target has no
+       ``3.11`` distribution, the oldest available version is used instead.
 
     ``flavor`` is a string denoting the distribution *flavor*. Values can be one
     of the following:

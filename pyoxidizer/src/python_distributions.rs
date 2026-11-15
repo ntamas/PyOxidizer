@@ -12,7 +12,7 @@ use {
 pub use crate::default_python_distributions::PYTHON_DISTRIBUTIONS;
 
 /// Default Python X.Y version to use.
-pub const DEFAULT_PYTHON_VERSION: &str = "3.10";
+pub const DEFAULT_PYTHON_VERSION: &str = "3.11";
 
 /// A collection of available Python distributions.
 pub struct PythonDistributionCollection {
@@ -103,8 +103,7 @@ mod tests {
             .unwrap();
         assert_eq!(dist.python_major_minor_version, DEFAULT_PYTHON_VERSION);
 
-        // aarch64 Windows distributions start at 3.11, so the oldest
-        // available version is used when no version is requested.
+        // aarch64 Windows distributions start at 3.11, the default version.
         let dist = PYTHON_DISTRIBUTIONS
             .find_distribution(
                 "aarch64-pc-windows-msvc",

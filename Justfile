@@ -530,7 +530,7 @@ pyoxidizer-release:
 pyoxidizer-update-python-distributions: _python_scripts_venv
   venv/bin/python3 \
     scripts/fetch-python-distributions.py \
-    --tag 20261003 > pyoxidizer/src/default_python_distributions.rs
+    --tag 20261110 > pyoxidizer/src/default_python_distributions.rs
   rustfmt pyoxidizer/src/default_python_distributions.rs
 
 # Perform Rust crate releases.

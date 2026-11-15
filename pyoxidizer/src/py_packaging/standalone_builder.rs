@@ -2898,13 +2898,12 @@ pub mod tests {
 
         // (target triple, Python version, OpenSSL DLL name infix).
         //
-        // Python 3.10 ships OpenSSL 1.1, later versions OpenSSL 3. The
-        // aarch64 distributions start at 3.11 and their PYTHON.json omits
-        // the OpenSSL DLLs, which PyOxidizer fills in.
+        // The PYTHON.json of the aarch64 distributions omits the OpenSSL
+        // DLLs, which PyOxidizer fills in.
         let targets = [
-            ("i686-pc-windows-msvc", "3.10", "-1_1"),
-            ("x86_64-pc-windows-msvc", "3.10", "-1_1-x64"),
-            ("x86_64-pc-windows-msvc", "3.13", "-3-x64"),
+            ("i686-pc-windows-msvc", "3.11", "-3"),
+            ("x86_64-pc-windows-msvc", "3.11", "-3-x64"),
+            ("x86_64-pc-windows-msvc", "3.15", "-3-x64"),
             ("aarch64-pc-windows-msvc", "3.11", "-3-arm64"),
         ];
 
@@ -3127,14 +3126,14 @@ pub mod tests {
             assert!(importer_supports_in_memory_shared_library_loading(version));
         }
 
-        for version in ["3.13", "3.14", "4.0", "", "3", "invalid"] {
+        for version in ["3.13", "3.14", "3.15", "4.0", "", "3", "invalid"] {
             assert!(!importer_supports_in_memory_shared_library_loading(version));
         }
     }
 
     #[test]
     fn test_windows_dynamic_extension_in_memory_unsupported_python_version() -> Result<()> {
-        for python_version in ["3.13", "3.14"] {
+        for python_version in ["3.13", "3.14", "3.15"] {
             for target_triple in WINDOWS_TARGET_TRIPLES.iter() {
                 let options = StandalonePythonExecutableBuilderOptions {
                     target_triple: target_triple.to_string(),
@@ -3241,7 +3240,7 @@ pub mod tests {
         // metadata from the build.
         let options = StandalonePythonExecutableBuilderOptions {
             target_triple: "x86_64-unknown-linux-gnu".to_string(),
-            distribution_version: Some("3.10".into()),
+            distribution_version: Some("3.11".into()),
             extension_module_filter: Some(ExtensionModuleFilter::All),
             resources_location: Some(ConcreteResourceLocation::InMemory),
             ..StandalonePythonExecutableBuilderOptions::default()

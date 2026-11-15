@@ -43,7 +43,7 @@ PythonDistributionRecord {{
 RE_CAL_VER = re.compile(r"^\d{8}$")
 
 # Python versions to emit distributions for.
-PYTHON_VERSIONS = ["3.10", "3.11", "3.12", "3.13", "3.14"]
+PYTHON_VERSIONS = ["3.11", "3.12", "3.13", "3.14", "3.15"]
 
 # Linux (glibc) and macOS optimized builds are only published as `pgo+lto`.
 # Their libpython consists of LLVM bitcode, which PyOxidizer links with LLD.
@@ -75,9 +75,7 @@ WINDOWS_TARGETS = [
 
 # Targets that python-build-standalone only publishes for newer Python
 # versions, mapped to the first Python version available for them.
-MINIMUM_PYTHON_VERSIONS = {
-    "aarch64-pc-windows-msvc": (3, 11),
-}
+MINIMUM_PYTHON_VERSIONS = {}
 
 MACOS_TARGETS = [
     "aarch64-apple-darwin",
