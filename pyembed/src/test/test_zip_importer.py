@@ -114,7 +114,7 @@ class TestImporter(unittest.TestCase):
         self.assertEqual(m.__loader__, importer)
         self.assertEqual(m.__package__, "")
         self.assertEqual(m.__file__, spec.origin)
-        self.assertIsNotNone(m.__cached__)
+        self.assertIsNotNone(m.__spec__.cached)
 
     def test_import_pyc_only(self):
         source = b"foo = 42\n"
@@ -148,7 +148,7 @@ class TestImporter(unittest.TestCase):
         self.assertEqual(m.__loader__, importer)
         self.assertEqual(m.__package__, "")
         self.assertEqual(m.__file__, spec.origin)
-        self.assertIsNotNone(m.__cached__)
+        self.assertIsNotNone(m.__spec__.cached)
 
     def test_import_py_and_pyc(self):
         source = b"foo = 42\n"
@@ -184,7 +184,7 @@ class TestImporter(unittest.TestCase):
         self.assertEqual(m.__loader__, importer)
         self.assertEqual(m.__package__, "")
         self.assertEqual(m.__file__, spec.origin)
-        self.assertIsNotNone(m.__cached__)
+        self.assertIsNotNone(m.__spec__.cached)
 
     def test_import_package_py_only(self):
         source = b"foo = 42\n"
@@ -222,7 +222,7 @@ class TestImporter(unittest.TestCase):
         self.assertEqual(m.__loader__, importer)
         self.assertEqual(m.__package__, "foo")
         self.assertEqual(m.__file__, spec.origin)
-        self.assertIsNotNone(m.__cached__)
+        self.assertIsNotNone(m.__spec__.cached)
 
     def test_import_package_pyc_only(self):
         source = b"foo = 42\n"
@@ -260,7 +260,7 @@ class TestImporter(unittest.TestCase):
         self.assertEqual(m.__loader__, importer)
         self.assertEqual(m.__package__, "foo")
         self.assertEqual(m.__file__, spec.origin)
-        self.assertIsNotNone(m.__cached__)
+        self.assertIsNotNone(m.__spec__.cached)
 
     def test_import_package_py_and_pyc(self):
         source = b"foo = 42\n"
@@ -303,7 +303,7 @@ class TestImporter(unittest.TestCase):
         self.assertEqual(m.__loader__, importer)
         self.assertEqual(m.__package__, "foo")
         self.assertEqual(m.__file__, spec.origin)
-        self.assertIsNotNone(m.__cached__)
+        self.assertIsNotNone(m.__spec__.cached)
 
     def test_import_submodule_py_only(self):
         source = b"foo = 42\n"
@@ -341,7 +341,7 @@ class TestImporter(unittest.TestCase):
         self.assertEqual(m.__loader__, importer)
         self.assertEqual(m.__package__, "foo")
         self.assertEqual(m.__file__, spec.origin)
-        self.assertIsNotNone(m.__cached__)
+        self.assertIsNotNone(m.__spec__.cached)
 
     def test_zip_file(self):
         source = b"foo = 42\n"
