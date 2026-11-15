@@ -16,7 +16,6 @@ use {
     anyhow::Context,
     pyo3::{
         exceptions::{PyTypeError, PyValueError},
-        ffi as pyffi,
         prelude::*,
         types::{PyBytes, PyList, PyString, PyTuple},
     },
@@ -56,9 +55,10 @@ impl PyTempDir {
 impl Drop for PyTempDir {
     fn drop(&mut self) {
         Python::attach(|py| {
-            if self.cleanup.call0(py).is_err() {
-                let cleanup = self.cleanup.as_ptr();
-                unsafe { pyffi::PyErr_WriteUnraisable(cleanup) }
+            // The error must be restored before it is reported. Python 3.15
+            // crashes if no exception is set.
+            if let Err(err) = self.cleanup.call0(py) {
+                err.write_unraisable(py, Some(self.cleanup.bind(py)));
             }
         });
     }

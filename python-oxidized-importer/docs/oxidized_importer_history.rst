@@ -16,6 +16,9 @@ Next
 
 (Not yet released)
 
+* ``OxidizedResourceCollector.oxidize()`` no longer crashes Python 3.15
+  when the temporary directory it uses cannot be removed. The error of the
+  cleanup was not set when it was reported as an unraisable exception.
 * :py:class:`OxidizedResourceReader` now implements ``files()``, returning a
   new :py:class:`OxidizedResourceTraversable` that implements
   ``importlib.resources.abc.Traversable`` for package resources.
