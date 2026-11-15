@@ -16,6 +16,7 @@ Next
 
 (Not yet released)
 
+* Wheels are now built for Python 3.15.
 * ``OxidizedResourceCollector.oxidize()`` no longer crashes Python 3.15
   when the temporary directory it uses cannot be removed. The error of the
   cleanup was not set when it was reported as an unraisable exception.
