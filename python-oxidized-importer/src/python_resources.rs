@@ -652,6 +652,10 @@ impl<'a> PythonResourcesState<'a, u8> {
             #[cfg(not(Py_3_14))]
             frozen_stdlib_modules.push("os.path");
 
+            // Python 3.15 freezes `linecache` for the interactive interpreter.
+            #[cfg(Py_3_15)]
+            frozen_stdlib_modules.push("linecache");
+
             for name in &frozen_stdlib_modules {
                 self.index_frozen_module_by_name(name)?;
             }
