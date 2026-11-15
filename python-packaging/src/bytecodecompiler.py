@@ -24,9 +24,10 @@ import types
 RE_CODING = re.compile(b"^[ \t\f]*#.*?coding[:=][ \t]*([-_.a-zA-Z0-9]+)")
 
 
-# Marshal format 4 is used by Python 3.4 to 3.13; Python 3.14 bumped the
-# version to 5. Update this check when a new marshal format is added.
-if marshal.version not in (4, 5):
+# Marshal format 4 is used by Python 3.4 to 3.13. Python 3.14 uses format 5
+# and Python 3.15 format 6. Update this check when a new marshal format is
+# added.
+if marshal.version not in (4, 5, 6):
     raise Exception("unexpected marshal version: %d" % marshal.version)
 
 stdin = sys.__stdin__.buffer

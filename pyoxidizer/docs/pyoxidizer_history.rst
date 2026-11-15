@@ -36,6 +36,7 @@ Next
 Bug Fixes
 ^^^^^^^^^
 
+* The bytecode compiler accepts marshal format 6, used by Python 3.15.
 * Shared libraries whose file names end in an extension module suffix are no
   longer collected as extension modules unless Python could import them by
   that name. On Linux, ``.so`` is such a suffix. In 0.131.0 the libraries
