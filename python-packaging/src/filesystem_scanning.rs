@@ -12,7 +12,7 @@ Scanning the filesystem for Python resources.
 
 use {
     crate::{
-        module_util::{is_package_from_path, PythonModuleSuffixes},
+        module_util::{is_module_name_component, is_package_from_path, PythonModuleSuffixes},
         package_metadata::PythonPackageMetadata,
         resource::{
             is_in_bundled_libraries_directory, BytecodeOptimizationLevel, PythonEggFile,
@@ -327,6 +327,18 @@ impl<'a> PythonResourceIterator<'a> {
                 let mut package = itertools::join(package_parts, ".");
 
                 let module_name = &file_name[0..file_name.len() - ext_suffix.len()];
+
+                // A file that Python could not import is not an extension
+                // module, even with an extension suffix. Shared libraries in
+                // the `.libs` directories of auditwheel are an example. They
+                // are handled as resources or files below.
+                if !package_parts
+                    .iter()
+                    .chain(std::iter::once(&module_name))
+                    .all(|part| is_module_name_component(part))
+                {
+                    continue;
+                }
 
                 let mut full_module_name: Vec<&str> = package_parts.to_vec();
 
@@ -1517,6 +1529,73 @@ mod tests {
                 PathBuf::from("foo.libs").join("libbar.so")
             ]
         );
+
+        Ok(())
+    }
+
+    /// Shared libraries with an extension module suffix are not extension
+    /// modules if Python could not import them by name.
+    #[test]
+    fn test_shared_libraries_with_extension_suffix() -> Result<()> {
+        let td = tempfile::Builder::new()
+            .prefix("python-packaging-test")
+            .tempdir()?;
+        let tp = td.path();
+
+        let core_dir = tp.join("numpy").join("_core");
+        let libs_dir = tp.join("numpy.libs");
+        let usb_dir = tp.join("libusb_package");
+        create_dir_all(&core_dir)?;
+        create_dir_all(&libs_dir)?;
+        create_dir_all(&usb_dir)?;
+        write(tp.join("numpy").join("__init__.py"), "")?;
+        write(core_dir.join("__init__.py"), "")?;
+        write(
+            core_dir.join("_multiarray_umath.cpython-312-x86_64-linux-gnu.so"),
+            "umath",
+        )?;
+        write(
+            libs_dir.join("libscipy_openblas64_-f48b354e.so"),
+            "openblas",
+        )?;
+        write(usb_dir.join("__init__.py"), "")?;
+        write(usb_dir.join("libusb-1.0.so"), "usb")?;
+
+        let suffixes = PythonModuleSuffixes {
+            extension: vec![
+                ".cpython-312-x86_64-linux-gnu.so".to_string(),
+                ".abi3.so".to_string(),
+                ".so".to_string(),
+            ],
+            ..DEFAULT_SUFFIXES.clone()
+        };
+
+        let resources = PythonResourceIterator::new(tp, DEFAULT_CACHE_TAG, &suffixes, false, true)?
+            .collect::<Result<Vec<_>>>()?;
+
+        let extensions = resources
+            .iter()
+            .filter_map(|r| match r {
+                PythonResource::ExtensionModule(em) => Some(em.name.as_str()),
+                _ => None,
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(extensions, vec!["numpy._core._multiarray_umath"]);
+
+        assert!(resources.contains(
+            &File::new(
+                "numpy.libs/libscipy_openblas64_-f48b354e.so",
+                FileEntry::new_from_path(libs_dir.join("libscipy_openblas64_-f48b354e.so"), false)
+            )
+            .into()
+        ));
+
+        assert!(resources.iter().any(|r| matches!(
+            r,
+            PythonResource::PackageResource(resource)
+                if resource.leaf_package == "libusb_package"
+                    && resource.relative_name == "libusb-1.0.so"
+        )));
 
         Ok(())
     }

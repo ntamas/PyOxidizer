@@ -114,9 +114,44 @@ pub fn is_package_from_path(path: &Path) -> bool {
     file_name.starts_with("__init__.")
 }
 
+/// Whether a string can be one component of a dotted module name.
+///
+/// Python only imports modules whose name components are identifiers. Files
+/// with other names may still carry a module suffix. An example is
+/// `numpy.libs/libscipy_openblas64_-f48b354e.so`, a shared library that
+/// auditwheel bundles with NumPy.
+pub fn is_module_name_component(name: &str) -> bool {
+    let mut chars = name.chars();
+
+    match chars.next() {
+        Some(c) if c == '_' || c.is_alphabetic() => {}
+        _ => return false,
+    }
+
+    chars.all(|c| c == '_' || c.is_alphanumeric())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_is_module_name_component() {
+        for name in ["numpy", "_core", "_multiarray_umath", "foo2", "café"] {
+            assert!(is_module_name_component(name), "{}", name);
+        }
+
+        for name in [
+            "",
+            "2foo",
+            "numpy.libs",
+            "libscipy_openblas64_-f48b354e",
+            "libusb-1.0",
+            "python_rtmidi.",
+        ] {
+            assert!(!is_module_name_component(name), "{}", name);
+        }
+    }
 
     #[test]
     fn test_packages_from_module_name() {
