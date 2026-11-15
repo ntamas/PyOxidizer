@@ -37,6 +37,7 @@ use {
     simple_file_manifest::{FileData, FileEntry},
     std::{
         collections::{hash_map::RandomState, BTreeMap, HashMap},
+        ffi::OsStr,
         io::{BufRead, BufReader, Read},
         path::{Path, PathBuf},
         sync::Arc,
@@ -441,6 +442,83 @@ fn bundled_shared_library(python_path: &Path, link: &LinkEntry) -> Option<PathBu
 fn parse_python_json_from_distribution(dist_dir: &Path) -> Result<PythonJsonMain> {
     let python_json_path = dist_dir.join("python").join("PYTHON.json");
     parse_python_json(&python_json_path)
+}
+
+/// Extract the JIT object files that the core object files of a distribution lack.
+///
+/// Python 3.15 built with the experimental JIT defines `_PyJIT_Entry` in a
+/// shim object that the JIT toolchain compiles. The `JIT_OBJS` config variable
+/// names this object, but `PYTHON.json` of python-build-standalone does not
+/// list it among the core object files. The static libpython of the
+/// distribution contains it. Each missing object is extracted from there into
+/// `build/jit` of the distribution.
+///
+/// Returns the relative and the absolute path of each extracted object.
+fn extract_jit_objects(
+    python_path: &Path,
+    config_vars: &HashMap<String, String>,
+    objs_core: &BTreeMap<PathBuf, PathBuf>,
+) -> Result<Vec<(PathBuf, PathBuf)>> {
+    let missing = config_vars
+        .get("JIT_OBJS")
+        .map(|objs| objs.split_whitespace().collect::<Vec<_>>())
+        .unwrap_or_default()
+        .into_iter()
+        .filter(|name| {
+            !objs_core
+                .keys()
+                .any(|path| path.file_name() == Some(OsStr::new(name)))
+        })
+        .collect::<Vec<_>>();
+
+    if missing.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let library = config_vars
+        .get("LIBRARY")
+        .ok_or_else(|| anyhow!("distribution with JIT objects does not define LIBRARY"))?;
+    let library_path = python_path.join("install").join("lib").join(library);
+
+    let mut archive =
+        ar::Archive::new(std::fs::File::open(&library_path).with_context(|| {
+            format!("opening {} to extract JIT objects", library_path.display())
+        })?);
+
+    let dest_dir = python_path.join("build").join("jit");
+    std::fs::create_dir_all(&dest_dir)?;
+
+    let mut extracted = vec![];
+
+    while let Some(entry) = archive.next_entry() {
+        let mut entry = entry.context("reading static libpython")?;
+
+        // GNU ar terminates member names with a slash.
+        let name = String::from_utf8_lossy(entry.header().identifier())
+            .trim_end_matches('/')
+            .to_string();
+
+        if missing.contains(&name.as_str()) {
+            let mut data = vec![];
+            entry.read_to_end(&mut data)?;
+
+            let rel_path = PathBuf::from("build").join("jit").join(&name);
+            let full_path = dest_dir.join(&name);
+            std::fs::write(&full_path, data)?;
+
+            extracted.push((rel_path, full_path));
+        }
+    }
+
+    if extracted.len() != missing.len() {
+        return Err(anyhow!(
+            "{} does not contain all JIT objects: {}",
+            library_path.display(),
+            missing.join(", ")
+        ));
+    }
+
+    Ok(extracted)
 }
 
 fn parse_python_major_minor_version(version: &str) -> String {
@@ -957,6 +1035,12 @@ impl StandaloneDistribution {
             let rel_path = PathBuf::from(obj);
             let full_path = python_path.join(obj);
 
+            objs_core.insert(rel_path, full_path);
+        }
+
+        for (rel_path, full_path) in
+            extract_jit_objects(&python_path, &pi.python_config_vars, &objs_core)?
+        {
             objs_core.insert(rel_path, full_path);
         }
 

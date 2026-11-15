@@ -36,6 +36,12 @@ Next
 Bug Fixes
 ^^^^^^^^^
 
+* Python 3.15 distributions built with the experimental JIT define
+  ``_PyJIT_Entry`` in a separate shim object. python-build-standalone does
+  not list it among the object files of libpython, and linking failed with
+  an undefined symbol. The objects named by the ``JIT_OBJS`` configuration
+  variable are now taken from the static libpython of the distribution when
+  they are missing.
 * The bytecode compiler accepts marshal format 6, used by Python 3.15.
 * Shared libraries whose file names end in an extension module suffix are no
   longer collected as extension modules unless Python could import them by
