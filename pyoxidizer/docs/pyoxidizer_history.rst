@@ -39,6 +39,9 @@ Backwards Compatibility Notes
 * Support for Python 3.10 has been removed, as python-build-standalone no
   longer publishes distributions for it.
 * The default Python version is now 3.11 instead of 3.10.
+* The minimum Rust version has been changed from 1.95 to 1.99. The
+  ``pgo+lto`` distributions of python-build-standalone 20261110 contain LLVM
+  23 bitcode. Rust 1.99 is the first release whose bundled LLVM can read it.
 
 New Features
 ^^^^^^^^^^^^
