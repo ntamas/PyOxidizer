@@ -493,16 +493,17 @@ rusty_fork_test! {
             let value_string = value_raw.cast::<PyString>().unwrap();
 
             // The result in isolated mode without configure_locale is kinda wonky.
+            // Python 3.15 enables UTF-8 mode by default and decodes it correctly.
             match unsafe { value_string.data().unwrap() } {
                 // This is the correct value.
                 PyStringData::Ucs2(&[20013, 25991]) => {
-                    if !cfg!(any(target_family = "windows", target_os = "macos")) {
+                    if !cfg!(any(target_family = "windows", target_os = "macos", Py_3_15)) {
                         panic!("Unexpected result");
                     }
                 }
                 // This is some abomination.
                 PyStringData::Ucs2(&[56548, 56504, 56493, 56550, 56470, 56455]) => {
-                    if !cfg!(target_family = "unix") {
+                    if !cfg!(all(target_family = "unix", not(Py_3_15))) {
                         panic!("Unexpected result");
                     }
                 }
