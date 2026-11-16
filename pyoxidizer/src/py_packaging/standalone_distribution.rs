@@ -130,6 +130,13 @@ pub static NO_BYTECODE_MODULES: Lazy<Vec<&'static str>> = Lazy::new(|| {
         "test.test_lib2to3.data.false_encoding",
         "test.test_lib2to3.data.py2_test_grammar",
         "test.test_lib2to3.data.py3_test_grammar",
+        // Python 3.15 tests misplaced lazy imports.
+        "test.test_lazy_import.data.badsyntax.lazy_class_body",
+        "test.test_lazy_import.data.badsyntax.lazy_future_import",
+        "test.test_lazy_import.data.badsyntax.lazy_import_func",
+        "test.test_lazy_import.data.badsyntax.lazy_try_except",
+        "test.test_lazy_import.data.badsyntax.lazy_try_except_from",
+        "test.test_lazy_import.data.badsyntax.lazy_try_except_from_star",
     ]
 });
 

@@ -3281,7 +3281,7 @@ pub mod tests {
             &PythonExtensionModule {
                 name: "yaml._yaml".to_string(),
                 init_fn: Some("PyInit__yaml".to_string()),
-                extension_file_suffix: ".cpython-310-x86_64-linux-gnu.so".to_string(),
+                extension_file_suffix: ".cpython-311-x86_64-linux-gnu.so".to_string(),
                 shared_library: None,
                 object_file_data: vec![],
                 is_package: false,

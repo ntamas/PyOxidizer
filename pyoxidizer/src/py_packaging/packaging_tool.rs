@@ -431,7 +431,10 @@ mod tests {
     fn test_pip_download_zstandard() -> Result<()> {
         let env = get_env()?;
 
-        for target_dist in get_all_standalone_distributions()? {
+        // zstandard does not publish wheels for Python 3.15 yet.
+        for target_dist in get_all_standalone_distributions_matching(|record| {
+            record.python_major_minor_version != "3.15"
+        })? {
             if target_dist.python_platform_compatibility_tag() == "none" {
                 continue;
             }
